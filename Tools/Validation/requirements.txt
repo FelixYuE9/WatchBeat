@@ -1,0 +1,2 @@
+# Milestone 0 uses only the Python standard library.
+# Freeze validation-only dependencies with hashes here in Milestone 3.

@@ -1,0 +1,9 @@
+# Keep source and documentation portable between Windows and macOS/Xcode.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.dat binary

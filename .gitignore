@@ -1,0 +1,46 @@
+# Swift Package Manager / Xcode
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS / Windows / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Python validation tools
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Generated reports and downloaded public datasets
+Tools/Validation/data/
+Tools/Validation/output/
+Tools/Validation/reports/generated/
+
+# Private ECG data must never be committed. Keep only the safety note.
+PrivateValidationData/**
+!PrivateValidationData/README.md
+
+# Signing material and secrets
+*.cer
+*.p12
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+
+# User-triggered ECG exports
+Exports/
+*.ecg-export.csv
+*.ecg-features.csv
+*.ecg-metadata.json
