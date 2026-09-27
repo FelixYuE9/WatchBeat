@@ -1,6 +1,11 @@
 import ECGCore
 import Foundation
 
+public enum ECGMeasurementSource: String, Codable, Sendable, Equatable {
+    case healthKit
+    case builtInSyntheticExample
+}
+
 /// Facts that make a loaded measurement sequence unsuitable for analysis, kept separate from
 /// "no data at all" and from query failures.
 public enum ECGMeasurementIssue: String, Codable, CaseIterable, Sendable, Equatable {
@@ -29,17 +34,20 @@ public struct ECGMeasurement: Equatable, Sendable {
     public let signal: ECGSignal
     public let integrity: ECGSignalIntegrityReport
     public let issues: [ECGMeasurementIssue]
+    public let source: ECGMeasurementSource
 
     public init(
         record: ECGRecord,
         signal: ECGSignal,
         integrity: ECGSignalIntegrityReport,
-        issues: [ECGMeasurementIssue]
+        issues: [ECGMeasurementIssue],
+        source: ECGMeasurementSource = .healthKit
     ) {
         self.record = record
         self.signal = signal
         self.integrity = integrity
         self.issues = issues
+        self.source = source
     }
 
     public var isComplete: Bool {

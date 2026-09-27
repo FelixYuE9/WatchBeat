@@ -22,7 +22,7 @@
                                │ versioned results and feature values
 ┌──────────────────────────────▼─────────────────────────────────────┐
 │ SwiftUI presentation / local export                               │
-│ waveform, markers, explanations, CSV/JSON, system share sheet     │
+│ waveform, timestamp markers, synthetic tutorial, CSV/JSON sharing │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -54,7 +54,7 @@ Tools/Validation/            # 离线验证骨架；无运行时依赖
 PrivateValidationData/       # 内容被 Git 忽略
 iOS/                         # Milestone 1 App：SwiftPM 包 + Xcode 工程
   App/                       # @main 入口、scene container、root 路由
-  Models/                    # WatchBeatModels：记录、measurement、类型化状态
+  Models/                    # records、measurement、display/export 与合成教学数据
   HealthKit/                 # WatchBeatHealthKit：唯一接触 HealthKit 的模块
   Features/                  # Disclaimer、ECGList、ECGDetail
   Resources/                 # Xcode App target 使用的 Info.plist 与 entitlements
@@ -71,8 +71,12 @@ HealthKit 行为仍须按 [VALIDATION.md](VALIDATION.md) 实测。
 - `ECGHealthKitReading` / `LiveHealthKitECGReader`：可注入的最小授权/查询边界；`toShare` 为空。
 - `ECGRepository`：列表只加载 metadata；详情按需读取 voltage；generation + 取消保护。
 - `ECGHealthKitMapper`：单位换算和完整性信息，不静默清洗。
-- feature modules：Disclaimer、ECG list、ECG detail（beat detail、settings、research mode 待 M2/M8）。
-- exporters：待 Milestone 2。
+- feature modules：Disclaimer、ECG list、ECG detail、可滚动/缩放 Canvas 波形与内置合成教程
+  （beat detail、settings、research mode 待后续里程碑）。
+- `ECGDisplayDownsampler`：只生成绘图 envelope，不修改分析/导出的完整 `ECGSignal`；可选 marker
+  从真实时间戳映射到横轴。
+- `ECGExportEncoder` / `ECGTemporaryExportWriter`：原始 CSV、metadata JSON、敏感信息确认、系统
+  share sheet 与分享结束后的临时目录清理。合成示例在 UI、JSON `dataSource` 和文件名中均有标记。
 
 HealthKit 异步查询必须支持 cooperative cancellation 和请求 identity 检查，防止快速切换
 记录时旧结果覆盖新页面。读取权限被拒绝和“数据库无可访问记录”在 HealthKit 中不可可靠

@@ -9,10 +9,12 @@ import WatchBeatModels
 public final class AppContainer {
     public let repository: ECGRepository
     public let listViewModel: ECGListViewModel
+    public let exampleMeasurement: ECGMeasurement?
 
     public init() {
         let repository = ECGRepository(reader: LiveHealthKitECGReader())
         self.repository = repository
         self.listViewModel = ECGListViewModel(repository: repository)
+        self.exampleMeasurement = try? ECGExampleFactory.makeMeasurement()
     }
 }

@@ -82,6 +82,25 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         self.assertTrue(info.get("NSHealthShareUsageDescription"))
         self.assertNotIn("NSHealthUpdateUsageDescription", info)
 
+    def test_milestone_two_sources_are_members_of_xcode_targets(self) -> None:
+        project = PROJECT_FILE.read_text(encoding="utf-8")
+        source_files = {
+            "ECGDisplay.swift",
+            "ECGExportEncoder.swift",
+            "ECGExampleFactory.swift",
+            "ECGWaveformView.swift",
+            "ECGExportSharing.swift",
+            "ECGPresentationAndExportTests.swift",
+        }
+
+        for file_name in source_files:
+            self.assertIn(f"/* {file_name} */", project)
+            self.assertEqual(project.count(f"/* {file_name} in Sources */"), 2)
+
+        tests_group = project[project.index("/* Tests */ = {") :]
+        tests_group = tests_group[: tests_group.index("/* End PBXGroup section */")]
+        self.assertIn("ECGPresentationAndExportTests.swift", tests_group)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,18 +4,20 @@
 Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以保守、
 可审计的方式标记疑似提前心搏。
 
-> **当前状态：Milestone 1（HealthKit 读取层，进行中）。** `ECGCore` 已编译并通过 7 项单元测试。
+> **当前状态：Milestone 2（波形与导出，源码已实现，等待 macOS 复验）。** `ECGCore` 已编译并通过 7 项单元测试。
 > iOS 17 读取层源码已完成（SwiftUI App、只读 HealthKit ECG 授权、metadata 列表、惰性电压读取、
 > mV 映射、状态区分与免责声明），并在本机真实编译：
 >
 > - `swift build`：macOS 目标全量通过；以真实 iPhoneOS 26.5 / iPhoneSimulator 26.5 SDK 通过。
 > - Xcode 26.6（build 17F113，位于 `~/Downloads/Xcode.app`）：`iOS/WatchBeat.xcodeproj` 的
 >   App target 与单元测试 bundle 均 `BUILD SUCCEEDED`。
-> - 16 项读取层单元测试通过（SwiftPM/macOS）；Xcode iOS test bundle 已构建、尚未在 destination 执行。
+> - 既有 16 项读取层单元测试通过（SwiftPM/macOS）；本轮新增 7 项波形、合成示例和导出测试，
+>   当前 Windows 环境无法执行 Swift，须在 macOS 上运行后再登记结果。
 >
-> **未完成的真实验收：** App **从未运行过**。本机未安装 iOS 模拟器运行时与 iOS 26.5 设备支持，
-> 因此 scheme + destination 构建失败，也没有模拟器/真机运行、没有截图、没有真机 HealthKit
-> 授权与波形验收。详见 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
+> **运行证据：** 2026-09-27 的用户截图确认 App 已在 iPhone 17 Pro / iOS 26.5 模拟器成功安装
+> 和启动，并显示预期的无可访问 ECG 状态；这也确认 embedded framework plist 修复已越过安装检查。
+> 尚未记录 shared scheme 自动测试，也没有真机 HealthKit 授权与波形验收。详见
+> [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
 > [Docs/VALIDATION.md](Docs/VALIDATION.md)。
 > 后续审查已修正 entitlement、iPhone-only、共享 scheme 与 SwiftUI 状态生命周期；该修复提交
 > 已通过跨平台配置测试，但仍须回到 macOS 重新编译并运行。
@@ -71,20 +73,22 @@ PAC/PVC 分类或置信度的输入。
   稳健采样率推断和时间间隔相对 MAD。
 - iOS 17 SwiftUI App 源码（`iOS/`）：只读 HealthKit ECG 授权（`toShare` 为空）、metadata
   列表、惰性电压读取（含取消与陈旧请求保护）、mV 映射、四类状态区分、免责声明。
-- 16 项读取层单元测试源码（已通过 SwiftPM/macOS 测试；尚未在 iOS destination 执行）。
+- 内置确定性合成 ECG 教程（非人体数据），在无授权、无记录或 HealthKit 不可用时也能学习界面。
+- 全分辨率数据独立于显示降采样的可滚动/缩放波形，以及按真实时间戳定位的 marker 接口。
+- 用户确认后通过系统 share sheet 导出原始 CSV 或 metadata JSON；临时文件分享后清理。
+- 16 项读取层测试此前已通过；本轮新增 7 项波形/导出测试，等待 macOS 执行。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
 
-- App 运行：Xcode 工程与 App target 已能构建，但本机缺 iOS 模拟器运行时与 iOS 26.5 设备支持，
-  所以没有 scheme + destination 构建、没有模拟器或真机运行、没有真机 HealthKit 授权验收。
-- 波形显示、滚动缩放、导出和真机一致性校验（Milestone 2）。
+- shared scheme 的 simulator 自动测试、本轮 Milestone 2 源码的 Xcode 编译与 UI 操作复验。
+- 真机 HealthKit 授权、真实波形显示和导出逐样本一致性校验。
 - 数字滤波、完整信号质量门控、R 峰 detector、RR、模板、QRS 和分类器（Milestones 4–7）。
 - 离线公开数据评测结果或 Apple Watch 域验证（Milestones 3、9）。
 - 界面本地化：UI 文案目前为英文，免责声明为中英双语。
 
-因此仍然没有应用截图。截图只能在界面于 Xcode 编译并在真机实际运行后加入，
-不会用静态 mock 冒充已完成的产品。
+模拟器截图只证明安装、启动与 UI 状态，不会被当作真机 HealthKit 或医学准确率证据。内置示例
+始终明确标为数学合成数据，不会用它冒充 Apple Watch ECG。
 
 ## 构建 ECGCore
 
@@ -120,7 +124,7 @@ Tools/uninstall-swift-test-shim.sh      # 需要时移除
 ## 构建与测试 iOS App（本机可执行的编译）
 
 ```bash
-bash Tools/run-app-tests.sh --parallel                 # 16 项单元测试（仓库根目录执行）
+bash Tools/run-app-tests.sh --parallel                 # 当前应发现 23 项单元测试（仓库根目录执行）
 
 cd iOS
 swift build                                            # macOS 目标：SwiftUI + HealthKit 全量编译
@@ -134,33 +138,31 @@ swift build --triple x86_64-apple-ios17.0-simulator \
 Command Line Tools），为 `swift test` 补上 Swift Testing 的 framework、宏插件与 rpath
 搜索路径——这些无法写进 `Package.swift`，必须放在命令行。
 
-Xcode App 构建（Xcode 26.6，需要显式指定 developer 目录，因为 `xcode-select` 仍指向
-Command Line Tools）：
+Xcode App 构建与模拟器测试（Xcode 26.6；如果 `xcode-select` 仍指向 Command Line Tools，
+需要显式指定 developer 目录）：
 
 ```bash
 export DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"
 cd iOS
-xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
-           -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
-           -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
+           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
+           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' test
 ```
 
-用 `-target` 而非 `-scheme`：scheme 构建需要 destination，而本机没有模拟器运行时与 iOS 26.5
-设备支持，`-scheme` 会报 `Unable to find a destination ...` / `iOS 26.5 is not installed`。
-`-target` + `CODE_SIGNING_ALLOWED=NO` 构建只证明 App 能编译、链接并处理 Info.plist；它不会生成
-可用于验证的签名，也不能证明 HealthKit entitlement 已进入最终 App 签名，更不代表运行过。
+早期在没有 simulator runtime 时只能使用 `-target` + `CODE_SIGNING_ALLOWED=NO`；那段历史结果仍
+保留在验证文档。现在 simulator 已可运行，应使用 shared scheme + 真实 destination。若设备名称
+不同，先执行 `xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations`。
 
 ## 未来构建 iPhone App
 
-最低目标 iOS 17.0。Xcode 工程已经能用 `-target` + `-sdk` 构建；要真正跑起来还需要：
+最低目标 iOS 17.0。模拟器已经可以启动；要读取真人 ECG 还需要：
 
-1. iOS 26.5 平台支持与模拟器运行时（Xcode > Settings > Components），或一台真机。
-2. Apple Developer 签名配置及带 HealthKit capability 的 App ID；验证签名产物实际包含
+1. Apple Developer 签名配置及带 HealthKit capability 的 App ID；验证签名产物实际包含
    `com.apple.developer.healthkit`。
-3. 一台能访问真实 Apple Health ECG 数据的兼容 iPhone。
-4. 只请求 ECG 读取权限；`toShare` 必须为空。
-5. 在真机逐项完成 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md)。
+2. 一台能访问真实 Apple Health ECG 数据的兼容 iPhone。
+3. 只请求 ECG 读取权限；`toShare` 必须为空。
+4. 在真机逐项完成 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md)。
 
 模拟器、合成数据和静态 mock 不能替代 HealthKit 真实 ECG 的端到端验收。
 

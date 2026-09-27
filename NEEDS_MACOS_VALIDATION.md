@@ -1,11 +1,10 @@
 # macOS, Xcode and real-iPhone validation required
 
 This repository was initialized on Windows 10, where Swift and Xcode were unavailable. Work has since
-moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is now installed at `~/Downloads/Xcode.app`
-with the iOS 26.5 SDKs, but **no iOS simulator runtime and no iOS 26.5 device support** are
-downloaded. Steps 1, 2 and the unit-test half of 3 are done; running on a simulator or device
-(step 3 runtime, steps 4 and 5) remains blocked. Record versions, commands, outputs and
-failures whenever the blocking tool becomes available.
+moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app`.
+On 2026-09-27 a user-provided screenshot confirmed the App running on an iPhone 17 Pro simulator
+with iOS 26.5 and showing the expected empty HealthKit state. The exact scheme command, automated
+simulator tests, current Milestone 2 UI and all signed real-iPhone checks remain to be recorded.
 
 ## 1. Validate ECGCore first — DONE
 
@@ -62,10 +61,10 @@ xcodebuild: error: Unable to find a destination matching the provided destinatio
       platform from Xcode > Settings > Components. }
 ```
 
-The repository now contains a shared `WatchBeatApp` scheme and an iPhone-only target. Still to do
-once the platform/runtime is installed: replace the placeholder bundle identifier
-`com.watchbeat.WatchBeat`, select a real team, then build and test through that scheme and a real
-destination. Do not add PeakSwift or any other candidate yet.
+The repository contains a shared `WatchBeatApp` scheme and an iPhone-only target. The simulator
+runtime is now available. Before a real-iPhone run, replace the placeholder bundle identifier
+`com.watchbeat.WatchBeat`, select a real team, then build through that scheme. Do not add PeakSwift
+or another detector candidate yet.
 
 Verify before the first signed run:
 
@@ -79,13 +78,11 @@ Verify before the first signed run:
 Check the generated project for user-specific signing values before commit. Do not commit
 provisioning profiles, certificates or device IDs.
 
-## 3. Simulator and unit checks — UNIT CHECKS DONE, SIMULATOR STILL UNAVAILABLE
+## 3. Simulator and unit checks — APP LAUNCH OBSERVED; CURRENT TESTS PENDING
 
-With Xcode 26.6 present the iPhoneSimulator 26.5 SDK is available, but
-`xcrun simctl list runtimes` is empty and no device exists, so no simulator destination can be
-created or run. Downloading the runtime (Xcode > Settings > Components, several GB) is required
-first. The unit checks below were executed through SwiftPM on macOS
-(`bash Tools/run-app-tests.sh --parallel`, 16 tests pass under both Swift 6.2.4 and Swift 6.3.3).
+The original 16 tests passed through SwiftPM on macOS under Swift 6.2.4 and Swift 6.3.3. Milestone 2
+adds 7 tests (expected total: 23) that have only received Windows-side static/project checks so far.
+Run both commands below and retain their final summaries.
 
 Simulator/mock tests may cover navigation, typed errors, cancellation, stale-result protection,
 unit conversion, measurement ordering, missing voltage and sample-count mismatch. They do not count
@@ -94,14 +91,15 @@ as HealthKit end-to-end evidence.
 Discover and use an actual destination:
 
 ```bash
-xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations
 xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
-           -destination 'platform=iOS Simulator,name=<Device>' build
+           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build
 xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
-           -destination 'platform=iOS Simulator,name=<Device>' test
+           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' test
 ```
 
-Replace placeholders rather than copying these commands verbatim into a pass report.
+Then launch the App and verify the built-in example is available from the empty state. Confirm its
+orange synthetic label, horizontal scrolling, 1×–8× zoom, raw CSV confirmation/share sheet and
+metadata JSON confirmation/share sheet. The exported example filenames must contain `synthetic-example`.
 
 ## 4. Real-iPhone acceptance steps
 
@@ -121,9 +119,11 @@ Use a compatible iPhone signed into a Health database containing Apple Watch ECG
 9. Inspect the installed App's signed entitlements and confirm HealthKit is present and no unexpected
    capability was added.
 10. Inspect device/network behavior: no ECG leaves the device and no sensitive values appear in logs.
+11. Export raw CSV and metadata JSON through the share sheet. Compare CSV row count/order/timestamps/
+    missing fields with the selected HealthKit measurements, confirm JSON says `dataSource: healthKit`,
+    and confirm no HealthKit UUID appears in either filename or JSON.
 
-Raw CSV/JSON export verification belongs to Milestone 2 and must not be added to the Milestone 1
-acceptance result before export exists.
+The built-in synthetic example is a UI tutorial only and does not satisfy any real-iPhone item.
 
 ## 5. Evidence to record safely
 

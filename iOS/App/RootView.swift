@@ -12,7 +12,10 @@ public struct RootView: View {
         Group {
             if hasAcceptedDisclaimer {
                 NavigationStack {
-                    ECGListView(viewModel: container.listViewModel)
+                    ECGListView(
+                        viewModel: container.listViewModel,
+                        exampleMeasurement: container.exampleMeasurement
+                    )
                 }
             } else {
                 DisclaimerView {

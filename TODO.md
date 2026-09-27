@@ -24,7 +24,7 @@ Every milestone must update the related documents, versions, actual commands, fa
 Milestone 0 is source- and build-complete. This does not validate the iOS App or any ECG algorithm
 end to end; those claims remain governed by the later milestones and recorded runtime evidence.
 
-## Milestone 1 — HealthKit ECG reader (in progress; Xcode/real-iPhone items still blocked)
+## Milestone 1 — HealthKit ECG reader (simulator run complete; real-iPhone items pending)
 
 - [x] Create minimal iOS 17 SwiftUI project and test target: SwiftPM package under `iOS/`
   (`WatchBeatModels`, `WatchBeatHealthKit`, `WatchBeatApp`, `WatchBeatAppTests`).
@@ -33,8 +33,9 @@ end to end; those claims remain governed by the later milestones and recorded ru
   (Xcode 26.6, build 17F113).
 - [x] Commit a shared `WatchBeatApp` scheme, configure the App as iPhone-only and wire the HealthKit
   entitlement with `CODE_SIGN_ENTITLEMENTS` (signed-product verification remains pending).
-- [ ] Build and run through a real scheme + destination, and run the app on a simulator or iPhone
-  (blocked: no iOS 26.5 device support and no simulator runtime installed).
+- [x] Build and run the app on an iPhone 17 Pro simulator with iOS 26.5. A user-provided screenshot
+  on 2026-09-27 confirms installation, launch and the no-accessible-records state after the embedded
+  framework bundle-identifier fix. The exact Xcode command/output was not captured.
 - [x] Add HealthKit read-purpose string (`iOS/Resources/Info.plist`) and entitlement
   (`iOS/Resources/WatchBeatApp.entitlements`); request ECG read only with empty `toShare`. The
   capability is source-configured; a signed real-device build must still verify it.
@@ -53,15 +54,19 @@ end to end; those claims remain governed by the later milestones and recorded ru
   triple, real iPhoneOS/iPhoneSimulator 26.5 SDKs, `xcodebuild -target` builds under Xcode 26.6
   (build 17F113), and 16 unit tests via `bash Tools/run-app-tests.sh --parallel`.
   See `Docs/VALIDATION.md`.
-- [ ] Build/test with a real Xcode scheme + destination and run the app on a simulator or iPhone
-  (blocked: iOS 26.5 device support and simulator runtime are not installed).
+- [ ] Run the shared scheme's automated test action on the installed simulator and record the exact
+  command/result. App launch is observed; automated destination tests are not yet recorded.
 - [ ] Perform real-iPhone authorization/list/detail verification and record evidence without committing ECG.
 
-## Milestone 2 — waveform and export
+## Milestone 2 — waveform and export (implemented in source; macOS runtime validation pending)
 
-- [ ] Full-resolution analysis data remains separate from display downsampling.
-- [ ] Scroll/zoom waveform with marker positions tied to real timestamps.
-- [ ] User-triggered raw CSV and metadata JSON export through share sheet.
+- [x] Full-resolution analysis/export data remains separate from timestamp-preserving display
+  downsampling, with original extrema and missing-value gaps represented.
+- [x] Scroll/zoom waveform with an optional marker overlay positioned from real timestamps.
+- [x] User-triggered raw CSV and metadata JSON export through the iPhone share sheet; temporary
+  files use protection and are removed when sharing finishes.
+- [x] Ship a deterministic built-in synthetic ECG tutorial, visibly and structurally distinguished
+  from Apple Health data and available even when no HealthKit record is accessible.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
 
 ## Milestone 3 — reproducible detector benchmark

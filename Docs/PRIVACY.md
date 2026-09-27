@@ -38,6 +38,10 @@ Apple 文档说明 ECG sample type 用于请求读取和查询，不能写入：
 保持 HealthKit measurement 顺序、时间戳和 `nil`，不能为了美观静默清洗。导出文件名
 尽量避免直接包含姓名、HealthKit ID 或完整采集时间。
 
+内置教学 ECG 是确定性数学合成数据，不来自 HealthKit，也不包含个人健康信息。其 UI 标题、
+metadata JSON 的 `dataSource` 以及导出文件名都必须明确包含 synthetic/example 语义，防止用户把
+它误当作真人记录。它不能作为算法准确率或 Apple Watch 域验证数据。
+
 ## UI 与系统表面
 
 - 不在锁屏通知、widget、Spotlight 或剪贴板自动暴露分类结果。

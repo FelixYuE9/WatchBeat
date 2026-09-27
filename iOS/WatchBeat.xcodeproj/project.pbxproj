@@ -17,6 +17,9 @@
 		A00000000000000000004011 /* ECGRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002011 /* ECGRecord.swift */; };
 		A00000000000000000004012 /* ECGMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002012 /* ECGMeasurement.swift */; };
 		A00000000000000000004013 /* ECGReaderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002013 /* ECGReaderState.swift */; };
+		A00000000000000000004014 /* ECGDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002014 /* ECGDisplay.swift */; };
+		A00000000000000000004015 /* ECGExportEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002015 /* ECGExportEncoder.swift */; };
+		A00000000000000000004016 /* ECGExampleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002016 /* ECGExampleFactory.swift */; };
 		A00000000000000000004021 /* ECGVoltageSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002021 /* ECGVoltageSample.swift */; };
 		A00000000000000000004022 /* ECGHealthKitReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002022 /* ECGHealthKitReading.swift */; };
 		A00000000000000000004023 /* ECGHealthKitMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002023 /* ECGHealthKitMapper.swift */; };
@@ -31,10 +34,13 @@
 		A00000000000000000004052 /* ECGListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002052 /* ECGListView.swift */; };
 		A00000000000000000004061 /* ECGDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002061 /* ECGDetailViewModel.swift */; };
 		A00000000000000000004062 /* ECGDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002062 /* ECGDetailView.swift */; };
+		A00000000000000000004063 /* ECGWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002063 /* ECGWaveformView.swift */; };
+		A00000000000000000004064 /* ECGExportSharing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002064 /* ECGExportSharing.swift */; };
 		A00000000000000000004081 /* ECGHealthKitMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002081 /* ECGHealthKitMapperTests.swift */; };
 		A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002082 /* ECGRepositoryStateTests.swift */; };
 		A00000000000000000004083 /* FakeECGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002083 /* FakeECGReader.swift */; };
 		A00000000000000000004084 /* Gate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002084 /* Gate.swift */; };
+		A00000000000000000004085 /* ECGPresentationAndExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002085 /* ECGPresentationAndExportTests.swift */; };
 		A00000000000000000004101 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
 		A00000000000000000004102 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
 		A00000000000000000004103 /* WatchBeatModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; };
@@ -147,6 +153,9 @@
 		A00000000000000000002011 /* ECGRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecord.swift; sourceTree = "<group>"; };
 		A00000000000000000002012 /* ECGMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGMeasurement.swift; sourceTree = "<group>"; };
 		A00000000000000000002013 /* ECGReaderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGReaderState.swift; sourceTree = "<group>"; };
+		A00000000000000000002014 /* ECGDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDisplay.swift; sourceTree = "<group>"; };
+		A00000000000000000002015 /* ECGExportEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGExportEncoder.swift; sourceTree = "<group>"; };
+		A00000000000000000002016 /* ECGExampleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGExampleFactory.swift; sourceTree = "<group>"; };
 		A00000000000000000002021 /* ECGVoltageSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGVoltageSample.swift; sourceTree = "<group>"; };
 		A00000000000000000002022 /* ECGHealthKitReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitReading.swift; sourceTree = "<group>"; };
 		A00000000000000000002023 /* ECGHealthKitMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapper.swift; sourceTree = "<group>"; };
@@ -161,12 +170,15 @@
 		A00000000000000000002052 /* ECGListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGListView.swift; sourceTree = "<group>"; };
 		A00000000000000000002061 /* ECGDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDetailViewModel.swift; sourceTree = "<group>"; };
 		A00000000000000000002062 /* ECGDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDetailView.swift; sourceTree = "<group>"; };
+		A00000000000000000002063 /* ECGWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGWaveformView.swift; sourceTree = "<group>"; };
+		A00000000000000000002064 /* ECGExportSharing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGExportSharing.swift; sourceTree = "<group>"; };
 		A00000000000000000002071 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A00000000000000000002072 /* WatchBeatApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchBeatApp.entitlements; sourceTree = "<group>"; };
 		A00000000000000000002081 /* ECGHealthKitMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapperTests.swift; sourceTree = "<group>"; };
 		A00000000000000000002082 /* ECGRepositoryStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRepositoryStateTests.swift; sourceTree = "<group>"; };
 		A00000000000000000002083 /* FakeECGReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeECGReader.swift; sourceTree = "<group>"; };
 		A00000000000000000002084 /* Gate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gate.swift; sourceTree = "<group>"; };
+		A00000000000000000002085 /* ECGPresentationAndExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGPresentationAndExportTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -314,6 +326,9 @@
 				A00000000000000000002011 /* ECGRecord.swift */,
 				A00000000000000000002012 /* ECGMeasurement.swift */,
 				A00000000000000000002013 /* ECGReaderState.swift */,
+				A00000000000000000002014 /* ECGDisplay.swift */,
+				A00000000000000000002015 /* ECGExportEncoder.swift */,
+				A00000000000000000002016 /* ECGExampleFactory.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -363,6 +378,8 @@
 			children = (
 				A00000000000000000002061 /* ECGDetailViewModel.swift */,
 				A00000000000000000002062 /* ECGDetailView.swift */,
+				A00000000000000000002063 /* ECGWaveformView.swift */,
+				A00000000000000000002064 /* ECGExportSharing.swift */,
 			);
 			path = ECGDetail;
 			sourceTree = "<group>";
@@ -381,6 +398,7 @@
 			children = (
 				A00000000000000000002081 /* ECGHealthKitMapperTests.swift */,
 				A00000000000000000002082 /* ECGRepositoryStateTests.swift */,
+				A00000000000000000002085 /* ECGPresentationAndExportTests.swift */,
 				A0000000000000000000000F /* Fakes */,
 			);
 			path = Tests;
@@ -551,6 +569,9 @@
 				A00000000000000000004011 /* ECGRecord.swift in Sources */,
 				A00000000000000000004012 /* ECGMeasurement.swift in Sources */,
 				A00000000000000000004013 /* ECGReaderState.swift in Sources */,
+				A00000000000000000004014 /* ECGDisplay.swift in Sources */,
+				A00000000000000000004015 /* ECGExportEncoder.swift in Sources */,
+				A00000000000000000004016 /* ECGExampleFactory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +600,8 @@
 				A00000000000000000004052 /* ECGListView.swift in Sources */,
 				A00000000000000000004061 /* ECGDetailViewModel.swift in Sources */,
 				A00000000000000000004062 /* ECGDetailView.swift in Sources */,
+				A00000000000000000004063 /* ECGWaveformView.swift in Sources */,
+				A00000000000000000004064 /* ECGExportSharing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -590,6 +613,7 @@
 				A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */,
 				A00000000000000000004083 /* FakeECGReader.swift in Sources */,
 				A00000000000000000004084 /* Gate.swift in Sources */,
+				A00000000000000000004085 /* ECGPresentationAndExportTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

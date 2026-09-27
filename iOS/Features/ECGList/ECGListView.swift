@@ -4,9 +4,11 @@ import WatchBeatModels
 public struct ECGListView: View {
     @AppStorage("hasRequestedECGReadAccess") private var hasRequestedReadAccess = false
     let viewModel: ECGListViewModel
+    let exampleMeasurement: ECGMeasurement?
 
-    public init(viewModel: ECGListViewModel) {
+    public init(viewModel: ECGListViewModel, exampleMeasurement: ECGMeasurement? = nil) {
         self.viewModel = viewModel
+        self.exampleMeasurement = exampleMeasurement
     }
 
     public var body: some View {
@@ -36,16 +38,21 @@ public struct ECGListView: View {
             placeholder(
                 title: "HealthKit ECG is unavailable",
                 message: "This device or OS version does not expose ECG records through HealthKit."
-            )
+            ) {
+                exampleLink
+            }
         case .authorizationRequired:
             placeholder(
                 title: "ECG read access has not been requested",
                 message: "Only reading saved ECG records is requested. Nothing is written to Apple Health."
             ) {
-                Button("Request ECG read access") {
-                    Task { await requestReadAccess() }
+                VStack(spacing: 12) {
+                    Button("Request ECG read access") {
+                        Task { await requestReadAccess() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    exampleLink
                 }
-                .buttonStyle(.borderedProminent)
             }
         case .noAccessibleRecords:
             placeholder(
@@ -56,15 +63,25 @@ public struct ECGListView: View {
                     this app never claims access was denied.
                     """
             ) {
-                Button("Request ECG read access") {
-                    Task { await requestReadAccess() }
+                VStack(spacing: 12) {
+                    Button("Request ECG read access") {
+                        Task { await requestReadAccess() }
+                    }
+                    exampleLink
                 }
             }
         case .loaded(let records):
             List {
-                ForEach(records) { record in
-                    NavigationLink(value: record) {
-                        ECGRecordRow(record: record)
+                if exampleMeasurement != nil {
+                    Section("Learn with an example") {
+                        exampleLink
+                    }
+                }
+                Section("Your Health records") {
+                    ForEach(records) { record in
+                        NavigationLink(value: record) {
+                            ECGRecordRow(record: record)
+                        }
                     }
                 }
             }
@@ -76,9 +93,23 @@ public struct ECGListView: View {
                 title: "Unable to access ECG records",
                 message: "Error: \(message)"
             ) {
-                Button("Try again") {
-                    Task { await requestReadAccess() }
+                VStack(spacing: 12) {
+                    Button("Try again") {
+                        Task { await requestReadAccess() }
+                    }
+                    exampleLink
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var exampleLink: some View {
+        if let exampleMeasurement {
+            NavigationLink {
+                ECGDetailView(viewModel: ECGDetailViewModel(example: exampleMeasurement))
+            } label: {
+                Label("Explore built-in synthetic ECG", systemImage: "waveform.path.ecg")
             }
         }
     }

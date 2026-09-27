@@ -3,11 +3,13 @@
 ## 验证状态摘要
 
 截至 2026-09-27，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
-iOS 读取层源码已完成，并在 macOS 上编译与测试通过。仍然没有 R 峰或 beat 分类性能报告，也没有
+iOS 读取层源码已完成，并在 macOS 上编译与测试通过。用户截图确认修复后的 App 已在 iPhone 17 Pro /
+iOS 26.5 模拟器安装和启动。Milestone 2 的波形、合成教程与导出源码已实现，但尚未在 macOS 编译。
+仍然没有 R 峰或 beat 分类性能报告，也没有
 Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall 或 accuracy
 声明在当前阶段都是不真实的。
 
-当前关键限制：Xcode 和 iOS SDK 已安装，但**没有 iOS 模拟器运行时或可用 destination，也没有
+当前关键限制：模拟器已经可用，但**当前 Milestone 2 revision 尚未执行 Xcode build/test，也没有
 完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在签名产物与真机上验证。
 
 ## 实际环境审计（2026-09-26 / 2026-09-27）
@@ -38,15 +40,17 @@ Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall
 | `xcrun --sdk iphoneos --show-sdk-path` | `.../Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk` |
 | `xcrun --sdk iphonesimulator --show-sdk-path` | `.../Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk` |
 | `xcode-select -p`（系统默认，未 sudo） | 仍是 `/Library/Developer/CommandLineTools`；切换需 `sudo xcode-select -s <Xcode.app>/Contents/Developer` |
-| `xcrun simctl list runtimes` | **空**：未安装 iOS 模拟器运行时 |
-| `xcrun simctl list devices` | **空**：无可用模拟器设备 |
+| `xcrun simctl list runtimes` | **当时为空**：该次检查尚未安装 iOS 模拟器运行时 |
+| `xcrun simctl list devices` | **当时为空**：该次检查尚无可用模拟器设备 |
 | `iPhoneOS.platform/DeviceSupport` | 只有 15.0–16.4；缺 iOS 26.5 设备支持，故 "Any iOS Device" 报 `iOS 26.5 is not installed` |
 
 历史记录（本仓库初始化时）：Windows 10.0.19045、PowerShell 7.6.5、`git --version`
 `2.39.1.windows.1`、`python --version` `3.10.9`，Swift 与 Xcode 均不可用。
 
-结论：本轮**可以**执行 Xcode 工程构建与真实 iOS SDK 编译；**仍不能**在模拟器或真机上运行
-App（缺模拟器运行时与 iOS 26.5 设备支持），真机 HealthKit 验收依旧未执行。
+该表是首次安装 Xcode 时的历史快照。随后 simulator runtime 已安装；用户提供的截图显示
+`iPhone 17 Pro / iOS 26.5` 上的 App 已启动并进入 “No accessible ECG records” 状态。没有保存
+对应命令的完整输出，因此不能据此宣称 shared scheme 的 test action 已通过。真机 HealthKit
+验收依旧未执行。
 
 ## 本轮实际执行结果
 
@@ -58,11 +62,17 @@ python -m unittest discover -s Tools/Validation/tests -v
 的 `dataclass` 无法解析模块 namespace。修复测试 loader 后重新运行：3 tests，全部通过，
 exit 0。保留此失败记录，避免把"最终通过"写成"一次即通过"。
 
-2026-09-27 的 Windows follow-up 又增加 5 项 iOS 工程配置回归测试，覆盖正确的
+2026-09-27 的 Windows follow-up 先增加 5 项 iOS 工程配置回归测试，覆盖正确的
 `CODE_SIGN_ENTITLEMENTS`、iPhone-only、embedded framework bundle identifiers、只读 HealthKit
-plist/entitlement 与共享 scheme。当前 Python suite 合计 8 tests，全部通过；该环境没有
+plist/entitlement 与共享 scheme；Milestone 2 又增加 1 项 Xcode source-membership 检查。
+当前 Python suite 合计 9 tests，全部通过；该环境没有
 Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
+
+同日的 Milestone 2 follow-up 新增 7 项 Swift 测试，覆盖显示降采样不修改原始数据、extrema、
+缺测 gap、真实 timestamp 映射、CSV 顺序/缺测、JSON 去除 HealthKit ID，以及内置合成示例的
+确定性和来源标记。当前 Windows 主机不能运行 Swift；这 7 项测试仅完成源码和 Xcode target
+membership 静态检查，必须在 macOS 上运行后才可写成通过。
 
 ```text
 python Tools/Validation/validate_raw_ecg_csv.py \
@@ -138,8 +148,9 @@ Info.plist 处理，但无签名构建不能验证最终签名中的 entitlement
 第一次 macOS scheme build 随后真实失败：嵌入 App 的 `ECGCore`、`WatchBeatModels` 与
 `WatchBeatHealthKit` framework 的生成 plist 都没有 `CFBundleIdentifier`。原因是三个 framework
 target 的 Debug/Release 配置均缺 `PRODUCT_BUNDLE_IDENTIFIER`；现已分别补上唯一标识并加入回归测试。
-这些配置通过 5 项 Python 回归测试；由于 follow-up 环境是 Windows，修复后的工程仍须回到
-macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物检查。
+这些配置当前通过 6 项 Python 回归测试。其后用户截图确认 framework 修复后的 App 能在模拟器安装并
+启动；但由于没有保留命令输出，且又加入 Milestone 2 源码，仍须回到 macOS 执行当前 revision 的
+scheme build/test 与签名产物检查。
 
 编译可行性说明（本机实测）：
 
@@ -152,9 +163,8 @@ macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物
 
 失败与限制（保留，不改写为成功）：
 
-1. **App 从未运行过**：未安装 iOS 模拟器运行时（`xcrun simctl list runtimes` 为空），也未安装
-   iOS 26.5 设备支持（`DeviceSupport` 只有 15.0–16.4），因此 scheme + destination 构建失败，
-   更没有 simulator 运行、真机运行或 UI 快照。
+1. App 已在 iPhone 17 Pro / iOS 26.5 模拟器运行并有截图；但当前 M2 revision 尚未重新构建，
+   shared scheme test action 也没有结果记录。截图不证明真机 HealthKit。
 2. 真机 HealthKit 授权、measurement 完整性与真实 sampling metadata **未验证**。
 3. 单元测试使用 `FakeECGReader` 替身：真实 `HKElectrocardiogram` 无法在测试中构造，所以
    mapper 测试只覆盖 `HKQuantity` 电压换算接缝，不覆盖 `HKElectrocardiogram` 元数据映射。
@@ -195,9 +205,20 @@ macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物
 | 本机编译与单元测试 | 既有版本通过 SwiftPM 构建与 16 tests；修复后工程待 macOS 复验 | 16 tests 在 macOS 执行，Xcode iOS test bundle 仅构建 |
 | Xcode 工程构建（App + 测试 bundle） | 通过：3 条 `xcodebuild -target` 命令 BUILD SUCCEEDED | Xcode 26.6，iOS 26.5 / iOS Simulator 26.5 SDK |
 | iPhone-only、framework IDs 与共享 scheme | 源码完成 + 5 项配置测试通过 | 需在 macOS 重新执行共享 scheme |
-| Xcode scheme + destination 构建 | 失败（阻塞） | 缺 iOS 26.5 设备支持与模拟器运行时 |
-| App 在模拟器/真机运行 | 未执行 | 缺运行时/设备支持、签名与真实 Watch ECG 数据 |
+| Xcode scheme + destination 构建 | 模拟器安装/启动已观察；命令待重跑 | 用户截图，缺完整 build/test 输出 |
+| App 在模拟器/真机运行 | 模拟器已运行；真机未执行 | iPhone 17 Pro / iOS 26.5 截图；无真机证据 |
 | 真机授权/列表/详情验证 | 未验证 | 见 `NEEDS_MACOS_VALIDATION.md` |
+
+## Milestone 2 验收表
+
+| 条件 | 状态 | 证据/限制 |
+|---|---|---|
+| 全分辨率与显示降采样分离 | 源码完成 | `ECGDisplayDownsampler`；新增 Swift tests 待 macOS 执行 |
+| 滚动/缩放波形与 timestamp marker | 源码完成 | SwiftUI Canvas，1×–8×；待模拟器 UI 复验 |
+| 内置合成教学 ECG | 源码完成 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
+| raw CSV 与 metadata JSON | 源码完成 | 用户确认 + share sheet + 临时文件清理；待 iOS 构建 |
+| 当前 Swift tests | 未执行 | 预期 23 tests；既有 16 曾通过，新增 7 待运行 |
+| 真实 HealthKit 导出一致性 | 未验证 | 必须在真机逐样本核对 |
 
 ## 首次可用 Swift 环境的必跑命令
 
@@ -210,9 +231,10 @@ swift test --parallel
 已执行（macOS 26.7 + Swift 6.2.4，仅 Command Line Tools）：`swift test --parallel` 通过
 7 tests / 2 suites。
 
-共享 `WatchBeatApp` scheme 已建立，但还必须在安装 iOS runtime 后执行真实 destination 的
-`xcodebuild build` 和 `xcodebuild test`。命令、Xcode/Swift 版本、destination、签名 entitlement
-和完整结果摘要要回填本文件；当前阻塞点是 runtime/device/signing，不再是缺少 Xcode 或 SDK。
+共享 `WatchBeatApp` scheme 和 simulator runtime 均已存在。现在必须对当前 revision 执行
+`xcodebuild build` 和 `xcodebuild test`，并操作合成示例的 waveform/export。命令、Xcode/Swift
+版本、destination、签名 entitlement 和完整结果摘要要回填本文件；真机读取仍受 device/signing
+条件限制。
 
 ## 计划中的离线验证
 
