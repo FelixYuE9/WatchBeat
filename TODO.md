@@ -18,12 +18,11 @@ Every milestone must update the related documents, versions, actual commands, fa
 - [x] Document architecture, algorithm, validation, datasets, privacy and regulatory boundaries.
 - [x] Run `swift package describe` and `swift test --parallel` (macOS, Swift 6.2.4, Command Line
   Tools only, no Xcode: 7 tests passed via `Tools/run-core-tests.sh --parallel`).
-- [ ] Compile with Xcode on macOS (blocked: Xcode is not installed on this macOS host; only
-  Command Line Tools are present).
+- [x] Compile with Xcode on macOS: the `ECGCore` Xcode framework target was built as an App
+  dependency with Xcode 26.6 against iPhoneOS/iPhoneSimulator 26.5 SDKs.
 
-Milestone 0 is source-complete and its `ECGCore` unit tests pass on a Command Line Tools-only macOS.
-It is not validated end to end until the last item is executed. Do not mark the milestone validated
-from static checks alone.
+Milestone 0 is source- and build-complete. This does not validate the iOS App or any ECG algorithm
+end to end; those claims remain governed by the later milestones and recorded runtime evidence.
 
 ## Milestone 1 — HealthKit ECG reader (in progress; Xcode/real-iPhone items still blocked)
 
@@ -32,10 +31,13 @@ from static checks alone.
 - [x] Xcode app project: `iOS/WatchBeat.xcodeproj` with app, framework and unit-test targets;
   `xcodebuild -target` builds succeed for iPhoneOS 26.5 and iPhoneSimulator 26.5 SDKs
   (Xcode 26.6, build 17F113).
+- [x] Commit a shared `WatchBeatApp` scheme, configure the App as iPhone-only and wire the HealthKit
+  entitlement with `CODE_SIGN_ENTITLEMENTS` (signed-product verification remains pending).
 - [ ] Build and run through a real scheme + destination, and run the app on a simulator or iPhone
   (blocked: no iOS 26.5 device support and no simulator runtime installed).
 - [x] Add HealthKit read-purpose string (`iOS/Resources/Info.plist`) and entitlement
-  (`iOS/Resources/WatchBeatApp.entitlements`); request ECG read only with empty `toShare`.
+  (`iOS/Resources/WatchBeatApp.entitlements`); request ECG read only with empty `toShare`. The
+  capability is source-configured; a signed real-device build must still verify it.
 - [x] Add typed `HealthKitClient`/repository/mapper boundaries (`ECGHealthKitReading`,
   `LiveHealthKitECGReader`, `ECGRepository`, `ECGHealthKitMapper`).
 - [x] Query metadata-only latest/history list, sorted by start date (most recent first).

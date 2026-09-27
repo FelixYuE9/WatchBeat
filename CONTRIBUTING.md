@@ -57,6 +57,11 @@ runtime and no iOS 26.5 device support. Re-run `Tools/install-swift-test-shim.sh
 `xcode-select` to Xcode — the wrapper has to stop passing Command Line Tools paths to the Xcode
 toolchain.
 
+The shared `WatchBeatApp` scheme is committed for destination-based builds and tests. Once a runtime
+is installed, use `xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations`,
+then run `build` and `test` against one of the listed destinations. An unsigned `-target` build does
+not validate the entitlement in a signed product.
+
 For algorithm changes, include deterministic tests, frozen fixtures/provenance, per-record metrics,
 failure cases and Uncertain coverage. Public-dataset results must not be described as Apple Watch
 accuracy. Never weaken rejection thresholds only to improve apparent coverage.

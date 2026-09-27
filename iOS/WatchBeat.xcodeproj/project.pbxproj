@@ -496,6 +496,16 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					A00000000000000000005004 = {
+						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.HealthKit = {
+								enabled = 1;
+							};
+						};
+					};
+				};
 			};
 			buildConfigurationList = A00000000000000000007001 /* Build configuration list for PBXProject "WatchBeat" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -743,7 +753,7 @@
 		A00000000000000000008401 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -751,14 +761,14 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat;
 				PRODUCT_NAME = WatchBeatApp;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
 		A00000000000000000008402 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -766,7 +776,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat;
 				PRODUCT_NAME = WatchBeatApp;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

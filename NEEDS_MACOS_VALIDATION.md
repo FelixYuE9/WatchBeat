@@ -62,13 +62,15 @@ xcodebuild: error: Unable to find a destination matching the provided destinatio
       platform from Xcode > Settings > Components. }
 ```
 
-Still to do once the platform/runtime is installed: build and test through the real scheme and
-destination, then replace the placeholder bundle identifier `com.watchbeat.WatchBeat` and sign with
-a real team. Do not add PeakSwift or any other candidate yet.
+The repository now contains a shared `WatchBeatApp` scheme and an iPhone-only target. Still to do
+once the platform/runtime is installed: replace the placeholder bundle identifier
+`com.watchbeat.WatchBeat`, select a real team, then build and test through that scheme and a real
+destination. Do not add PeakSwift or any other candidate yet.
 
-Configure:
+Verify before the first signed run:
 
-- HealthKit capability and entitlement.
+- `CODE_SIGN_ENTITLEMENTS` resolves to `Resources/WatchBeatApp.entitlements`, the HealthKit
+  capability is enabled, and the signed App contains `com.apple.developer.healthkit`.
 - A read-purpose description that clearly says the app reads saved ECGs for on-device research
   analysis.
 - ECG read authorization only; `toShare` is empty.
@@ -89,11 +91,14 @@ Simulator/mock tests may cover navigation, typed errors, cancellation, stale-res
 unit conversion, measurement ordering, missing voltage and sample-count mismatch. They do not count
 as HealthKit end-to-end evidence.
 
-Run the actual scheme and destination names, for example:
+Discover and use an actual destination:
 
 ```bash
-xcodebuild -scheme <AppScheme> -destination 'platform=iOS Simulator,name=<Device>' build
-xcodebuild -scheme <AppScheme> -destination 'platform=iOS Simulator,name=<Device>' test
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
+           -destination 'platform=iOS Simulator,name=<Device>' build
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
+           -destination 'platform=iOS Simulator,name=<Device>' test
 ```
 
 Replace placeholders rather than copying these commands verbatim into a pass report.
@@ -107,15 +112,18 @@ Use a compatible iPhone signed into a Health database containing Apple Watch ECG
 3. Deny/withhold access: confirm the UI says no ECG is accessible and does not assert denial.
 4. Grant access: confirm latest/history metadata loads and list navigation is responsive.
 5. Open one ECG: compare start/end, duration, optional sampling frequency, declared measurement count,
-   average heart rate, Apple classification and algorithm metadata against the Health record.
+   average heart rate, Apple classification and symptoms metadata against the Health record.
 6. Verify every returned measurement keeps `timeSinceSampleStart` order and converts
    `.appleWatchSimilarToLeadI` to mV exactly once.
 7. Exercise cancellation by switching records quickly; an older query must not replace the selected one.
 8. Test records with missing lead quantity, missing sampling frequency and any available malformed edge
    case; confirm typed states rather than crash/force unwrap.
-9. Export raw CSV and metadata JSON, then sample-check positions and values against the in-memory
-   measurement sequence. Do not commit or attach the export.
+9. Inspect the installed App's signed entitlements and confirm HealthKit is present and no unexpected
+   capability was added.
 10. Inspect device/network behavior: no ECG leaves the device and no sensitive values appear in logs.
+
+Raw CSV/JSON export verification belongs to Milestone 2 and must not be added to the Milestone 1
+acceptance result before export exists.
 
 ## 5. Evidence to record safely
 

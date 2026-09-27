@@ -7,6 +7,10 @@ unit-test bundle against the real iPhoneOS 26.5 and iPhoneSimulator 26.5 SDKs. T
 been run anywhere: no iOS simulator runtime and no iOS 26.5 device support are installed, so
 scheme + destination builds fail. There is no screenshot and no on-device evidence.
 
+A follow-up review corrected entitlement wiring, made the target iPhone-only, committed a shared
+scheme and stabilized view-model ownership. Those corrections pass repository configuration tests
+but have not yet been rebuilt with Xcode; the earlier target-build evidence predates them.
+
 `xcode-select` on this host still points at `/Library/Developer/CommandLineTools`, so every
 `xcodebuild` / `xcrun` command needs the developer directory explicitly:
 
@@ -56,7 +60,9 @@ Planned but not created yet: `Features/BeatDetail`, `Features/Settings`, `Featur
   the placeholder `com.watchbeat.WatchBeat`; replace it with your own bundle identifier before any
   signed or real-device build.
 - `Resources/WatchBeatApp.entitlements` — `com.apple.developer.healthkit` only; no background
-  delivery, no clinical-record access and no HealthKit write entitlement.
+  delivery, no clinical-record access and no HealthKit write entitlement. Both App configurations
+  use `CODE_SIGN_ENTITLEMENTS`, and the project declares the HealthKit system capability.
+- The App target is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`).
 - `LiveHealthKitECGReader.requestReadOnlyAuthorization()` calls
   `requestAuthorization(toShare: [], read: [HKObjectType.electrocardiogramType()])`. The `toShare`
   set is always empty.
@@ -115,14 +121,17 @@ xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
 neither an iOS simulator runtime nor iOS 26.5 device support. That makes `-scheme` builds fail with
 `Unable to find a destination matching the provided destination specifier` and
 `iOS 26.5 is not installed. Please download and install the platform from Xcode > Settings >
-Components.` A successful `-target` build proves the app compiles, links and processes its
-Info.plist and entitlements; it does **not** prove the app runs.
+Components.` A successful unsigned `-target` build proves the app compiles, links and processes its
+Info.plist. It does **not** prove that the entitlement is present in a signed product or that the app
+runs. The repository now includes a shared `WatchBeatApp` scheme; it still needs a real destination.
 
 Actual commands and results are recorded in [Docs/VALIDATION.md](../Docs/VALIDATION.md).
 
 ## Still required before Milestone 1 can be called validated
 
-1. Install the iOS 26.5 platform and a simulator runtime (Xcode > Settings > Components), then build
-   and test through a real scheme + destination.
-2. Run the app on a simulator and on a real iPhone, and record the outcome.
-3. Run the real-iPhone checklist in [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).
+1. Re-run the corrected iPhone-only project on macOS and confirm `CODE_SIGN_ENTITLEMENTS` in
+   `xcodebuild -showBuildSettings`.
+2. Install the iOS 26.5 platform and a simulator runtime (Xcode > Settings > Components), then build
+   and test the shared scheme on a real destination.
+3. Run the app on a simulator and on a real iPhone, inspect the signed entitlement, and record the outcome.
+4. Run the real-iPhone checklist in [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).

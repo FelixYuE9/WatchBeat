@@ -2,14 +2,15 @@
 
 ## 验证状态摘要
 
-截至 2026-09-26（本轮），Milestone 0 已在真实 Swift 环境编译并通过单元测试；Milestone 1 的
-iOS 读取层源码已完成，并在本机真实编译与测试通过。仍然没有 R 峰或 beat 分类性能报告，也没有
+截至 2026-09-27，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
+iOS 读取层源码已完成，并在 macOS 上编译与测试通过。仍然没有 R 峰或 beat 分类性能报告，也没有
 Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall 或 accuracy
 声明在当前阶段都是不真实的。
 
-本轮的关键限制：**没有安装 Xcode，也没有任何 iOS SDK**。真机 HealthKit 端到端验收仍未执行。
+当前关键限制：Xcode 和 iOS SDK 已安装，但**没有 iOS 模拟器运行时或可用 destination，也没有
+完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在签名产物与真机上验证。
 
-## 实际环境审计（2026-09-26，macOS 主机）
+## 实际环境审计（2026-09-26 / 2026-09-27）
 
 工作目录：当前 Git repository root。公开文档不固化本机用户名或绝对路径；原始 `pwd`
 结果只用于本次开发会话审计。
@@ -56,6 +57,11 @@ python -m unittest discover -s Tools/Validation/tests -v
 首次运行失败：测试通过 `importlib` 动态载入模块时未先登记 `sys.modules`，Python 3.10
 的 `dataclass` 无法解析模块 namespace。修复测试 loader 后重新运行：3 tests，全部通过，
 exit 0。保留此失败记录，避免把"最终通过"写成"一次即通过"。
+
+2026-09-27 的 Windows follow-up 又增加 4 项 iOS 工程配置回归测试，覆盖正确的
+`CODE_SIGN_ENTITLEMENTS`、iPhone-only、只读 HealthKit plist/entitlement 与共享 scheme。
+当前 Python suite 合计 7 tests，全部通过；该环境没有 Swift/Xcode，因此没有把静态检查写成
+本次 Swift/Xcode 复验。
 
 ```text
 python Tools/Validation/validate_raw_ecg_csv.py \
@@ -107,7 +113,7 @@ Swift 6.3.3）：同样是 `Test run with 7 tests in 2 suites passed`。
 `ECGCore`、`WatchBeatModels`、`WatchBeatHealthKit`（framework）与 `WatchBeatApp`（application）、
 `WatchBeatAppTests`（unit-test bundle）。
 
-`DEVELOPER_DIR=/Users/felixsyu/Downloads/Xcode.app/Contents/Developer`；因为系统
+`DEVELOPER_DIR=~/Downloads/Xcode.app/Contents/Developer`；因为系统
 `xcode-select` 仍指向 Command Line Tools（切换需要 sudo），所有命令都显式带该变量。
 
 | 命令（工作目录 `iOS`） | 结果 |
@@ -115,7 +121,7 @@ Swift 6.3.3）：同样是 `Test run with 7 tests in 2 suites passed`。
 | `xcodebuild -project WatchBeat.xcodeproj -list` | 5 targets、Debug/Release、schemes `ECGCore` 与 `WatchBeatApp` |
 | `xcodebuild -target WatchBeatApp -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build` | **BUILD SUCCEEDED** |
 | `xcodebuild -target WatchBeatAppTests -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build` | **BUILD SUCCEEDED** |
-| `xcodebuild -target WatchBeatApp -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build` | **BUILD SUCCEEDED**（一条 iPad 方向告警） |
+| `xcodebuild -target WatchBeatApp -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build` | **BUILD SUCCEEDED**（当时含一条 iPad 方向告警；后续已改为 iPhone-only，待 macOS 复验） |
 | `swift build --triple arm64-apple-ios17.0 --sdk <iPhoneOS26.5.sdk>` | `Build complete!` |
 | `swift build --triple x86_64-apple-ios17.0-simulator --sdk <iPhoneSimulator26.5.sdk>` | `Build complete!` |
 | `bash Tools/run-app-tests.sh --parallel`（Xcode 工具链） | `Test run with 16 tests in 2 suites passed` |
@@ -124,7 +130,12 @@ Swift 6.3.3）：同样是 `Test run with 7 tests in 2 suites passed`。
 
 为什么用 `-target` 而不是 `-scheme`：scheme 路径要求 destination 数据库里有可用设备/运行时，
 本机两者都缺；`-target` + `-sdk` 直接构建，不查 destination。这能验证 App target 的编译、链接、
-Info.plist 与 entitlements 处理，但**不等于运行过 App**。
+Info.plist 处理，但无签名构建不能验证最终签名中的 entitlement，且**不等于运行过 App**。
+
+后续静态修复已提交共享 `WatchBeatApp` scheme，把 App 限定为 iPhone，并将误写的
+`CODE_ENTITLEMENTS` 更正为 `CODE_SIGN_ENTITLEMENTS`，同时登记 HealthKit system capability。
+这些配置通过 4 项 Python 回归测试；由于 follow-up 环境是 Windows，修复后的工程仍须回到
+macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物检查。
 
 编译可行性说明（本机实测）：
 
@@ -140,12 +151,12 @@ Info.plist 与 entitlements 处理，但**不等于运行过 App**。
 1. **App 从未运行过**：未安装 iOS 模拟器运行时（`xcrun simctl list runtimes` 为空），也未安装
    iOS 26.5 设备支持（`DeviceSupport` 只有 15.0–16.4），因此 scheme + destination 构建失败，
    更没有 simulator 运行、真机运行或 UI 快照。
-2. 真机 HealthKit 授权、measurement 完整性、真实 sampling metadata、端到端导出一致性**未验证**。
+2. 真机 HealthKit 授权、measurement 完整性与真实 sampling metadata **未验证**。
 3. 单元测试使用 `FakeECGReader` 替身：真实 `HKElectrocardiogram` 无法在测试中构造，所以
    mapper 测试只覆盖 `HKQuantity` 电压换算接缝，不覆盖 `HKElectrocardiogram` 元数据映射。
-4. Xcode 工程中的 `PRODUCT_BUNDLE_IDENTIFIER` 是占位值 `com.watchbeat.WatchBeat`，签名与
-   HealthKit entitlement 在真机运行前必须换成开发者自己的 team/bundle id；本次构建全部使用
-   `CODE_SIGNING_ALLOWED=NO`。
+4. Xcode 工程中的 `PRODUCT_BUNDLE_IDENTIFIER` 是占位值 `com.watchbeat.WatchBeat`；真机运行前
+   必须换成开发者自己的 team/bundle id。HealthKit entitlement 源码配置已修正，但此前构建全部
+   使用 `CODE_SIGNING_ALLOWED=NO`，所以签名产物仍未验证。
 5. 本机 Command Line Tools 的 `_Testing_Foundation` 交叉导入模块损坏
    （`_Testing_Foundation.framework/Modules` 指向不存在的目录），因此测试文件不能同时
    `import Testing` 与 `import Foundation`；测试代码已规避，未删除任何测试。
@@ -161,7 +172,7 @@ Info.plist 与 entitlements 处理，但**不等于运行过 App**。
 | Python raw CSV checker | 完成并在 Python 3.10.9 通过 3 tests | 仅结构检查，不是 ECG 算法 |
 | dependency ADR | 完成 | `Docs/ADR/0001-...md` |
 | 私有 ECG Git 隔离 | 完成 | `.gitignore` 与目录安全说明 |
-| Xcode 编译 | 未完成（阻塞） | 本机未安装 Xcode |
+| Xcode 编译 | 完成：target 构建通过 | Xcode 26.6；scheme/destination 运行属于 Milestone 1 |
 | 真实 iPhone ECG | 未验证 | 需要兼容 iPhone、权限和真实记录 |
 
 ## Milestone 1 验收表
@@ -170,15 +181,16 @@ Info.plist 与 entitlements 处理，但**不等于运行过 App**。
 |---|---|---|
 | iOS 17 SwiftUI 工程与测试目标 | 完成：SwiftPM 包 + `iOS/WatchBeat.xcodeproj`（5 targets） | `xcodebuild -list` 输出 |
 | HealthKit 只读授权（`toShare` 为空） | 源码完成 | `LiveHealthKitECGReader.requestReadOnlyAuthorization()` |
-| 读取用途字符串与 entitlement | 源码完成，已在 Xcode 构建中使用（`CODE_SIGNING_ALLOWED=NO`，未真机签名） | `iOS/Resources/Info.plist`、`WatchBeatApp.entitlements` |
+| 读取用途字符串与 entitlement | 源码配置完成；签名产物未验证 | `CODE_SIGN_ENTITLEMENTS` + HealthKit system capability；需真机签名检查 |
 | metadata 列表查询（按开始时间排序） | 源码完成 | `HKSampleQueryDescriptor` + `SortDescriptor` |
 | 惰性电压读取 + 取消/陈旧保护 | 源码完成 + 2 项测试通过 | `ECGRepository` generation 检查 |
 | 顺序/时间/缺测/声明数量保持 | 源码完成 + 测试通过 | `ECGHealthKitMapper` 与 `ECGSignalInspector` |
 | mV 换算（只做一次） | 源码完成 + 测试通过 | `ECGHealthKitMapper.millivolts(from:)` |
 | 区分 unavailable/empty/failure/incomplete | 源码完成 + 4 项状态测试 | `ECGListState`、`ECGMeasurementIssue` |
 | 首次启动与结果页免责声明 | 源码完成 | `Features/Disclaimer/` |
-| 本机编译与单元测试 | 通过：SwiftPM（macOS/iOS 真机/iOS 模拟器）+ 16 tests | 见上表 |
+| 本机编译与单元测试 | 既有版本通过 SwiftPM 构建与 16 tests；修复后工程待 macOS 复验 | 16 tests 在 macOS 执行，Xcode iOS test bundle 仅构建 |
 | Xcode 工程构建（App + 测试 bundle） | 通过：3 条 `xcodebuild -target` 命令 BUILD SUCCEEDED | Xcode 26.6，iOS 26.5 / iOS Simulator 26.5 SDK |
+| iPhone-only 与共享 scheme | 源码完成 + 4 项配置测试通过 | 需在安装 runtime 后执行共享 scheme |
 | Xcode scheme + destination 构建 | 失败（阻塞） | 缺 iOS 26.5 设备支持与模拟器运行时 |
 | App 在模拟器/真机运行 | 未执行 | 缺运行时/设备支持、签名与真实 Watch ECG 数据 |
 | 真机授权/列表/详情验证 | 未验证 | 见 `NEEDS_MACOS_VALIDATION.md` |
@@ -194,9 +206,9 @@ swift test --parallel
 已执行（macOS 26.7 + Swift 6.2.4，仅 Command Line Tools）：`swift test --parallel` 通过
 7 tests / 2 suites。
 
-在 macOS/Xcode 建立 app 后还必须执行实际 scheme 名称对应的 `xcodebuild build` 和
-`xcodebuild test`。命令、Xcode/Swift 版本、destination 和完整结果摘要要回填本文件。
-本机**尚未执行**，因为只安装了 Command Line Tools，没有 Xcode，也没有 iOS SDK。
+共享 `WatchBeatApp` scheme 已建立，但还必须在安装 iOS runtime 后执行真实 destination 的
+`xcodebuild build` 和 `xcodebuild test`。命令、Xcode/Swift 版本、destination、签名 entitlement
+和完整结果摘要要回填本文件；当前阻塞点是 runtime/device/signing，不再是缺少 Xcode 或 SDK。
 
 ## 计划中的离线验证
 

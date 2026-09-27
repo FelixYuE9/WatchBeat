@@ -2,10 +2,10 @@ import SwiftUI
 import WatchBeatModels
 
 public struct ECGDetailView: View {
-    let viewModel: ECGDetailViewModel
+    @State private var viewModel: ECGDetailViewModel
 
     public init(viewModel: ECGDetailViewModel) {
-        self.viewModel = viewModel
+        _viewModel = State(initialValue: viewModel)
     }
 
     public var body: some View {

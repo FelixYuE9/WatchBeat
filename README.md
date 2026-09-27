@@ -11,12 +11,14 @@ Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以�
 > - `swift build`：macOS 目标全量通过；以真实 iPhoneOS 26.5 / iPhoneSimulator 26.5 SDK 通过。
 > - Xcode 26.6（build 17F113，位于 `~/Downloads/Xcode.app`）：`iOS/WatchBeat.xcodeproj` 的
 >   App target 与单元测试 bundle 均 `BUILD SUCCEEDED`。
-> - 16 项 App 单元测试通过。
+> - 16 项读取层单元测试通过（SwiftPM/macOS）；Xcode iOS test bundle 已构建、尚未在 destination 执行。
 >
 > **未完成的真实验收：** App **从未运行过**。本机未安装 iOS 模拟器运行时与 iOS 26.5 设备支持，
 > 因此 scheme + destination 构建失败，也没有模拟器/真机运行、没有截图、没有真机 HealthKit
 > 授权与波形验收。详见 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
 > [Docs/VALIDATION.md](Docs/VALIDATION.md)。
+> 后续审查已修正 entitlement、iPhone-only、共享 scheme 与 SwiftUI 状态生命周期；该修复提交
+> 已通过跨平台配置测试，但仍须回到 macOS 重新编译并运行。
 
 ## 医疗安全声明
 
@@ -69,7 +71,7 @@ PAC/PVC 分类或置信度的输入。
   稳健采样率推断和时间间隔相对 MAD。
 - iOS 17 SwiftUI App 源码（`iOS/`）：只读 HealthKit ECG 授权（`toShare` 为空）、metadata
   列表、惰性电压读取（含取消与陈旧请求保护）、mV 映射、四类状态区分、免责声明。
-- 16 项 App 单元测试源码（已在本机通过）。
+- 16 项读取层单元测试源码（已通过 SwiftPM/macOS 测试；尚未在 iOS destination 执行）。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
@@ -106,7 +108,7 @@ Tools/run-core-tests.sh --parallel
 
 # 2. 安装用户级 swift 包装器，之后裸命令即可
 Tools/install-swift-test-shim.sh        # 只写 ~/.local/bin/swift，不需要 sudo
-export PATH="$HOME/.local/bin:$PATH"    # 已自动写入 ~/.zshrc，或手动执行
+export PATH="$HOME/.local/bin:$PATH"    # 手动执行；需要持久化时自行加入 ~/.zshrc
 cd ECGCore && swift test --parallel
 Tools/uninstall-swift-test-shim.sh      # 需要时移除
 ```
@@ -146,14 +148,16 @@ xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
 
 用 `-target` 而非 `-scheme`：scheme 构建需要 destination，而本机没有模拟器运行时与 iOS 26.5
 设备支持，`-scheme` 会报 `Unable to find a destination ...` / `iOS 26.5 is not installed`。
-`-target` 构建成功只证明 App 能编译、链接并处理 Info.plist 与 entitlements，**不代表运行过**。
+`-target` + `CODE_SIGNING_ALLOWED=NO` 构建只证明 App 能编译、链接并处理 Info.plist；它不会生成
+可用于验证的签名，也不能证明 HealthKit entitlement 已进入最终 App 签名，更不代表运行过。
 
 ## 未来构建 iPhone App
 
 最低目标 iOS 17.0。Xcode 工程已经能用 `-target` + `-sdk` 构建；要真正跑起来还需要：
 
 1. iOS 26.5 平台支持与模拟器运行时（Xcode > Settings > Components），或一台真机。
-2. Apple Developer 签名配置及带 HealthKit capability 的 App ID。
+2. Apple Developer 签名配置及带 HealthKit capability 的 App ID；验证签名产物实际包含
+   `com.apple.developer.healthkit`。
 3. 一台能访问真实 Apple Health ECG 数据的兼容 iPhone。
 4. 只请求 ECG 读取权限；`toShare` 必须为空。
 5. 在真机逐项完成 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md)。

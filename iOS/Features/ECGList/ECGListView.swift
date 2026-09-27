@@ -2,6 +2,7 @@ import SwiftUI
 import WatchBeatModels
 
 public struct ECGListView: View {
+    @AppStorage("hasRequestedECGReadAccess") private var hasRequestedReadAccess = false
     let viewModel: ECGListViewModel
 
     public init(viewModel: ECGListViewModel) {
@@ -12,13 +13,18 @@ public struct ECGListView: View {
         content
             .navigationTitle("ECG Records")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Reload") {
-                        Task { await viewModel.load() }
+                if viewModel.canReload {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Reload") {
+                            Task { await viewModel.load() }
+                        }
                     }
                 }
             }
-            .task { await viewModel.load() }
+            .task {
+                guard hasRequestedReadAccess else { return }
+                await viewModel.load()
+            }
     }
 
     @ViewBuilder
@@ -37,7 +43,7 @@ public struct ECGListView: View {
                 message: "Only reading saved ECG records is requested. Nothing is written to Apple Health."
             ) {
                 Button("Request ECG read access") {
-                    Task { await viewModel.requestReadAccess() }
+                    Task { await requestReadAccess() }
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -51,7 +57,7 @@ public struct ECGListView: View {
                     """
             ) {
                 Button("Request ECG read access") {
-                    Task { await viewModel.requestReadAccess() }
+                    Task { await requestReadAccess() }
                 }
             }
         case .loaded(let records):
@@ -67,11 +73,11 @@ public struct ECGListView: View {
             }
         case .failed(let message):
             placeholder(
-                title: "The ECG query failed",
+                title: "Unable to access ECG records",
                 message: "Error: \(message)"
             ) {
                 Button("Try again") {
-                    Task { await viewModel.load() }
+                    Task { await requestReadAccess() }
                 }
             }
         }
@@ -94,6 +100,13 @@ public struct ECGListView: View {
             action()
         }
         .padding()
+    }
+
+    @MainActor
+    private func requestReadAccess() async {
+        if await viewModel.requestReadAccess() {
+            hasRequestedReadAccess = true
+        }
     }
 }
 

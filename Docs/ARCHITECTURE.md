@@ -52,17 +52,19 @@ ECGCore/                      # 已建立；平台无关 Swift Package
 Docs/                        # 设计、验证、数据、隐私与合规记录
 Tools/Validation/            # 离线验证骨架；无运行时依赖
 PrivateValidationData/       # 内容被 Git 忽略
-iOS/                         # Milestone 1 已建立的 SwiftPM App 包
-  App/                      # @main 入口、scene container、root 路由
-  Models/                   # WatchBeatModels：记录、measurement、类型化状态
-  HealthKit/                # WatchBeatHealthKit：唯一接触 HealthKit 的模块
-  Features/                 # Disclaimer、ECGList、ECGDetail
-  Resources/                # Info.plist 与 entitlements（供未来 Xcode target）
-  Tests/                    # Swift Testing 用例与 fakes
+iOS/                         # Milestone 1 App：SwiftPM 包 + Xcode 工程
+  App/                       # @main 入口、scene container、root 路由
+  Models/                    # WatchBeatModels：记录、measurement、类型化状态
+  HealthKit/                 # WatchBeatHealthKit：唯一接触 HealthKit 的模块
+  Features/                  # Disclaimer、ECGList、ECGDetail
+  Resources/                 # Xcode App target 使用的 Info.plist 与 entitlements
+  Tests/                     # Swift Testing 用例与 fakes
+  WatchBeat.xcodeproj/       # iPhone-only App、framework、测试 target 与共享 scheme
 ```
 
-Xcode 工程仍未生成：当前主机只有 Command Line Tools，没有 Xcode 与 iOS SDK，无法验证手写
-`.xcodeproj`。
+Xcode 工程已由 Xcode 26.6 解析，并曾用真实 iPhoneOS/iPhoneSimulator 26.5 SDK 完成无签名
+target 构建。共享 `WatchBeatApp` scheme 已纳入版本控制；模拟器运行、签名 entitlement 与真机
+HealthKit 行为仍须按 [VALIDATION.md](VALIDATION.md) 实测。
 
 ## iOS 组件（Milestone 1 已建立源码）
 
@@ -71,10 +73,6 @@ Xcode 工程仍未生成：当前主机只有 Command Line Tools，没有 Xcode 
 - `ECGHealthKitMapper`：单位换算和完整性信息，不静默清洗。
 - feature modules：Disclaimer、ECG list、ECG detail（beat detail、settings、research mode 待 M2/M8）。
 - exporters：待 Milestone 2。
-- `HealthKitECGRepository`：列表只加载 metadata；详情按需读取 voltage。
-- `HealthKitModelsMapper`：单位换算和完整性信息，不静默清洗。
-- feature modules：ECG list、detail、beat detail、settings、research mode。
-- exporters：raw CSV、feature CSV 和 metadata JSON；只由用户主动调用。
 
 HealthKit 异步查询必须支持 cooperative cancellation 和请求 identity 检查，防止快速切换
 记录时旧结果覆盖新页面。读取权限被拒绝和“数据库无可访问记录”在 HealthKit 中不可可靠
