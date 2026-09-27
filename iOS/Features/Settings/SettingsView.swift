@@ -44,7 +44,7 @@ public struct SettingsView: View {
                 }
 
                 Section(language.text("About", "关于")) {
-                    LabeledContent(language.text("Version", "版本"), value: "0.3.0 (3)")
+                    LabeledContent(language.text("Version", "版本"), value: "0.3.0 (4)")
                     Text(language.text(
                         "Research use only — not a medical diagnosis.",
                         "仅供研究使用，不构成医疗诊断。"

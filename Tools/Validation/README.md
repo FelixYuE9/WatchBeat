@@ -20,6 +20,45 @@ must remain read-only, every embedded framework must have a unique bundle identi
 scheme must include the unit-test bundle. These checks do not replace an Xcode build, signed-product
 inspection or real-device HealthKit validation.
 
-`data/` and `output/` are Git-ignored. Milestone 3 will add pinned WFDB/NeuroKit/BioSPPy environments,
-MIT-BIH version/checksum download, deterministic 30 s manifests, one-to-one peak matching and metrics.
-No external Python dependency is installed or declared yet.
+## Milestone 3 R-peak benchmark foundation
+
+The first benchmark layer remains standard-library-only:
+
+```bash
+# Optional public dataset download; all 48 records are the default.
+python download_mitdb.py --records 100
+
+# Evaluate one detector prediction file against a frozen window manifest.
+python evaluate_r_peaks.py manifest.json predictions.json --output output/report.json
+```
+
+`download_mitdb.py` is fixed to MIT-BIH Arrhythmia Database v1.0.0 and its official 48-record list.
+It downloads only `.hea`, `.dat` and current `.atr` files, verifies each against the versioned official
+`SHA256SUMS.txt`, and writes a local receipt plus attribution notice. It refuses unknown record names
+and never runs automatically.
+
+`evaluate_r_peaks.py` validates a version-1 manifest with:
+
+- exact 30-second windows;
+- explicit `subjectId`, `recordId`, channel and development/validation/held-out-test split;
+- rejection of any subject or record present in more than one split;
+- strictly increasing reference and detected sample indices;
+- detector name/version plus a required lowercase SHA-256 hash of its frozen configuration;
+- deterministic, order-preserving, one-to-one matching that first maximizes matched peaks and then
+  minimizes total timing error;
+- a frozen 150 ms match tolerance, matching the default window documented for PhysioNet WFDB `bxb`;
+- per-window, per-split and aggregate TP/FP/FN, sensitivity/recall, positive predictivity/precision,
+  F1, FP/FN per 30 seconds, and absolute timing-error median/p95.
+
+The report is always marked `research-only-unvalidated` and requires a future cross-check against the
+official `bxb` tool. It evaluates R-peak timing only, not PAC/PVC classification, and public-dataset
+performance cannot establish Apple Watch performance.
+
+`data/` and `output/` are Git-ignored. Actual MIT-BIH download, the audited patient/record manifest,
+WFDB adapters and pinned third-party Python environments remain pending. No external Python dependency
+is installed or declared yet.
+
+Primary references:
+
+- <https://physionet.org/content/mitdb/1.0.0/>
+- <https://physionet.org/physiotools/wag/bxb-1.htm>

@@ -1,2 +1,2 @@
-# Milestone 0 uses only the Python standard library.
-# Freeze validation-only dependencies with hashes here in Milestone 3.
+# Current structural and R-peak benchmark foundations use only the Python standard library.
+# Freeze future WFDB/detector-reference dependencies with hashes before they are introduced.

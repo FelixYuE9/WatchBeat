@@ -4,7 +4,7 @@
 Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以保守、
 可审计的方式标记疑似提前心搏。
 
-> **当前状态：Milestone 2 界面迭代（v0.3.0 源码已实现，等待 macOS 复验）。** `ECGCore` 已编译并通过 7 项单元测试。
+> **当前状态：Milestone 2 界面已在模拟器手工运行；v0.3.0 (4) 的示例记录改动等待 macOS 复验。** `ECGCore` 已编译并通过 7 项单元测试。
 > iOS 17 读取层源码已完成（SwiftUI App、只读 HealthKit ECG 授权、metadata 列表、惰性电压读取、
 > mV 映射、状态区分与免责声明），并在本机真实编译：
 >
@@ -15,8 +15,9 @@ Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以�
 >   当前 Windows 环境无法执行 Swift，须在 macOS 上运行后再登记结果。
 >
 > **运行证据：** 2026-09-27 的用户截图确认 App 已在 iPhone 17 Pro / iOS 26.5 模拟器成功安装
-> 和启动，并已打开 15,000 点的内置合成 ECG 波形；用户反馈测试数据显示正常。这证明上一版
-> 波形路径可在模拟器运行，但不代表当前 v0.3.0 界面、shared scheme 自动测试或真机 HealthKit 已验证。详见
+> 和启动，并已打开 15,000 点的内置合成 ECG 波形；用户随后确认 v0.3.0 (3) 整体服务运行正常。
+> 当前 v0.3.0 (4) 只把示例入口改成数据列表中的固定记录，尚未在 Xcode 重建；shared scheme
+> 自动测试和真机 HealthKit 也仍未验证。详见
 > [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
 > [Docs/VALIDATION.md](Docs/VALIDATION.md)。
 > 后续审查已修正 entitlement、iPhone-only、共享 scheme 与 SwiftUI 状态生命周期；该修复提交
@@ -77,13 +78,16 @@ PAC/PVC 分类或置信度的输入。
 - 全分辨率数据独立于显示降采样的可滚动/缩放波形，以及按真实时间戳定位的 marker 接口。
 - 卡片式默认概览页与“概览 / 数据 / 设置”底部导航；设置可即时切换跟随系统、简体中文或英文。
 - 内置合成 ECG 使用生成方程的已知 R 峰位置，在波形上逐个显示 R–R 间隔（ms）；这不是 detector 结果。
+- 数据页把合成示例作为一条固定的“示例 ECG 数据”记录展示，而不是另外的功能按钮。
 - 用户确认后通过系统 share sheet 导出原始 CSV 或 metadata JSON；临时文件分享后清理。
 - 16 项读取层测试此前已通过；当前另有 9 项波形/导出/R–R 测试，等待 macOS 执行。
+- Milestone 3 离线基础：固定 MIT-BIH v1.0.0 记录列表与 SHA-256 校验下载器，以及
+  30 秒窗口、分组防泄漏、150 ms 一对一 R 峰匹配和按窗口/分组/全局汇总指标。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
 
-- shared scheme 的 simulator 自动测试与当前 v0.3.0 概览/语言/R–R 界面的 Xcode 编译、UI 复验。
+- shared scheme 的 simulator 自动测试，以及 v0.3.0 (4)“示例 ECG 数据”固定记录卡的 Xcode 编译与 UI 复验。
 - 真机 HealthKit 授权、真实波形显示和导出逐样本一致性校验。
 - 真实 HealthKit ECG 的已验证 R 峰 detector 与 R–R 显示；当前不会用未验证算法猜峰值。
 - 数字滤波、完整信号质量门控、模板、QRS 和分类器（Milestones 4–7）。

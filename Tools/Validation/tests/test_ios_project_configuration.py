@@ -106,6 +106,13 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         tests_group = tests_group[: tests_group.index("/* End PBXGroup section */")]
         self.assertIn("ECGPresentationAndExportTests.swift", tests_group)
 
+        list_view = (IOS_ROOT / "Features" / "ECGList" / "ECGListView.swift").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('language.text("Example ECG Data", "示例 ECG 数据")', list_view)
+        self.assertNotIn("Explore built-in synthetic ECG", list_view)
+        self.assertNotIn("查看内置合成心电示例", list_view)
+
 
 if __name__ == "__main__":
     unittest.main()

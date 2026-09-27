@@ -27,128 +27,122 @@ public struct ECGListView: View {
                 }
             }
         }
+        .navigationDestination(for: ECGRecord.self) { record in
+            ECGDetailView(viewModel: viewModel.makeDetailViewModel(for: record))
+        }
+    }
+
+    private var content: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 12) {
+                if let exampleMeasurement {
+                    NavigationLink {
+                        ECGDetailView(viewModel: ECGDetailViewModel(example: exampleMeasurement))
+                    } label: {
+                        ECGExampleRecordRow(measurement: exampleMeasurement)
+                            .watchBeatCard()
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text(language.text("Apple Health ECG", "Apple 健康 ECG"))
+                    .font(.headline)
+                    .padding(.top, 4)
+
+                healthKitContent
+            }
+            .padding()
+        }
     }
 
     @ViewBuilder
-    private var content: some View {
+    private var healthKitContent: some View {
         switch viewModel.state {
         case .idle, .loading:
-            ProgressView(language.text("Loading ECG metadata…", "正在载入心电元数据…"))
+            healthStatusCard(
+                symbol: "arrow.triangle.2.circlepath",
+                title: language.text("Loading Apple Health ECG…", "正在载入 Apple 健康 ECG…"),
+                message: language.text(
+                    "The example data above is ready while HealthKit metadata loads.",
+                    "HealthKit 元数据载入期间，上方的示例数据仍可使用。"
+                )
+            ) {
+                ProgressView()
+            }
         case .unavailable:
-            placeholder(
+            healthStatusCard(
+                symbol: "heart.slash",
                 title: language.text("HealthKit ECG is unavailable", "HealthKit 心电不可用"),
                 message: language.text(
                     "This device or OS version does not expose ECG records through HealthKit.",
                     "此设备或系统版本未通过 HealthKit 提供心电记录。"
                 )
-            ) {
-                exampleLink
-            }
+            )
         case .authorizationRequired:
-            placeholder(
+            healthStatusCard(
+                symbol: "lock.shield",
                 title: language.text("ECG read access has not been requested", "尚未申请心电读取权限"),
                 message: language.text(
                     "Only reading saved ECG records is requested. Nothing is written to Apple Health.",
                     "应用只申请读取已保存的心电记录，不会向 Apple 健康写入任何内容。"
                 )
             ) {
-                VStack(spacing: 12) {
-                    Button(language.text("Request ECG read access", "申请心电读取权限")) {
-                        Task { await requestReadAccess() }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    exampleLink
+                Button(language.text("Request ECG read access", "申请心电读取权限")) {
+                    Task { await requestReadAccess() }
                 }
+                .buttonStyle(.borderedProminent)
             }
         case .noAccessibleRecords:
-            placeholder(
-                title: language.text("No accessible ECG records", "没有可访问的心电记录"),
+            healthStatusCard(
+                symbol: "waveform.path.ecg",
+                title: language.text("No accessible Apple Health ECG", "没有可访问的 Apple 健康 ECG"),
                 message: language.text("""
                     No ECG record was returned. This can mean no saved Apple Watch ECG exists, or that \
-                    read access was not granted. HealthKit does not allow these to be distinguished, so \
-                    this app never claims access was denied.
-                    """, "没有返回心电记录。这可能表示尚无 Apple Watch 心电记录，也可能表示未授予读取权限。HealthKit 不允许应用区分这两种情况，因此本应用不会声称权限被拒绝。")
+                    read access was not granted. HealthKit does not allow these to be distinguished.
+                    """, "没有返回心电记录。这可能表示尚无 Apple Watch 心电记录，也可能表示未授予读取权限；HealthKit 不允许应用区分这两种情况。")
             ) {
-                VStack(spacing: 12) {
-                    Button(language.text("Request ECG read access", "再次申请读取权限")) {
-                        Task { await requestReadAccess() }
-                    }
-                    exampleLink
+                Button(language.text("Request access again", "再次申请读取权限")) {
+                    Task { await requestReadAccess() }
                 }
+                .buttonStyle(.bordered)
             }
         case .loaded(let records):
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    if exampleMeasurement != nil {
-                        Text(language.text("Learn with an example", "通过示例学习"))
-                            .font(.headline)
-                        exampleLink
-                            .watchBeatCard()
-                    }
-                    Text(language.text("Your Health records", "你的健康记录"))
-                        .font(.headline)
-                        .padding(.top, 4)
-                    ForEach(records) { record in
-                        NavigationLink(value: record) {
-                            ECGRecordRow(record: record)
-                                .watchBeatCard()
-                        }
-                        .buttonStyle(.plain)
-                    }
+            ForEach(records) { record in
+                NavigationLink(value: record) {
+                    ECGRecordRow(record: record)
+                        .watchBeatCard()
                 }
-                .padding()
-            }
-            .navigationDestination(for: ECGRecord.self) { record in
-                ECGDetailView(viewModel: viewModel.makeDetailViewModel(for: record))
+                .buttonStyle(.plain)
             }
         case .failed(let message):
-            placeholder(
+            healthStatusCard(
+                symbol: "exclamationmark.triangle",
                 title: language.text("Unable to access ECG records", "无法访问心电记录"),
                 message: language.text("Error: \(message)", "错误：\(message)")
             ) {
-                VStack(spacing: 12) {
-                    Button(language.text("Try again", "重试")) {
-                        Task { await requestReadAccess() }
-                    }
-                    exampleLink
+                Button(language.text("Try again", "重试")) {
+                    Task { await requestReadAccess() }
                 }
+                .buttonStyle(.bordered)
             }
         }
     }
 
-    @ViewBuilder
-    private var exampleLink: some View {
-        if let exampleMeasurement {
-            NavigationLink {
-                ECGDetailView(viewModel: ECGDetailViewModel(example: exampleMeasurement))
-            } label: {
-                Label(
-                    language.text("Explore built-in synthetic ECG", "查看内置合成心电示例"),
-                    systemImage: "waveform.path.ecg"
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    private func placeholder(
+    private func healthStatusCard(
+        symbol: String,
         title: String,
         message: String,
         @ViewBuilder action: () -> some View = { EmptyView() }
     ) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "waveform.path.ecg")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-            Text(title).font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: symbol)
+                .font(.headline)
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
             action()
         }
         .watchBeatCard()
-        .padding()
     }
 
     @MainActor
@@ -156,6 +150,80 @@ public struct ECGListView: View {
         if await viewModel.requestReadAccess() {
             hasRequestedReadAccess = true
         }
+    }
+}
+
+public struct ECGExampleRecordRow: View {
+    let measurement: ECGMeasurement
+    @Environment(\.appLanguage) private var language
+
+    public init(measurement: ECGMeasurement) {
+        self.measurement = measurement
+    }
+
+    public var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.title2)
+                .foregroundStyle(.orange)
+                .frame(width: 46, height: 46)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    Text(language.text("Example ECG Data", "示例 ECG 数据"))
+                        .font(.headline)
+                    Text(language.text("SYNTHETIC", "合成"))
+                        .font(.caption2.bold())
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color.orange.opacity(0.12), in: Capsule())
+                }
+
+                Text(language.text(
+                    "Built into the app; contains no personal health data",
+                    "App 内置，不包含个人健康数据"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    metricText(heartRateText)
+                    metricText(durationText)
+                    metricText(language.text(
+                        "\(measurement.integrity.sampleCount) samples",
+                        "\(measurement.integrity.sampleCount) 点"
+                    ))
+                }
+            }
+
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.tertiary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(language.text("Opens the example ECG waveform", "打开示例 ECG 波形"))
+    }
+
+    private var heartRateText: String {
+        guard let heartRate = measurement.record.averageHeartRateBPM else { return "—" }
+        return "\(Int(heartRate.rounded())) BPM"
+    }
+
+    private var durationText: String {
+        language.text(
+            String(format: "%.1f s", measurement.record.durationSeconds),
+            String(format: "%.1f 秒", measurement.record.durationSeconds)
+        )
+    }
+
+    private func metricText(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
     }
 }
 

@@ -2,10 +2,11 @@
 
 This repository was initialized on Windows 10, where Swift and Xcode were unavailable. Work has since
 moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app`.
-On 2026-09-27 a user-provided screenshot confirmed the App running on an iPhone 17 Pro simulator
-with iOS 26.5. A later screenshot shows the previous version rendering the 15,000-sample synthetic
-waveform. The exact scheme command, automated simulator tests, current v0.3.0 overview/language/R–R
-UI and all signed real-iPhone checks remain to be recorded.
+On 2026-09-27 user-provided screenshots confirmed the App running on an iPhone 17 Pro simulator
+with iOS 26.5, rendering the 15,000-sample synthetic waveform and the v0.3.0 (3)
+overview/language/R–R UI; the user reported the service was running normally. The exact scheme
+command, automated simulator tests, the v0.3.0 (4) persistent example-record card and all signed
+real-iPhone checks remain to be recorded.
 
 ## 1. Validate ECGCore first — DONE
 
@@ -100,7 +101,9 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
 
 Then launch the App and verify it opens on Overview; switch among Overview, Data and Settings; change
 language among Follow System, Simplified Chinese and English; and confirm the change is immediate.
-Open the built-in example and confirm its orange synthetic label, a millisecond bracket between every
+On Data, confirm one persistent `Example ECG Data` / `示例 ECG 数据` card is shown above the
+separate Apple Health section and that the old `Explore built-in synthetic ECG` action is absent.
+Open that record and confirm its orange synthetic label, a millisecond bracket between every
 adjacent R peak (about 857 ms at 70 bpm), horizontal scrolling, 1×–8× zoom, raw CSV confirmation/share
 sheet and metadata JSON confirmation/share sheet. The exported example filenames must contain
 `synthetic-example`. A HealthKit record must show the detector-not-validated note rather than guessed

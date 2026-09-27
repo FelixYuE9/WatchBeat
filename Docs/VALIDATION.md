@@ -4,13 +4,15 @@
 
 截至 2026-09-27，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
 iOS 读取层源码已完成，并在 macOS 上编译与测试通过。用户截图确认修复后的 App 已在 iPhone 17 Pro /
-iOS 26.5 模拟器安装和启动，且之后的截图确认上一版能显示 15,000 点的内置合成波形。
-当前 v0.3.0 新增概览/底部导航/语言设置和合成 R–R 毫秒标注，但该 revision 尚未在 macOS 编译。
+iOS 26.5 模拟器安装和启动，且之后的截图确认能显示 15,000 点的内置合成波形。
+用户随后确认 v0.3.0 (3) 整体在模拟器运行正常，并提供了中文数据页截图；这是手工 UI
+验收，不等于 shared-scheme 自动测试。当前 v0.3.0 (4) 又把合成示例改为固定数据记录，
+该新 revision 尚未在 macOS 编译。
 仍然没有 R 峰或 beat 分类性能报告，也没有
 Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall 或 accuracy
 声明在当前阶段都是不真实的。
 
-当前关键限制：模拟器已经可用，但**当前 v0.3.0 revision 尚未执行 Xcode build/test，也没有
+当前关键限制：模拟器已经可用，但**当前 v0.3.0 (4) revision 尚未执行 Xcode build/test，也没有
 完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在签名产物与真机上验证。
 
 ## 实际环境审计（2026-09-26 / 2026-09-27）
@@ -66,7 +68,9 @@ exit 0。保留此失败记录，避免把"最终通过"写成"一次即通过"�
 2026-09-27 的 Windows follow-up 先增加 5 项 iOS 工程配置回归测试，覆盖正确的
 `CODE_SIGN_ENTITLEMENTS`、iPhone-only、embedded framework bundle identifiers、只读 HealthKit
 plist/entitlement 与共享 scheme；Milestone 2 又增加 1 项 Xcode source-membership 检查。
-当前 Python suite 合计 9 tests，全部通过；该环境没有
+后续 Milestone 3 新增 14 项标准库测试：6 项覆盖 MIT-BIH v1.0.0 官方 48-record 列表、
+SHA-256 manifest 解析/路径安全/文件校验/参数防护，8 项覆盖 30 秒窗口、split 防泄漏、150 ms
+一对一匹配、配置哈希、空预测和指标汇总。当前 Python suite 合计 23 tests，全部通过；该环境没有
 Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
 
@@ -164,8 +168,9 @@ scheme build/test 与签名产物检查。
 
 失败与限制（保留，不改写为成功）：
 
-1. App 已在 iPhone 17 Pro / iOS 26.5 模拟器运行，且上一版合成波形已有截图；但当前 v0.3.0 revision 尚未重新构建，
-   shared scheme test action 也没有结果记录。截图不证明真机 HealthKit。
+1. App 已在 iPhone 17 Pro / iOS 26.5 模拟器运行；v0.3.0 (3) 合成波形、概览、数据和设置页已有截图，
+   且用户确认运行正常。但当前 v0.3.0 (4) revision 尚未重新构建，shared scheme test action
+   也没有结果记录。截图不证明真机 HealthKit。
 2. 真机 HealthKit 授权、measurement 完整性与真实 sampling metadata **未验证**。
 3. 单元测试使用 `FakeECGReader` 替身：真实 `HKElectrocardiogram` 无法在测试中构造，所以
    mapper 测试只覆盖 `HKQuantity` 电压换算接缝，不覆盖 `HKElectrocardiogram` 元数据映射。
@@ -215,13 +220,23 @@ scheme build/test 与签名产物检查。
 | 条件 | 状态 | 证据/限制 |
 |---|---|---|
 | 全分辨率与显示降采样分离 | 源码完成 | `ECGDisplayDownsampler`；新增 Swift tests 待 macOS 执行 |
-| 滚动/缩放波形与 timestamp marker | 上一版模拟器已显示 | SwiftUI Canvas，1×–8×；当前 v0.3.0 待复验 |
-| 内置合成教学 ECG | 上一版模拟器已显示 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
-| 概览/数据/设置导航与语言切换 | 源码完成 | 当前 v0.3.0 待 Xcode 编译与模拟器 UI 复验 |
+| 滚动/缩放波形与 timestamp marker | v0.3.0 (3) 模拟器已显示 | SwiftUI Canvas，1×–8×；缺自动测试输出 |
+| 内置合成教学 ECG | v0.3.0 (3) 模拟器已显示 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
+| 概览/数据/设置导航与语言切换 | v0.3.0 (3) 用户手工运行正常 | 无 shared-scheme 自动测试输出 |
 | 合成 ECG 逐个 R–R 毫秒标注 | 源码完成 | 来自生成方程的已知 marker；不是 detector；真实 ECG 不显示 |
+| “示例 ECG 数据”固定记录卡 | v0.3.0 (4) 源码完成 | 已删除数据空状态内的“查看内置示例”按钮；待模拟器复验 |
 | raw CSV 与 metadata JSON | 源码完成 | 用户确认 + share sheet + 临时文件清理；待 iOS 构建 |
 | 当前 Swift tests | 未执行 | 预期 25 tests；既有 16 曾通过，新增 9 待运行 |
 | 真实 HealthKit 导出一致性 | 未验证 | 必须在真机逐样本核对 |
+
+## Milestone 3 验收表（进行中）
+
+| 条件 | 状态 | 证据/限制 |
+|---|---|---|
+| MIT-BIH v1.0.0 固定下载 | 脚本完成 | 官方 48-record 列表 + `SHA256SUMS.txt`；本轮未下载数据 |
+| 30 s manifest 与 split 防泄漏 | 契约/测试完成 | 真实 MIT-BIH subject 对应与 split manifest 尚未冻结 |
+| R 峰一对一匹配 | 源码 + 8 项测试通过 | 150 ms；最大匹配数后最小总误差；尚须与 WFDB `bxb` 交叉核对 |
+| R 峰性能报告 | 未开始 | 没有 detector 预测、没有数据集指标、没有 Apple Watch 性能声明 |
 
 ## 首次可用 Swift 环境的必跑命令
 
@@ -243,9 +258,9 @@ swift test --parallel
 
 ### R 峰
 
-以预先冻结的时间容差匹配 reference beat，至少报告：recall/sensitivity、precision/PPV、
-F1、FP/30 s、FN/30 s、timing error median/p95，并按 record 和噪声分层。容差和一对一
-匹配算法必须写入报告。
+契约已冻结 150 ms 时间容差和一对一匹配，并输出 recall/sensitivity、precision/PPV、
+F1、FP/30 s、FN/30 s、timing error median/p95，可按窗口、split 与全局汇总。下一步是冻结
+真实 record/subject split，并与官方 WFDB `bxb` 交叉核对。
 
 ### Beat 分类
 

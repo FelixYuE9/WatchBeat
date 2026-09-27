@@ -72,12 +72,19 @@ end to end; those claims remain governed by the later milestones and recorded ru
 - [x] Label every adjacent R–R interval in the synthetic tutorial in milliseconds, using exact marker
   timestamps from the generator rather than a detector. Real HealthKit ECG labels remain pending a
   benchmark-selected and validated R-peak detector.
+- [x] Present the built-in synthetic ECG as a persistent, explicitly labelled `Example ECG Data`
+  record in the Data list instead of a separate "view example" action.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
 
 ## Milestone 3 — reproducible detector benchmark
 
-- [ ] Freeze Python tool versions and lock hashes; add MIT-BIH v1.0.0 checksum download script.
-- [ ] Define patient/record splits, 30 s window manifest, reference matching and tolerance.
+- [x] Add a version-fixed MIT-BIH v1.0.0 downloader that freezes the official 48-record list and
+  verifies each selected `.hea`/`.dat`/`.atr` file against PhysioNet's SHA-256 manifest.
+- [x] Define and test a versioned 30 s window/prediction contract, subject/record split-leakage
+  checks, and deterministic one-to-one R-peak matching with the official `bxb` 150 ms default window.
+- [ ] Download the dataset, audit subject identities, freeze actual development/validation/held-out
+  record manifests, and cross-check evaluator output against the official WFDB `bxb` implementation.
+- [ ] Freeze any required WFDB/NeuroKit/BioSPPy Python versions and hashes before adding them.
 - [ ] Add PeakSwift adapter pinned to exact tag/full SHA after full license/transitive audit.
 - [ ] Compare at least two suitable PeakSwift detectors and Python references without Apple labels.
 - [ ] Publish per-record R-peak metrics, timing errors, failures and detector-selection ADR.

@@ -1,14 +1,14 @@
 # iOS application boundary
 
-Status: **v0.3.0 UI source implemented; current simulator rebuild and tests are pending.**
+Status: **v0.3.0 (3) was manually confirmed in the simulator; the build-4 example-record change and automated tests are pending.**
 
 Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app` and builds the app target and the
 unit-test bundle against the real iPhoneOS 26.5 and iPhoneSimulator 26.5 SDKs. A user-provided
-2026-09-27 screenshot confirms the corrected App installs and runs on an iPhone 17 Pro simulator
-with iOS 26.5. A later screenshot shows the previous v0.2.0 source rendering the full 15,000-sample
-synthetic ECG, and the user reported that the test data looked correct. The exact command and the
-shared scheme test action were not recorded, the current v0.3.0 UI has not been rebuilt, and there is
-still no real-iPhone evidence.
+2026-09-27 screenshots confirm the corrected App installs and runs on an iPhone 17 Pro simulator
+with iOS 26.5, renders the full 15,000-sample synthetic ECG, and presents the v0.3.0 (3)
+overview/data/settings UI. The user reported that the service and test data looked correct. The exact
+command and shared-scheme test action were not recorded. Build 4 now presents the synthetic example
+as a persistent data record; that revision has not been rebuilt, and there is still no real-iPhone evidence.
 
 A follow-up review corrected entitlement wiring, made the target iPhone-only, committed a shared
 scheme and stabilized view-model ownership. Those corrections pass repository configuration tests
@@ -29,7 +29,7 @@ sudo xcode-select -s "$HOME/Downloads/Xcode.app/Contents/Developer"
 |---|---|---|---|
 | `WatchBeatModels` | records, measurements, typed states, display downsampling, export encoding, synthetic tutorial | no | yes |
 | `WatchBeatHealthKit` | `ECGHealthKitReading` (protocol), `LiveHealthKitECGReader`, `ECGHealthKitMapper`, `ECGRepository` | no | yes |
-| `WatchBeatApp` | SwiftUI app: disclaimer, overview/data/settings tabs, language setting, ECG list/detail, waveform and share sheet | yes | yes (earlier source revision; current v0.3.0 changes await rebuild) |
+| `WatchBeatApp` | SwiftUI app: disclaimer, overview/data/settings tabs, language setting, ECG list/detail, waveform and share sheet | yes | yes (build 3 observed; build-4 example-record change awaits rebuild) |
 | `WatchBeatAppTests` | Swift Testing suites for the mapper and repository states | no | yes (build) |
 
 The same modules exist twice: as SwiftPM targets (`Package.swift`) and as Xcode targets
@@ -61,6 +61,8 @@ Every build includes one deterministic mathematical ECG example so the interface
 without Apple Watch data. It is not routed through HealthKit and is identified as synthetic in the
 screen, exported JSON and filenames. Known R-peak positions from its generating equation are used to
 label every synthetic R–R interval in milliseconds. It is not validation data or a peak-detector result.
+The Data tab presents it as a persistent `Example ECG Data` record card, not as a separate tutorial
+button; Apple Health availability and authorization remain a separate section below it.
 
 ## HealthKit configuration
 
@@ -148,7 +150,7 @@ Actual commands and results are recorded in [Docs/VALIDATION.md](../Docs/VALIDAT
 
 ## Still required before Milestone 1 can be called validated
 
-1. Build and test the current v0.3.0 source through the shared scheme on the installed simulator.
+1. Build and test the current v0.3.0 (4) source through the shared scheme on the installed simulator.
 2. Check the default Overview, all three tabs, immediate language switching, and the synthetic
    waveform's per-beat millisecond labels; recheck zoom/scroll and both share-sheet exports.
 3. Run on a real iPhone, inspect the signed entitlement, and record the outcome.
