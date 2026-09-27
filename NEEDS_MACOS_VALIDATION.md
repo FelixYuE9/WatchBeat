@@ -1,10 +1,13 @@
 # macOS, Xcode and real-iPhone validation required
 
-This repository was initialized on Windows 10. Swift and Xcode were unavailable, so none of the
-following has been claimed as complete. Record versions, commands, outputs and failures when moving
-to a suitable macOS host.
+This repository was initialized on Windows 10, where Swift and Xcode were unavailable. Work has since
+moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is now installed at `~/Downloads/Xcode.app`
+with the iOS 26.5 SDKs, but **no iOS simulator runtime and no iOS 26.5 device support** are
+downloaded. Steps 1, 2 and the unit-test half of 3 are done; running on a simulator or device
+(step 3 runtime, steps 4 and 5) remains blocked. Record versions, commands, outputs and
+failures whenever the blocking tool becomes available.
 
-## 1. Validate ECGCore first
+## 1. Validate ECGCore first — DONE
 
 ```bash
 sw_vers
@@ -16,13 +19,52 @@ swift package describe
 swift test --parallel
 ```
 
+Actual results (2026-09-26):
+
+- `sw_vers` → macOS 26.7, build 25G229; `uname -a` → Darwin 25.6.0 x86_64.
+- `swift --version` → Apple Swift 6.2.4 (swiftlang-6.2.4.1.4, clang-1700.6.4.2), swift-driver 1.127.15.
+- `xcodebuild -version` → **fails**: `tool 'xcodebuild' requires Xcode, but active developer
+  directory '/Library/Developer/CommandLineTools' is a command line tools instance`.
+- `Tools/run-core-tests.sh --parallel` (= `swift test --parallel` plus Swift Testing search paths)
+  → `Test run with 7 tests in 2 suites passed`, exit 0.
+
 Fix real compile/test failures without deleting tests or weakening safety assertions. Update
 `Docs/VALIDATION.md` with exact results.
 
-## 2. Create the iOS target
+## 2. Create the iOS target — DONE (Xcode 26.6, build 17F113)
 
-Use Xcode to create an iOS 17 SwiftUI application and unit-test target under `iOS/`. Add local
-`ECGCore` as a package. Do not add PeakSwift or any other candidate yet.
+`iOS/WatchBeat.xcodeproj` now exists with five targets: `ECGCore`, `WatchBeatModels`,
+`WatchBeatHealthKit` (frameworks), `WatchBeatApp` (application) and `WatchBeatAppTests`
+(unit-test bundle). `ECGCore` is compiled from `../ECGCore/Sources` instead of being resolved as a
+SwiftPM package dependency, which keeps `import ECGCore` working.
+
+Verified on 2026-09-27 (`DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"`):
+
+```bash
+cd iOS
+xcodebuild -project WatchBeat.xcodeproj -list
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
+           -configuration Debug -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatAppTests \
+           -configuration Debug -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
+           -configuration Debug -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build
+```
+
+All three builds report **BUILD SUCCEEDED**. `-target` is used instead of `-scheme` because a scheme
+build requires a destination, and this host has no simulator runtime and no iOS 26.5 device support:
+
+```text
+xcodebuild: error: Unable to find a destination matching the provided destination specifier:
+    { generic:1, platform:iOS Simulator }
+  Ineligible destinations for the "WatchBeatApp" scheme:
+    { platform:iOS, ..., error:iOS 26.5 is not installed. Please download and install the
+      platform from Xcode > Settings > Components. }
+```
+
+Still to do once the platform/runtime is installed: build and test through the real scheme and
+destination, then replace the placeholder bundle identifier `com.watchbeat.WatchBeat` and sign with
+a real team. Do not add PeakSwift or any other candidate yet.
 
 Configure:
 
@@ -35,7 +77,13 @@ Configure:
 Check the generated project for user-specific signing values before commit. Do not commit
 provisioning profiles, certificates or device IDs.
 
-## 3. Simulator and unit checks
+## 3. Simulator and unit checks — UNIT CHECKS DONE, SIMULATOR STILL UNAVAILABLE
+
+With Xcode 26.6 present the iPhoneSimulator 26.5 SDK is available, but
+`xcrun simctl list runtimes` is empty and no device exists, so no simulator destination can be
+created or run. Downloading the runtime (Xcode > Settings > Components, several GB) is required
+first. The unit checks below were executed through SwiftPM on macOS
+(`bash Tools/run-app-tests.sh --parallel`, 16 tests pass under both Swift 6.2.4 and Swift 6.3.3).
 
 Simulator/mock tests may cover navigation, typed errors, cancellation, stale-result protection,
 unit conversion, measurement ordering, missing voltage and sample-count mismatch. They do not count

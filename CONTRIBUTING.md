@@ -24,9 +24,38 @@ Contributions are welcome, but this project treats false certainty as a safety d
 Run what the environment supports and report exactly what ran:
 
 ```bash
-cd ECGCore
-swift test --parallel
+Tools/run-core-tests.sh --parallel        # ECGCore
+bash Tools/run-app-tests.sh --parallel    # iOS app package (iOS/); chmod +x once to drop `bash`
+
+cd iOS && swift build                # macOS target: SwiftUI + HealthKit
+cd iOS && swift build --triple x86_64-apple-ios17.0-macabi --target WatchBeatHealthKit
 ```
+
+The scripts wrap `swift test --parallel` and add the Swift Testing search paths that a
+Command Line Tools-only macOS (no Xcode) needs. Use plain `swift test --parallel` only on a
+machine with Xcode installed.
+
+Test files must not import both `Testing` and `Foundation`: the Command Line Tools install on the
+current host ships a broken `_Testing_Foundation` cross-import overlay, so such a file fails to
+compile with `no such module '_Testing_Foundation'`. Put Foundation-dependent helpers in files that
+do not import `Testing`.
+
+## Building the Xcode app target
+
+Xcode lives at `~/Downloads/Xcode.app` on the current host and `xcode-select` still points at the
+Command Line Tools, so set the developer directory first:
+
+```bash
+export DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"
+cd iOS
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
+           -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
+```
+
+Use `-target`, not `-scheme`: a scheme build needs a destination and this host has no simulator
+runtime and no iOS 26.5 device support. Re-run `Tools/install-swift-test-shim.sh` if you switch
+`xcode-select` to Xcode — the wrapper has to stop passing Command Line Tools paths to the Xcode
+toolchain.
 
 For algorithm changes, include deterministic tests, frozen fixtures/provenance, per-record metrics,
 failure cases and Uncertain coverage. Public-dataset results must not be described as Apple Watch

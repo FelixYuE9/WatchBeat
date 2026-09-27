@@ -1,22 +1,22 @@
-import XCTest
+import Testing
 @testable import ECGCore
 
-final class PublicContractTests: XCTestCase {
-    func testBeatClassificationRawValuesRemainExportStable() {
-        XCTAssertEqual(BeatClassification.normal.rawValue, "normal")
-        XCTAssertEqual(BeatClassification.possiblePAC.rawValue, "possiblePAC")
-        XCTAssertEqual(BeatClassification.possiblePVC.rawValue, "possiblePVC")
-        XCTAssertEqual(BeatClassification.prematureUncertain.rawValue, "prematureUncertain")
-        XCTAssertEqual(BeatClassification.noiseInvalid.rawValue, "noiseInvalid")
-        XCTAssertEqual(BeatClassification.notAnalyzed.rawValue, "notAnalyzed")
+@Suite struct PublicContractTests {
+    @Test func beatClassificationRawValuesRemainExportStable() {
+        #expect(BeatClassification.normal.rawValue == "normal")
+        #expect(BeatClassification.possiblePAC.rawValue == "possiblePAC")
+        #expect(BeatClassification.possiblePVC.rawValue == "possiblePVC")
+        #expect(BeatClassification.prematureUncertain.rawValue == "prematureUncertain")
+        #expect(BeatClassification.noiseInvalid.rawValue == "noiseInvalid")
+        #expect(BeatClassification.notAnalyzed.rawValue == "notAnalyzed")
     }
 
-    func testResearchDefaultsAreExplicitlyUnselected() {
+    @Test func researchDefaultsAreExplicitlyUnselected() {
         let config = ECGAlgorithmConfig.researchDefaults
 
-        XCTAssertEqual(config.detectorIdentifier, "unselected-pending-benchmark")
-        XCTAssertEqual(config.prematurityThreshold, 0.80)
-        XCTAssertEqual(config.minimumTemplateBeatCount, 5)
-        XCTAssertEqual(config.schemaVersion, AlgorithmVersion.configSchemaVersion)
+        #expect(config.detectorIdentifier == "unselected-pending-benchmark")
+        #expect(config.prematurityThreshold == 0.80)
+        #expect(config.minimumTemplateBeatCount == 5)
+        #expect(config.schemaVersion == AlgorithmVersion.configSchemaVersion)
     }
 }

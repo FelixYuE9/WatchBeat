@@ -4,11 +4,19 @@
 Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以保守、
 可审计的方式标记疑似提前心搏。
 
-> **当前状态：Milestone 0（架构基线）。** 仓库目前只有平台无关的
-> `ECGCore` 契约、原始时间轴完整性检查和单元测试源码。没有可运行的 iOS App，
-> 没有 PAC/PVC 分类器，也没有任何准确率声明。当前开发机是 Windows，未安装
-> Swift 或 Xcode，因此源码尚未编译。详见
-> [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md)。
+> **当前状态：Milestone 1（HealthKit 读取层，进行中）。** `ECGCore` 已编译并通过 7 项单元测试。
+> iOS 17 读取层源码已完成（SwiftUI App、只读 HealthKit ECG 授权、metadata 列表、惰性电压读取、
+> mV 映射、状态区分与免责声明），并在本机真实编译：
+>
+> - `swift build`：macOS 目标全量通过；以真实 iPhoneOS 26.5 / iPhoneSimulator 26.5 SDK 通过。
+> - Xcode 26.6（build 17F113，位于 `~/Downloads/Xcode.app`）：`iOS/WatchBeat.xcodeproj` 的
+>   App target 与单元测试 bundle 均 `BUILD SUCCEEDED`。
+> - 16 项 App 单元测试通过。
+>
+> **未完成的真实验收：** App **从未运行过**。本机未安装 iOS 模拟器运行时与 iOS 26.5 设备支持，
+> 因此 scheme + destination 构建失败，也没有模拟器/真机运行、没有截图、没有真机 HealthKit
+> 授权与波形验收。详见 [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
+> [Docs/VALIDATION.md](Docs/VALIDATION.md)。
 
 ## 医疗安全声明
 
@@ -53,23 +61,27 @@ PAC/PVC 分类或置信度的输入。
 
 ## 当前已实现
 
-- 无第三方 runtime 依赖的 `ECGCore` Swift Package 基线。
+- 无第三方 runtime 依赖的 `ECGCore` Swift Package 基线（已编译、7 项测试通过）。
 - HealthKit 无关的 `ECGSignal` 数据边界。
 - `RPeakDetecting` 与 `BeatClassifying` 协议。
 - 稳定的六类结果、特征快照、reason code 和版本字段。
 - 不删除样本的结构完整性检查：数组长度、缺测、非有限值、重复/倒退时间戳、
   稳健采样率推断和时间间隔相对 MAD。
-- 确定性单元测试源码。
+- iOS 17 SwiftUI App 源码（`iOS/`）：只读 HealthKit ECG 授权（`toShare` 为空）、metadata
+  列表、惰性电压读取（含取消与陈旧请求保护）、mV 映射、四类状态区分、免责声明。
+- 16 项 App 单元测试源码（已在本机通过）。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
 
-- SwiftUI App、HealthKit entitlement、授权流程和 ECG 历史列表。
-- 波形读取、显示、导出和真机验证。
-- 数字滤波、完整信号质量门控、R 峰 detector、RR、模板、QRS 和分类器。
-- 离线公开数据评测结果或 Apple Watch 域验证。
+- App 运行：Xcode 工程与 App target 已能构建，但本机缺 iOS 模拟器运行时与 iOS 26.5 设备支持，
+  所以没有 scheme + destination 构建、没有模拟器或真机运行、没有真机 HealthKit 授权验收。
+- 波形显示、滚动缩放、导出和真机一致性校验（Milestone 2）。
+- 数字滤波、完整信号质量门控、R 峰 detector、RR、模板、QRS 和分类器（Milestones 4–7）。
+- 离线公开数据评测结果或 Apple Watch 域验证（Milestones 3、9）。
+- 界面本地化：UI 文案目前为英文，免责声明为中英双语。
 
-因此目前没有应用截图。截图只能在 Milestone 1 的界面于 Xcode 编译并实际运行后加入，
+因此仍然没有应用截图。截图只能在界面于 Xcode 编译并在真机实际运行后加入，
 不会用静态 mock 冒充已完成的产品。
 
 ## 构建 ECGCore
@@ -77,18 +89,70 @@ PAC/PVC 分类或置信度的输入。
 需要 Swift 5.9 或更高版本：
 
 ```bash
-cd ECGCore
-swift test
+Tools/run-core-tests.sh --parallel
 ```
 
-当前 Windows 环境没有 `swift`，上述命令**尚未执行**。首次在装有 Swift 的环境执行时，
-任何编译错误都必须修复并记录，不能把静态检查写成测试通过。
+脚本内部执行 `swift test --parallel`。ECGCore 的单元测试使用 Swift Testing（`import Testing`），
+不依赖 XCTest。XCTest 只随 Xcode 提供；在**未安装 Xcode、只有 Command Line Tools 的 macOS** 上，
+SwiftPM 不会自动加入 Swift Testing 的 framework、宏插件和 rpath 搜索路径，`swift test` 会因找不到
+XCTest 而失败（`Package.swift` 里的 target 级 flags 也无效：SwiftPM 自动生成的 test runner 拿不到
+这些 flag，`canImport(Testing)` 为 false，会"构建成功但一个测试都不跑"，必须避免）。
+
+两种无需 Xcode 的跑法：
+
+```bash
+# 1. 仓库脚本，任何环境都能用（推荐，CI 也适用）
+Tools/run-core-tests.sh --parallel
+
+# 2. 安装用户级 swift 包装器，之后裸命令即可
+Tools/install-swift-test-shim.sh        # 只写 ~/.local/bin/swift，不需要 sudo
+export PATH="$HOME/.local/bin:$PATH"    # 已自动写入 ~/.zshrc，或手动执行
+cd ECGCore && swift test --parallel
+Tools/uninstall-swift-test-shim.sh      # 需要时移除
+```
+
+装有 Xcode 的机器无需上述任何包装，可直接 `cd ECGCore && swift test --parallel`。
+
+已验证：macOS 26.7 + Swift 6.2.4（Command Line Tools，未安装 Xcode），7 项测试全部通过。
+
+## 构建与测试 iOS App（本机可执行的编译）
+
+```bash
+bash Tools/run-app-tests.sh --parallel                 # 16 项单元测试（仓库根目录执行）
+
+cd iOS
+swift build                                            # macOS 目标：SwiftUI + HealthKit 全量编译
+swift build --triple arm64-apple-ios17.0 \
+            --sdk "$(xcrun --sdk iphoneos --show-sdk-path)"        # 真实 iOS SDK（真机）
+swift build --triple x86_64-apple-ios17.0-simulator \
+            --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" # 真实 iOS SDK（模拟器）
+```
+
+`Tools/run-core-tests.sh`、`Tools/run-app-tests.sh` 会自动识别当前工具链（Xcode 或只有
+Command Line Tools），为 `swift test` 补上 Swift Testing 的 framework、宏插件与 rpath
+搜索路径——这些无法写进 `Package.swift`，必须放在命令行。
+
+Xcode App 构建（Xcode 26.6，需要显式指定 developer 目录，因为 `xcode-select` 仍指向
+Command Line Tools）：
+
+```bash
+export DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"
+cd iOS
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
+           -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
+           -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build
+```
+
+用 `-target` 而非 `-scheme`：scheme 构建需要 destination，而本机没有模拟器运行时与 iOS 26.5
+设备支持，`-scheme` 会报 `Unable to find a destination ...` / `iOS 26.5 is not installed`。
+`-target` 构建成功只证明 App 能编译、链接并处理 Info.plist 与 entitlements，**不代表运行过**。
 
 ## 未来构建 iPhone App
 
-最低目标暂定 iOS 17.0。需要：
+最低目标 iOS 17.0。Xcode 工程已经能用 `-target` + `-sdk` 构建；要真正跑起来还需要：
 
-1. 一台受支持的 macOS 主机和兼容版本的 Xcode。
+1. iOS 26.5 平台支持与模拟器运行时（Xcode > Settings > Components），或一台真机。
 2. Apple Developer 签名配置及带 HealthKit capability 的 App ID。
 3. 一台能访问真实 Apple Health ECG 数据的兼容 iPhone。
 4. 只请求 ECG 读取权限；`toShare` 必须为空。

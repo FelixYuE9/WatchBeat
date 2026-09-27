@@ -52,12 +52,25 @@ ECGCore/                      # 已建立；平台无关 Swift Package
 Docs/                        # 设计、验证、数据、隐私与合规记录
 Tools/Validation/            # 离线验证骨架；无运行时依赖
 PrivateValidationData/       # 内容被 Git 忽略
-iOS/                         # 待 macOS/Xcode 建立 App 工程
+iOS/                         # Milestone 1 已建立的 SwiftPM App 包
+  App/                      # @main 入口、scene container、root 路由
+  Models/                   # WatchBeatModels：记录、measurement、类型化状态
+  HealthKit/                # WatchBeatHealthKit：唯一接触 HealthKit 的模块
+  Features/                 # Disclaimer、ECGList、ECGDetail
+  Resources/                # Info.plist 与 entitlements（供未来 Xcode target）
+  Tests/                    # Swift Testing 用例与 fakes
 ```
 
-## 计划中的 iOS 组件
+Xcode 工程仍未生成：当前主机只有 Command Line Tools，没有 Xcode 与 iOS SDK，无法验证手写
+`.xcodeproj`。
 
-- `HealthKitClient`：可注入的最小授权/查询边界。
+## iOS 组件（Milestone 1 已建立源码）
+
+- `ECGHealthKitReading` / `LiveHealthKitECGReader`：可注入的最小授权/查询边界；`toShare` 为空。
+- `ECGRepository`：列表只加载 metadata；详情按需读取 voltage；generation + 取消保护。
+- `ECGHealthKitMapper`：单位换算和完整性信息，不静默清洗。
+- feature modules：Disclaimer、ECG list、ECG detail（beat detail、settings、research mode 待 M2/M8）。
+- exporters：待 Milestone 2。
 - `HealthKitECGRepository`：列表只加载 metadata；详情按需读取 voltage。
 - `HealthKitModelsMapper`：单位换算和完整性信息，不静默清洗。
 - feature modules：ECG list、detail、beat detail、settings、research mode。

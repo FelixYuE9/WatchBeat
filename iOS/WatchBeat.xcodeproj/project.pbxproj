@@ -1,0 +1,861 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000004001 /* BeatClassifying.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002001 /* BeatClassifying.swift */; };
+		A00000000000000000004002 /* AlgorithmVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002002 /* AlgorithmVersion.swift */; };
+		A00000000000000000004003 /* ECGAlgorithmConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002003 /* ECGAlgorithmConfig.swift */; };
+		A00000000000000000004004 /* ECGQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002004 /* ECGQuality.swift */; };
+		A00000000000000000004005 /* ECGSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002005 /* ECGSignal.swift */; };
+		A00000000000000000004006 /* RPeakDetecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002006 /* RPeakDetecting.swift */; };
+		A00000000000000000004007 /* ECGSignalInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002007 /* ECGSignalInspector.swift */; };
+		A00000000000000000004011 /* ECGRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002011 /* ECGRecord.swift */; };
+		A00000000000000000004012 /* ECGMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002012 /* ECGMeasurement.swift */; };
+		A00000000000000000004013 /* ECGReaderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002013 /* ECGReaderState.swift */; };
+		A00000000000000000004021 /* ECGVoltageSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002021 /* ECGVoltageSample.swift */; };
+		A00000000000000000004022 /* ECGHealthKitReading.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002022 /* ECGHealthKitReading.swift */; };
+		A00000000000000000004023 /* ECGHealthKitMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002023 /* ECGHealthKitMapper.swift */; };
+		A00000000000000000004024 /* ECGRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002024 /* ECGRepository.swift */; };
+		A00000000000000000004025 /* LiveHealthKitECGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002025 /* LiveHealthKitECGReader.swift */; };
+		A00000000000000000004031 /* WatchBeatApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002031 /* WatchBeatApp.swift */; };
+		A00000000000000000004032 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002032 /* AppContainer.swift */; };
+		A00000000000000000004033 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002033 /* RootView.swift */; };
+		A00000000000000000004041 /* MedicalDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002041 /* MedicalDisclaimer.swift */; };
+		A00000000000000000004042 /* DisclaimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002042 /* DisclaimerView.swift */; };
+		A00000000000000000004051 /* ECGListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002051 /* ECGListViewModel.swift */; };
+		A00000000000000000004052 /* ECGListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002052 /* ECGListView.swift */; };
+		A00000000000000000004061 /* ECGDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002061 /* ECGDetailViewModel.swift */; };
+		A00000000000000000004062 /* ECGDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002062 /* ECGDetailView.swift */; };
+		A00000000000000000004081 /* ECGHealthKitMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002081 /* ECGHealthKitMapperTests.swift */; };
+		A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002082 /* ECGRepositoryStateTests.swift */; };
+		A00000000000000000004083 /* FakeECGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002083 /* FakeECGReader.swift */; };
+		A00000000000000000004084 /* Gate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002084 /* Gate.swift */; };
+		A00000000000000000004101 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
+		A00000000000000000004102 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
+		A00000000000000000004103 /* WatchBeatModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; };
+		A00000000000000000004104 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
+		A00000000000000000004105 /* WatchBeatModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; };
+		A00000000000000000004106 /* WatchBeatHealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003003 /* WatchBeatHealthKit.framework */; };
+		A00000000000000000004107 /* ECGCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; };
+		A00000000000000000004108 /* WatchBeatModels.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; };
+		A00000000000000000004109 /* WatchBeatHealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003003 /* WatchBeatHealthKit.framework */; };
+		A00000000000000000004110 /* WatchBeatModels.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A00000000000000000004111 /* WatchBeatHealthKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003003 /* WatchBeatHealthKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A00000000000000000004112 /* ECGCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A00000000000000000006001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005001;
+			remoteInfo = ECGCore;
+		};
+		A00000000000000000006002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005002;
+			remoteInfo = WatchBeatModels;
+		};
+		A00000000000000000006003 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005001;
+			remoteInfo = ECGCore;
+		};
+		A00000000000000000006004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005002;
+			remoteInfo = WatchBeatModels;
+		};
+		A00000000000000000006005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005003;
+			remoteInfo = WatchBeatHealthKit;
+		};
+		A00000000000000000006006 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005001;
+			remoteInfo = ECGCore;
+		};
+		A00000000000000000006007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005002;
+			remoteInfo = WatchBeatModels;
+		};
+		A00000000000000000006008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005003;
+			remoteInfo = WatchBeatHealthKit;
+		};
+		A00000000000000000006009 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000005001;
+			remoteInfo = ECGCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A00000000000000000005304 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A00000000000000000004110 /* WatchBeatModels.framework in Embed Frameworks */,
+				A00000000000000000004111 /* WatchBeatHealthKit.framework in Embed Frameworks */,
+				A00000000000000000004112 /* ECGCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000003001 /* ECGCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ECGCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003002 /* WatchBeatModels.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatModels.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003003 /* WatchBeatHealthKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatHealthKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003004 /* WatchBeatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchBeatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003005 /* WatchBeatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchBeatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000002001 /* BeatClassifying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatClassifying.swift; sourceTree = "<group>"; };
+		A00000000000000000002002 /* AlgorithmVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlgorithmVersion.swift; sourceTree = "<group>"; };
+		A00000000000000000002003 /* ECGAlgorithmConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAlgorithmConfig.swift; sourceTree = "<group>"; };
+		A00000000000000000002004 /* ECGQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGQuality.swift; sourceTree = "<group>"; };
+		A00000000000000000002005 /* ECGSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignal.swift; sourceTree = "<group>"; };
+		A00000000000000000002006 /* RPeakDetecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPeakDetecting.swift; sourceTree = "<group>"; };
+		A00000000000000000002007 /* ECGSignalInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignalInspector.swift; sourceTree = "<group>"; };
+		A00000000000000000002011 /* ECGRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecord.swift; sourceTree = "<group>"; };
+		A00000000000000000002012 /* ECGMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGMeasurement.swift; sourceTree = "<group>"; };
+		A00000000000000000002013 /* ECGReaderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGReaderState.swift; sourceTree = "<group>"; };
+		A00000000000000000002021 /* ECGVoltageSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGVoltageSample.swift; sourceTree = "<group>"; };
+		A00000000000000000002022 /* ECGHealthKitReading.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitReading.swift; sourceTree = "<group>"; };
+		A00000000000000000002023 /* ECGHealthKitMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapper.swift; sourceTree = "<group>"; };
+		A00000000000000000002024 /* ECGRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRepository.swift; sourceTree = "<group>"; };
+		A00000000000000000002025 /* LiveHealthKitECGReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveHealthKitECGReader.swift; sourceTree = "<group>"; };
+		A00000000000000000002031 /* WatchBeatApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBeatApp.swift; sourceTree = "<group>"; };
+		A00000000000000000002032 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		A00000000000000000002033 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A00000000000000000002041 /* MedicalDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicalDisclaimer.swift; sourceTree = "<group>"; };
+		A00000000000000000002042 /* DisclaimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisclaimerView.swift; sourceTree = "<group>"; };
+		A00000000000000000002051 /* ECGListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGListViewModel.swift; sourceTree = "<group>"; };
+		A00000000000000000002052 /* ECGListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGListView.swift; sourceTree = "<group>"; };
+		A00000000000000000002061 /* ECGDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDetailViewModel.swift; sourceTree = "<group>"; };
+		A00000000000000000002062 /* ECGDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDetailView.swift; sourceTree = "<group>"; };
+		A00000000000000000002071 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A00000000000000000002072 /* WatchBeatApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchBeatApp.entitlements; sourceTree = "<group>"; };
+		A00000000000000000002081 /* ECGHealthKitMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapperTests.swift; sourceTree = "<group>"; };
+		A00000000000000000002082 /* ECGRepositoryStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRepositoryStateTests.swift; sourceTree = "<group>"; };
+		A00000000000000000002083 /* FakeECGReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeECGReader.swift; sourceTree = "<group>"; };
+		A00000000000000000002084 /* Gate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gate.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000005201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005202 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004101 /* ECGCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005203 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004102 /* ECGCore.framework in Frameworks */,
+				A00000000000000000004103 /* WatchBeatModels.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005204 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004104 /* ECGCore.framework in Frameworks */,
+				A00000000000000000004105 /* WatchBeatModels.framework in Frameworks */,
+				A00000000000000000004106 /* WatchBeatHealthKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005205 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004107 /* ECGCore.framework in Frameworks */,
+				A00000000000000000004108 /* WatchBeatModels.framework in Frameworks */,
+				A00000000000000000004109 /* WatchBeatHealthKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000005 /* ECGCore */,
+				A00000000000000000000006 /* App */,
+				A00000000000000000000007 /* Models */,
+				A00000000000000000000008 /* HealthKit */,
+				A00000000000000000000009 /* Features */,
+				A0000000000000000000000D /* Resources */,
+				A0000000000000000000000E /* Tests */,
+				A00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000003001 /* ECGCore.framework */,
+				A00000000000000000003002 /* WatchBeatModels.framework */,
+				A00000000000000000003003 /* WatchBeatHealthKit.framework */,
+				A00000000000000000003004 /* WatchBeatApp.app */,
+				A00000000000000000003005 /* WatchBeatAppTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000005 /* ECGCore */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000011 /* Classification */,
+				A00000000000000000000012 /* Config */,
+				A00000000000000000000013 /* Models */,
+				A00000000000000000000014 /* Peaks */,
+				A00000000000000000000015 /* Signal */,
+			);
+			name = ECGCore;
+			path = ../ECGCore/Sources/ECGCore;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000011 /* Classification */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002001 /* BeatClassifying.swift */,
+			);
+			path = Classification;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000012 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002002 /* AlgorithmVersion.swift */,
+				A00000000000000000002003 /* ECGAlgorithmConfig.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000013 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002004 /* ECGQuality.swift */,
+				A00000000000000000002005 /* ECGSignal.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000014 /* Peaks */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002006 /* RPeakDetecting.swift */,
+			);
+			path = Peaks;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000015 /* Signal */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002007 /* ECGSignalInspector.swift */,
+			);
+			path = Signal;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000006 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002031 /* WatchBeatApp.swift */,
+				A00000000000000000002032 /* AppContainer.swift */,
+				A00000000000000000002033 /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002011 /* ECGRecord.swift */,
+				A00000000000000000002012 /* ECGMeasurement.swift */,
+				A00000000000000000002013 /* ECGReaderState.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000008 /* HealthKit */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002021 /* ECGVoltageSample.swift */,
+				A00000000000000000002022 /* ECGHealthKitReading.swift */,
+				A00000000000000000002023 /* ECGHealthKitMapper.swift */,
+				A00000000000000000002024 /* ECGRepository.swift */,
+				A00000000000000000002025 /* LiveHealthKitECGReader.swift */,
+			);
+			path = HealthKit;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000009 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000000A /* Disclaimer */,
+				A0000000000000000000000B /* ECGList */,
+				A0000000000000000000000C /* ECGDetail */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000A /* Disclaimer */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002041 /* MedicalDisclaimer.swift */,
+				A00000000000000000002042 /* DisclaimerView.swift */,
+			);
+			path = Disclaimer;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000B /* ECGList */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002051 /* ECGListViewModel.swift */,
+				A00000000000000000002052 /* ECGListView.swift */,
+			);
+			path = ECGList;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000C /* ECGDetail */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002061 /* ECGDetailViewModel.swift */,
+				A00000000000000000002062 /* ECGDetailView.swift */,
+			);
+			path = ECGDetail;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002071 /* Info.plist */,
+				A00000000000000000002072 /* WatchBeatApp.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000E /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002081 /* ECGHealthKitMapperTests.swift */,
+				A00000000000000000002082 /* ECGRepositoryStateTests.swift */,
+				A0000000000000000000000F /* Fakes */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000000F /* Fakes */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002083 /* FakeECGReader.swift */,
+				A00000000000000000002084 /* Gate.swift */,
+			);
+			path = Fakes;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000005001 /* ECGCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000007002 /* Build configuration list for PBXNativeTarget "ECGCore" */;
+			buildPhases = (
+				A00000000000000000005101 /* Sources */,
+				A00000000000000000005201 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ECGCore;
+			productName = ECGCore;
+			productReference = A00000000000000000003001 /* ECGCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		A00000000000000000005002 /* WatchBeatModels */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000007003 /* Build configuration list for PBXNativeTarget "WatchBeatModels" */;
+			buildPhases = (
+				A00000000000000000005102 /* Sources */,
+				A00000000000000000005202 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000006101 /* PBXTargetDependency */,
+			);
+			name = WatchBeatModels;
+			productName = WatchBeatModels;
+			productReference = A00000000000000000003002 /* WatchBeatModels.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		A00000000000000000005003 /* WatchBeatHealthKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000007004 /* Build configuration list for PBXNativeTarget "WatchBeatHealthKit" */;
+			buildPhases = (
+				A00000000000000000005103 /* Sources */,
+				A00000000000000000005203 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000006102 /* PBXTargetDependency */,
+				A00000000000000000006103 /* PBXTargetDependency */,
+			);
+			name = WatchBeatHealthKit;
+			productName = WatchBeatHealthKit;
+			productReference = A00000000000000000003003 /* WatchBeatHealthKit.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		A00000000000000000005004 /* WatchBeatApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000007005 /* Build configuration list for PBXNativeTarget "WatchBeatApp" */;
+			buildPhases = (
+				A00000000000000000005104 /* Sources */,
+				A00000000000000000005204 /* Frameworks */,
+				A00000000000000000005304 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000006104 /* PBXTargetDependency */,
+				A00000000000000000006105 /* PBXTargetDependency */,
+				A00000000000000000006106 /* PBXTargetDependency */,
+			);
+			name = WatchBeatApp;
+			productName = WatchBeatApp;
+			productReference = A00000000000000000003004 /* WatchBeatApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A00000000000000000005005 /* WatchBeatAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000007006 /* Build configuration list for PBXNativeTarget "WatchBeatAppTests" */;
+			buildPhases = (
+				A00000000000000000005105 /* Sources */,
+				A00000000000000000005205 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000006107 /* PBXTargetDependency */,
+				A00000000000000000006108 /* PBXTargetDependency */,
+				A00000000000000000006109 /* PBXTargetDependency */,
+			);
+			name = WatchBeatAppTests;
+			productName = WatchBeatAppTests;
+			productReference = A00000000000000000003005 /* WatchBeatAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2660;
+			};
+			buildConfigurationList = A00000000000000000007001 /* Build configuration list for PBXProject "WatchBeat" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A00000000000000000000002;
+			productRefGroup = A00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000005001 /* ECGCore */,
+				A00000000000000000005002 /* WatchBeatModels */,
+				A00000000000000000005003 /* WatchBeatHealthKit */,
+				A00000000000000000005004 /* WatchBeatApp */,
+				A00000000000000000005005 /* WatchBeatAppTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000005101 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004001 /* BeatClassifying.swift in Sources */,
+				A00000000000000000004002 /* AlgorithmVersion.swift in Sources */,
+				A00000000000000000004003 /* ECGAlgorithmConfig.swift in Sources */,
+				A00000000000000000004004 /* ECGQuality.swift in Sources */,
+				A00000000000000000004005 /* ECGSignal.swift in Sources */,
+				A00000000000000000004006 /* RPeakDetecting.swift in Sources */,
+				A00000000000000000004007 /* ECGSignalInspector.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005102 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004011 /* ECGRecord.swift in Sources */,
+				A00000000000000000004012 /* ECGMeasurement.swift in Sources */,
+				A00000000000000000004013 /* ECGReaderState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005103 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004021 /* ECGVoltageSample.swift in Sources */,
+				A00000000000000000004022 /* ECGHealthKitReading.swift in Sources */,
+				A00000000000000000004023 /* ECGHealthKitMapper.swift in Sources */,
+				A00000000000000000004024 /* ECGRepository.swift in Sources */,
+				A00000000000000000004025 /* LiveHealthKitECGReader.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005104 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004031 /* WatchBeatApp.swift in Sources */,
+				A00000000000000000004032 /* AppContainer.swift in Sources */,
+				A00000000000000000004033 /* RootView.swift in Sources */,
+				A00000000000000000004041 /* MedicalDisclaimer.swift in Sources */,
+				A00000000000000000004042 /* DisclaimerView.swift in Sources */,
+				A00000000000000000004051 /* ECGListViewModel.swift in Sources */,
+				A00000000000000000004052 /* ECGListView.swift in Sources */,
+				A00000000000000000004061 /* ECGDetailViewModel.swift in Sources */,
+				A00000000000000000004062 /* ECGDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000005105 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000004081 /* ECGHealthKitMapperTests.swift in Sources */,
+				A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */,
+				A00000000000000000004083 /* FakeECGReader.swift in Sources */,
+				A00000000000000000004084 /* Gate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A00000000000000000006101 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005001 /* ECGCore */;
+			targetProxy = A00000000000000000006001 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006102 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005002 /* WatchBeatModels */;
+			targetProxy = A00000000000000000006002 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006103 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005001 /* ECGCore */;
+			targetProxy = A00000000000000000006003 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006104 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005002 /* WatchBeatModels */;
+			targetProxy = A00000000000000000006004 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006105 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005003 /* WatchBeatHealthKit */;
+			targetProxy = A00000000000000000006005 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006106 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005001 /* ECGCore */;
+			targetProxy = A00000000000000000006006 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006107 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005002 /* WatchBeatModels */;
+			targetProxy = A00000000000000000006007 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006108 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005003 /* WatchBeatHealthKit */;
+			targetProxy = A00000000000000000006008 /* PBXContainerItemProxy */;
+		};
+		A00000000000000000006109 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000005001 /* ECGCore */;
+			targetProxy = A00000000000000000006009 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000008001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5;
+			};
+			name = Debug;
+		};
+		A00000000000000000008002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000008101 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = ECGCore;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		A00000000000000000008102 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = ECGCore;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000008201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = WatchBeatModels;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		A00000000000000000008202 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = WatchBeatModels;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000008301 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = WatchBeatHealthKit;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		A00000000000000000008302 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = WatchBeatHealthKit;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000008401 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat;
+				PRODUCT_NAME = WatchBeatApp;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A00000000000000000008402 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat;
+				PRODUCT_NAME = WatchBeatApp;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A00000000000000000008501 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeatTests;
+				PRODUCT_NAME = WatchBeatAppTests;
+			};
+			name = Debug;
+		};
+		A00000000000000000008502 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeatTests;
+				PRODUCT_NAME = WatchBeatAppTests;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000007001 /* Build configuration list for PBXProject "WatchBeat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008001 /* Debug */,
+				A00000000000000000008002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000007002 /* Build configuration list for PBXNativeTarget "ECGCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008101 /* Debug */,
+				A00000000000000000008102 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000007003 /* Build configuration list for PBXNativeTarget "WatchBeatModels" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008201 /* Debug */,
+				A00000000000000000008202 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000007004 /* Build configuration list for PBXNativeTarget "WatchBeatHealthKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008301 /* Debug */,
+				A00000000000000000008302 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000007005 /* Build configuration list for PBXNativeTarget "WatchBeatApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008401 /* Debug */,
+				A00000000000000000008402 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000007006 /* Build configuration list for PBXNativeTarget "WatchBeatAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000008501 /* Debug */,
+				A00000000000000000008502 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000001 /* Project object */;
+}
