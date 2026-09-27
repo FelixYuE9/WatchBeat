@@ -58,9 +58,10 @@ python -m unittest discover -s Tools/Validation/tests -v
 的 `dataclass` 无法解析模块 namespace。修复测试 loader 后重新运行：3 tests，全部通过，
 exit 0。保留此失败记录，避免把"最终通过"写成"一次即通过"。
 
-2026-09-27 的 Windows follow-up 又增加 4 项 iOS 工程配置回归测试，覆盖正确的
-`CODE_SIGN_ENTITLEMENTS`、iPhone-only、只读 HealthKit plist/entitlement 与共享 scheme。
-当前 Python suite 合计 7 tests，全部通过；该环境没有 Swift/Xcode，因此没有把静态检查写成
+2026-09-27 的 Windows follow-up 又增加 5 项 iOS 工程配置回归测试，覆盖正确的
+`CODE_SIGN_ENTITLEMENTS`、iPhone-only、embedded framework bundle identifiers、只读 HealthKit
+plist/entitlement 与共享 scheme。当前 Python suite 合计 8 tests，全部通过；该环境没有
+Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
 
 ```text
@@ -134,7 +135,10 @@ Info.plist 处理，但无签名构建不能验证最终签名中的 entitlement
 
 后续静态修复已提交共享 `WatchBeatApp` scheme，把 App 限定为 iPhone，并将误写的
 `CODE_ENTITLEMENTS` 更正为 `CODE_SIGN_ENTITLEMENTS`，同时登记 HealthKit system capability。
-这些配置通过 4 项 Python 回归测试；由于 follow-up 环境是 Windows，修复后的工程仍须回到
+第一次 macOS scheme build 随后真实失败：嵌入 App 的 `ECGCore`、`WatchBeatModels` 与
+`WatchBeatHealthKit` framework 的生成 plist 都没有 `CFBundleIdentifier`。原因是三个 framework
+target 的 Debug/Release 配置均缺 `PRODUCT_BUNDLE_IDENTIFIER`；现已分别补上唯一标识并加入回归测试。
+这些配置通过 5 项 Python 回归测试；由于 follow-up 环境是 Windows，修复后的工程仍须回到
 macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物检查。
 
 编译可行性说明（本机实测）：
@@ -190,7 +194,7 @@ macOS 执行 `xcodebuild -showBuildSettings`、scheme build/test 与签名产物
 | 首次启动与结果页免责声明 | 源码完成 | `Features/Disclaimer/` |
 | 本机编译与单元测试 | 既有版本通过 SwiftPM 构建与 16 tests；修复后工程待 macOS 复验 | 16 tests 在 macOS 执行，Xcode iOS test bundle 仅构建 |
 | Xcode 工程构建（App + 测试 bundle） | 通过：3 条 `xcodebuild -target` 命令 BUILD SUCCEEDED | Xcode 26.6，iOS 26.5 / iOS Simulator 26.5 SDK |
-| iPhone-only 与共享 scheme | 源码完成 + 4 项配置测试通过 | 需在安装 runtime 后执行共享 scheme |
+| iPhone-only、framework IDs 与共享 scheme | 源码完成 + 5 项配置测试通过 | 需在 macOS 重新执行共享 scheme |
 | Xcode scheme + destination 构建 | 失败（阻塞） | 缺 iOS 26.5 设备支持与模拟器运行时 |
 | App 在模拟器/真机运行 | 未执行 | 缺运行时/设备支持、签名与真实 Watch ECG 数据 |
 | 真机授权/列表/详情验证 | 未验证 | 见 `NEEDS_MACOS_VALIDATION.md` |

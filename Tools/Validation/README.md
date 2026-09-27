@@ -16,8 +16,9 @@ and interval relative MAD as JSON. A structurally invalid file exits non-zero.
 
 The same standard-library test command also checks safety-critical iOS project configuration:
 HealthKit must use `CODE_SIGN_ENTITLEMENTS`, the App must remain iPhone-only, its permission plist
-must remain read-only, and the shared scheme must include the unit-test bundle. These checks do not
-replace an Xcode build, signed-product inspection or real-device HealthKit validation.
+must remain read-only, every embedded framework must have a unique bundle identifier, and the shared
+scheme must include the unit-test bundle. These checks do not replace an Xcode build, signed-product
+inspection or real-device HealthKit validation.
 
 `data/` and `output/` are Git-ignored. Milestone 3 will add pinned WFDB/NeuroKit/BioSPPy environments,
 MIT-BIH version/checksum download, deterministic 30 s manifests, one-to-one peak matching and metrics.

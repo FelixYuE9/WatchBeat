@@ -700,6 +700,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.ECGCore;
 				PRODUCT_NAME = ECGCore;
 				SKIP_INSTALL = YES;
 			};
@@ -709,6 +710,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.ECGCore;
 				PRODUCT_NAME = ECGCore;
 				SKIP_INSTALL = YES;
 			};
@@ -718,6 +720,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.Models;
 				PRODUCT_NAME = WatchBeatModels;
 				SKIP_INSTALL = YES;
 			};
@@ -727,6 +730,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.Models;
 				PRODUCT_NAME = WatchBeatModels;
 				SKIP_INSTALL = YES;
 			};
@@ -736,6 +740,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.HealthKit;
 				PRODUCT_NAME = WatchBeatHealthKit;
 				SKIP_INSTALL = YES;
 			};
@@ -745,6 +750,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.watchbeat.WatchBeat.HealthKit;
 				PRODUCT_NAME = WatchBeatHealthKit;
 				SKIP_INSTALL = YES;
 			};

@@ -63,6 +63,8 @@ Planned but not created yet: `Features/BeatDetail`, `Features/Settings`, `Featur
   delivery, no clinical-record access and no HealthKit write entitlement. Both App configurations
   use `CODE_SIGN_ENTITLEMENTS`, and the project declares the HealthKit system capability.
 - The App target is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`).
+- `ECGCore`, `WatchBeatModels` and `WatchBeatHealthKit` each have a unique
+  `PRODUCT_BUNDLE_IDENTIFIER`; otherwise the embedded framework plist is invalid at App validation.
 - `LiveHealthKitECGReader.requestReadOnlyAuthorization()` calls
   `requestAuthorization(toShare: [], read: [HKObjectType.electrocardiogramType()])`. The `toShare`
   set is always empty.

@@ -44,6 +44,20 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(project.count("TARGETED_DEVICE_FAMILY = 1;"), 2)
         self.assertNotIn('TARGETED_DEVICE_FAMILY = "1,2";', project)
 
+    def test_embedded_frameworks_have_unique_bundle_identifiers(self) -> None:
+        project = PROJECT_FILE.read_text(encoding="utf-8")
+        framework_identifiers = {
+            "com.watchbeat.WatchBeat.ECGCore",
+            "com.watchbeat.WatchBeat.Models",
+            "com.watchbeat.WatchBeat.HealthKit",
+        }
+
+        for identifier in framework_identifiers:
+            self.assertEqual(
+                project.count(f"PRODUCT_BUNDLE_IDENTIFIER = {identifier};"),
+                2,
+            )
+
     def test_shared_scheme_builds_app_and_runs_tests(self) -> None:
         project = PROJECT_FILE.read_text(encoding="utf-8")
         scheme = ET.parse(SCHEME_FILE).getroot()
