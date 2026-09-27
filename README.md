@@ -4,19 +4,19 @@
 Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以保守、
 可审计的方式标记疑似提前心搏。
 
-> **当前状态：Milestone 2（波形与导出，源码已实现，等待 macOS 复验）。** `ECGCore` 已编译并通过 7 项单元测试。
+> **当前状态：Milestone 2 界面迭代（v0.3.0 源码已实现，等待 macOS 复验）。** `ECGCore` 已编译并通过 7 项单元测试。
 > iOS 17 读取层源码已完成（SwiftUI App、只读 HealthKit ECG 授权、metadata 列表、惰性电压读取、
 > mV 映射、状态区分与免责声明），并在本机真实编译：
 >
 > - `swift build`：macOS 目标全量通过；以真实 iPhoneOS 26.5 / iPhoneSimulator 26.5 SDK 通过。
 > - Xcode 26.6（build 17F113，位于 `~/Downloads/Xcode.app`）：`iOS/WatchBeat.xcodeproj` 的
 >   App target 与单元测试 bundle 均 `BUILD SUCCEEDED`。
-> - 既有 16 项读取层单元测试通过（SwiftPM/macOS）；本轮新增 7 项波形、合成示例和导出测试，
+> - 既有 16 项读取层单元测试通过（SwiftPM/macOS）；当前源码另有 9 项波形、合成示例、导出和 R–R 显示测试，
 >   当前 Windows 环境无法执行 Swift，须在 macOS 上运行后再登记结果。
 >
 > **运行证据：** 2026-09-27 的用户截图确认 App 已在 iPhone 17 Pro / iOS 26.5 模拟器成功安装
-> 和启动，并显示预期的无可访问 ECG 状态；这也确认 embedded framework plist 修复已越过安装检查。
-> 尚未记录 shared scheme 自动测试，也没有真机 HealthKit 授权与波形验收。详见
+> 和启动，并已打开 15,000 点的内置合成 ECG 波形；用户反馈测试数据显示正常。这证明上一版
+> 波形路径可在模拟器运行，但不代表当前 v0.3.0 界面、shared scheme 自动测试或真机 HealthKit 已验证。详见
 > [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
 > [Docs/VALIDATION.md](Docs/VALIDATION.md)。
 > 后续审查已修正 entitlement、iPhone-only、共享 scheme 与 SwiftUI 状态生命周期；该修复提交
@@ -75,17 +75,19 @@ PAC/PVC 分类或置信度的输入。
   列表、惰性电压读取（含取消与陈旧请求保护）、mV 映射、四类状态区分、免责声明。
 - 内置确定性合成 ECG 教程（非人体数据），在无授权、无记录或 HealthKit 不可用时也能学习界面。
 - 全分辨率数据独立于显示降采样的可滚动/缩放波形，以及按真实时间戳定位的 marker 接口。
+- 卡片式默认概览页与“概览 / 数据 / 设置”底部导航；设置可即时切换跟随系统、简体中文或英文。
+- 内置合成 ECG 使用生成方程的已知 R 峰位置，在波形上逐个显示 R–R 间隔（ms）；这不是 detector 结果。
 - 用户确认后通过系统 share sheet 导出原始 CSV 或 metadata JSON；临时文件分享后清理。
-- 16 项读取层测试此前已通过；本轮新增 7 项波形/导出测试，等待 macOS 执行。
+- 16 项读取层测试此前已通过；当前另有 9 项波形/导出/R–R 测试，等待 macOS 执行。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
 
-- shared scheme 的 simulator 自动测试、本轮 Milestone 2 源码的 Xcode 编译与 UI 操作复验。
+- shared scheme 的 simulator 自动测试与当前 v0.3.0 概览/语言/R–R 界面的 Xcode 编译、UI 复验。
 - 真机 HealthKit 授权、真实波形显示和导出逐样本一致性校验。
-- 数字滤波、完整信号质量门控、R 峰 detector、RR、模板、QRS 和分类器（Milestones 4–7）。
+- 真实 HealthKit ECG 的已验证 R 峰 detector 与 R–R 显示；当前不会用未验证算法猜峰值。
+- 数字滤波、完整信号质量门控、模板、QRS 和分类器（Milestones 4–7）。
 - 离线公开数据评测结果或 Apple Watch 域验证（Milestones 3、9）。
-- 界面本地化：UI 文案目前为英文，免责声明为中英双语。
 
 模拟器截图只证明安装、启动与 UI 状态，不会被当作真机 HealthKit 或医学准确率证据。内置示例
 始终明确标为数学合成数据，不会用它冒充 Apple Watch ECG。
@@ -124,7 +126,7 @@ Tools/uninstall-swift-test-shim.sh      # 需要时移除
 ## 构建与测试 iOS App（本机可执行的编译）
 
 ```bash
-bash Tools/run-app-tests.sh --parallel                 # 当前应发现 23 项单元测试（仓库根目录执行）
+bash Tools/run-app-tests.sh --parallel                 # 当前应发现 25 项单元测试（仓库根目录执行）
 
 cd iOS
 swift build                                            # macOS 目标：SwiftUI + HealthKit 全量编译

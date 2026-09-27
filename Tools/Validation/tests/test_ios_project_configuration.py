@@ -91,6 +91,11 @@ class IOSProjectConfigurationTests(unittest.TestCase):
             "ECGWaveformView.swift",
             "ECGExportSharing.swift",
             "ECGPresentationAndExportTests.swift",
+            "AppLanguage.swift",
+            "AppStyle.swift",
+            "AppHomeView.swift",
+            "OverviewView.swift",
+            "SettingsView.swift",
         }
 
         for file_name in source_files:

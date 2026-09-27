@@ -67,6 +67,11 @@ end to end; those claims remain governed by the later milestones and recorded ru
   files use protection and are removed when sharing finishes.
 - [x] Ship a deterministic built-in synthetic ECG tutorial, visibly and structurally distinguished
   from Apple Health data and available even when no HealthKit record is accessible.
+- [x] Add a default card-style overview, bottom Overview/Data/Settings navigation and immediate
+  Follow System/Simplified Chinese/English language selection.
+- [x] Label every adjacent R–R interval in the synthetic tutorial in milliseconds, using exact marker
+  timestamps from the generator rather than a detector. Real HealthKit ECG labels remain pending a
+  benchmark-selected and validated R-peak detector.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
 
 ## Milestone 3 — reproducible detector benchmark

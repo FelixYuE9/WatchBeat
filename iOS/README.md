@@ -1,12 +1,14 @@
 # iOS application boundary
 
-Status: **Milestone 2 source implemented; simulator rerun and tests are pending.**
+Status: **v0.3.0 UI source implemented; current simulator rebuild and tests are pending.**
 
 Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app` and builds the app target and the
 unit-test bundle against the real iPhoneOS 26.5 and iPhoneSimulator 26.5 SDKs. A user-provided
 2026-09-27 screenshot confirms the corrected App installs and runs on an iPhone 17 Pro simulator
-with iOS 26.5, showing the expected no-accessible-records state. The exact command and the shared
-scheme test action were not recorded, and there is still no real-iPhone evidence.
+with iOS 26.5. A later screenshot shows the previous v0.2.0 source rendering the full 15,000-sample
+synthetic ECG, and the user reported that the test data looked correct. The exact command and the
+shared scheme test action were not recorded, the current v0.3.0 UI has not been rebuilt, and there is
+still no real-iPhone evidence.
 
 A follow-up review corrected entitlement wiring, made the target iPhone-only, committed a shared
 scheme and stabilized view-model ownership. Those corrections pass repository configuration tests
@@ -27,7 +29,7 @@ sudo xcode-select -s "$HOME/Downloads/Xcode.app/Contents/Developer"
 |---|---|---|---|
 | `WatchBeatModels` | records, measurements, typed states, display downsampling, export encoding, synthetic tutorial | no | yes |
 | `WatchBeatHealthKit` | `ECGHealthKitReading` (protocol), `LiveHealthKitECGReader`, `ECGHealthKitMapper`, `ECGRepository` | no | yes |
-| `WatchBeatApp` | SwiftUI app: disclaimer, ECG list/detail, waveform and share sheet | yes | yes (earlier source revision; current M2 changes await rebuild) |
+| `WatchBeatApp` | SwiftUI app: disclaimer, overview/data/settings tabs, language setting, ECG list/detail, waveform and share sheet | yes | yes (earlier source revision; current v0.3.0 changes await rebuild) |
 | `WatchBeatAppTests` | Swift Testing suites for the mapper and repository states | no | yes (build) |
 
 The same modules exist twice: as SwiftPM targets (`Package.swift`) and as Xcode targets
@@ -43,19 +45,22 @@ iOS/
   HealthKit/               # the only HealthKit-touching module
   Features/
     Disclaimer/            # first-launch gate + reusable disclaimer text
+    Overview/              # default summary and safe entry points
     ECGList/               # metadata-only history list
     ECGDetail/             # voltage data, waveform, export confirmation + system sharing
+    Settings/              # in-app language selection
   Resources/               # Info.plist and entitlements, used by the Xcode app target
   Tests/                   # Swift Testing suites + fakes
   Package.swift            # SwiftPM build (unit tests, iOS SDK compile)
   WatchBeat.xcodeproj/     # Xcode app build (app + unit-test bundle)
 ```
 
-Planned but not created yet: `Features/BeatDetail`, `Features/Settings` and `Features/ResearchMode`.
+Planned but not created yet: `Features/BeatDetail` and `Features/ResearchMode`.
 
 Every build includes one deterministic mathematical ECG example so the interface is learnable
 without Apple Watch data. It is not routed through HealthKit and is identified as synthetic in the
-screen, exported JSON and filenames. It is not validation data.
+screen, exported JSON and filenames. Known R-peak positions from its generating equation are used to
+label every synthetic R–R interval in milliseconds. It is not validation data or a peak-detector result.
 
 ## HealthKit configuration
 
@@ -87,6 +92,7 @@ screen, exported JSON and filenames. It is not validation data.
 - `HKElectrocardiogram` objects stay inside `LiveHealthKitECGReader`; sample UUIDs are in-memory
   keys only and are never logged, persisted, or exported.
 - Display downsampling never replaces the full-resolution signal used by raw export and future analysis.
+- Real HealthKit waveforms do not receive R–R labels until a detector has been benchmarked and validated.
 - Export requires a user action and confirmation; temporary files are protected and removed after sharing.
 
 ## Build and test on this host
@@ -94,7 +100,7 @@ screen, exported JSON and filenames. It is not validation data.
 Unit tests, run from the repository root (the script resolves the active toolchain itself):
 
 ```bash
-bash Tools/run-app-tests.sh --parallel  # current source should run 23 tests
+bash Tools/run-app-tests.sh --parallel  # current source should run 25 tests
 ```
 
 SwiftPM builds:
@@ -135,14 +141,15 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' test
 ```
 
-The exact M2 command/output is still pending. Simulator success cannot prove that HealthKit is
+The exact current-revision command/output is still pending. Simulator success cannot prove that HealthKit is
 present in a signed real-device product.
 
 Actual commands and results are recorded in [Docs/VALIDATION.md](../Docs/VALIDATION.md).
 
 ## Still required before Milestone 1 can be called validated
 
-1. Build and test the current M2 source through the shared scheme on the installed simulator.
-2. Check the built-in example waveform, zoom/scroll and both share-sheet exports in the simulator.
+1. Build and test the current v0.3.0 source through the shared scheme on the installed simulator.
+2. Check the default Overview, all three tabs, immediate language switching, and the synthetic
+   waveform's per-beat millisecond labels; recheck zoom/scroll and both share-sheet exports.
 3. Run on a real iPhone, inspect the signed entitlement, and record the outcome.
 4. Complete the real-iPhone checklist in [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).

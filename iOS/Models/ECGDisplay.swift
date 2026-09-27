@@ -29,6 +29,57 @@ public struct ECGWaveformMarker: Identifiable, Equatable, Sendable {
     }
 }
 
+public struct ECGPeakInterval: Equatable, Sendable {
+    public let startMarkerID: String
+    public let endMarkerID: String
+    public let startTimeSeconds: Double
+    public let endTimeSeconds: Double
+    public let durationMilliseconds: Double
+
+    public init(
+        startMarkerID: String,
+        endMarkerID: String,
+        startTimeSeconds: Double,
+        endTimeSeconds: Double,
+        durationMilliseconds: Double
+    ) {
+        self.startMarkerID = startMarkerID
+        self.endMarkerID = endMarkerID
+        self.startTimeSeconds = startTimeSeconds
+        self.endTimeSeconds = endTimeSeconds
+        self.durationMilliseconds = durationMilliseconds
+    }
+}
+
+/// Builds display-only R–R intervals from already-established markers. It does not detect peaks.
+public enum ECGPeakIntervalBuilder {
+    public static func intervals(between markers: [ECGWaveformMarker]) -> [ECGPeakInterval] {
+        guard markers.count >= 2 else { return [] }
+        var intervals: [ECGPeakInterval] = []
+        intervals.reserveCapacity(markers.count - 1)
+
+        for index in 1..<markers.count {
+            let previous = markers[index - 1]
+            let current = markers[index]
+            guard previous.timeSeconds.isFinite,
+                  current.timeSeconds.isFinite,
+                  current.timeSeconds > previous.timeSeconds else {
+                continue
+            }
+            intervals.append(
+                ECGPeakInterval(
+                    startMarkerID: previous.id,
+                    endMarkerID: current.id,
+                    startTimeSeconds: previous.timeSeconds,
+                    endTimeSeconds: current.timeSeconds,
+                    durationMilliseconds: (current.timeSeconds - previous.timeSeconds) * 1_000
+                )
+            )
+        }
+        return intervals
+    }
+}
+
 public enum ECGTimeline {
     /// Maps a real timestamp to a clamped 0...1 drawing position.
     public static func normalizedPosition(

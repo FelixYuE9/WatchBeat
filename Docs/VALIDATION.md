@@ -4,12 +4,13 @@
 
 截至 2026-09-27，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
 iOS 读取层源码已完成，并在 macOS 上编译与测试通过。用户截图确认修复后的 App 已在 iPhone 17 Pro /
-iOS 26.5 模拟器安装和启动。Milestone 2 的波形、合成教程与导出源码已实现，但尚未在 macOS 编译。
+iOS 26.5 模拟器安装和启动，且之后的截图确认上一版能显示 15,000 点的内置合成波形。
+当前 v0.3.0 新增概览/底部导航/语言设置和合成 R–R 毫秒标注，但该 revision 尚未在 macOS 编译。
 仍然没有 R 峰或 beat 分类性能报告，也没有
 Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall 或 accuracy
 声明在当前阶段都是不真实的。
 
-当前关键限制：模拟器已经可用，但**当前 Milestone 2 revision 尚未执行 Xcode build/test，也没有
+当前关键限制：模拟器已经可用，但**当前 v0.3.0 revision 尚未执行 Xcode build/test，也没有
 完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在签名产物与真机上验证。
 
 ## 实际环境审计（2026-09-26 / 2026-09-27）
@@ -69,9 +70,9 @@ plist/entitlement 与共享 scheme；Milestone 2 又增加 1 项 Xcode source-me
 Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
 
-同日的 Milestone 2 follow-up 新增 7 项 Swift 测试，覆盖显示降采样不修改原始数据、extrema、
+同日的 Milestone 2 follow-up 新增 9 项 Swift 测试，覆盖显示降采样不修改原始数据、extrema、
 缺测 gap、真实 timestamp 映射、CSV 顺序/缺测、JSON 去除 HealthKit ID，以及内置合成示例的
-确定性和来源标记。当前 Windows 主机不能运行 Swift；这 7 项测试仅完成源码和 Xcode target
+确定性和来源标记，以及合成 R 峰间隔计算/异常 marker 过滤。当前 Windows 主机不能运行 Swift；这 9 项测试仅完成源码和 Xcode target
 membership 静态检查，必须在 macOS 上运行后才可写成通过。
 
 ```text
@@ -163,7 +164,7 @@ scheme build/test 与签名产物检查。
 
 失败与限制（保留，不改写为成功）：
 
-1. App 已在 iPhone 17 Pro / iOS 26.5 模拟器运行并有截图；但当前 M2 revision 尚未重新构建，
+1. App 已在 iPhone 17 Pro / iOS 26.5 模拟器运行，且上一版合成波形已有截图；但当前 v0.3.0 revision 尚未重新构建，
    shared scheme test action 也没有结果记录。截图不证明真机 HealthKit。
 2. 真机 HealthKit 授权、measurement 完整性与真实 sampling metadata **未验证**。
 3. 单元测试使用 `FakeECGReader` 替身：真实 `HKElectrocardiogram` 无法在测试中构造，所以
@@ -214,10 +215,12 @@ scheme build/test 与签名产物检查。
 | 条件 | 状态 | 证据/限制 |
 |---|---|---|
 | 全分辨率与显示降采样分离 | 源码完成 | `ECGDisplayDownsampler`；新增 Swift tests 待 macOS 执行 |
-| 滚动/缩放波形与 timestamp marker | 源码完成 | SwiftUI Canvas，1×–8×；待模拟器 UI 复验 |
-| 内置合成教学 ECG | 源码完成 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
+| 滚动/缩放波形与 timestamp marker | 上一版模拟器已显示 | SwiftUI Canvas，1×–8×；当前 v0.3.0 待复验 |
+| 内置合成教学 ECG | 上一版模拟器已显示 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
+| 概览/数据/设置导航与语言切换 | 源码完成 | 当前 v0.3.0 待 Xcode 编译与模拟器 UI 复验 |
+| 合成 ECG 逐个 R–R 毫秒标注 | 源码完成 | 来自生成方程的已知 marker；不是 detector；真实 ECG 不显示 |
 | raw CSV 与 metadata JSON | 源码完成 | 用户确认 + share sheet + 临时文件清理；待 iOS 构建 |
-| 当前 Swift tests | 未执行 | 预期 23 tests；既有 16 曾通过，新增 7 待运行 |
+| 当前 Swift tests | 未执行 | 预期 25 tests；既有 16 曾通过，新增 9 待运行 |
 | 真实 HealthKit 导出一致性 | 未验证 | 必须在真机逐样本核对 |
 
 ## 首次可用 Swift 环境的必跑命令

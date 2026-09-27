@@ -6,13 +6,6 @@ enum ECGExportKind: String, Identifiable {
     case metadataJSON
 
     var id: String { rawValue }
-
-    var buttonTitle: String {
-        switch self {
-        case .rawCSV: return "Share raw CSV"
-        case .metadataJSON: return "Share metadata JSON"
-        }
-    }
 }
 
 struct ECGTemporaryExportFile: Identifiable {

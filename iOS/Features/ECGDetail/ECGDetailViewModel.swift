@@ -8,6 +8,7 @@ import WatchBeatModels
 public final class ECGDetailViewModel {
     public let record: ECGRecord
     public let source: ECGMeasurementSource
+    public let waveformMarkers: [ECGWaveformMarker]
     public private(set) var state: ECGDetailState = .idle
 
     private let repository: ECGRepository?
@@ -16,12 +17,16 @@ public final class ECGDetailViewModel {
         self.repository = repository
         self.record = record
         self.source = .healthKit
+        self.waveformMarkers = []
     }
 
     public init(example measurement: ECGMeasurement) {
         self.repository = nil
         self.record = measurement.record
         self.source = measurement.source
+        self.waveformMarkers = measurement.source == .builtInSyntheticExample
+            ? ECGExampleFactory.syntheticRPeakMarkers()
+            : []
         self.state = measurement.isComplete
             ? .loaded(measurement)
             : .loadedWithIncompleteMeasurements(measurement)

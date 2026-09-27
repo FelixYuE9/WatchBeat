@@ -8,6 +8,7 @@ public struct ECGWaveformView: View {
     private let signal: ECGSignal
     private let markers: [ECGWaveformMarker]
     @State private var zoom = 1.0
+    @Environment(\.appLanguage) private var language
 
     public init(signal: ECGSignal, markers: [ECGWaveformMarker] = []) {
         self.signal = signal
@@ -17,10 +18,13 @@ public struct ECGWaveformView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Waveform")
+                Text(language.text("Waveform", "波形"))
                     .font(.headline)
                 Spacer()
-                Text("\(signal.timeSeconds.count) full-resolution samples")
+                Text(language.text(
+                    "\(signal.timeSeconds.count) full-resolution samples",
+                    "\(signal.timeSeconds.count) 个全分辨率采样点"
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -29,7 +33,7 @@ public struct ECGWaveformView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "minus.magnifyingglass")
                     Slider(value: $zoom, in: 1...8, step: 0.5)
-                        .accessibilityLabel("Waveform zoom")
+                        .accessibilityLabel(language.text("Waveform zoom", "波形缩放"))
                     Image(systemName: "plus.magnifyingglass")
                     Text(String(format: "%.1f×", zoom))
                         .font(.caption.monospacedDigit())
@@ -74,17 +78,39 @@ public struct ECGWaveformView: View {
                 HStack {
                     Text(String(format: "%.2f s", timeRange.lowerBound))
                     Spacer()
-                    Text("Scroll horizontally · timestamps are preserved")
+                    Text(language.text("Scroll horizontally", "左右滑动查看"))
                     Spacer()
                     Text(String(format: "%.2f s", timeRange.upperBound))
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
+                if markers.count > 1 {
+                    Label(
+                        language.text(
+                            "Orange brackets show known synthetic R–R intervals in milliseconds.",
+                            "橙色括号以毫秒显示已知的合成 R–R 间期。"
+                        ),
+                        systemImage: "ruler"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text(language.text(
+                        "R–R intervals require a validated peak detector and are not estimated for HealthKit records yet.",
+                        "R–R 间期需要经过验证的峰值检测器；目前不会对 HealthKit 记录进行猜测。"
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
             } else {
                 ContentUnavailableView(
-                    "Waveform unavailable",
+                    language.text("Waveform unavailable", "波形不可用"),
                     systemImage: "waveform.path.ecg",
-                    description: Text("No finite timestamp and voltage pair can be drawn.")
+                    description: Text(language.text(
+                        "No finite timestamp and voltage pair can be drawn.",
+                        "没有可绘制的有限时间戳与电压数据。"
+                    ))
                 )
                 .frame(maxWidth: .infinity, minHeight: 180)
             }
@@ -110,7 +136,8 @@ public struct ECGWaveformView: View {
     }
 
     private func chartWidth(minimumWidth: CGFloat, duration: Double) -> CGFloat {
-        min(max(minimumWidth, CGFloat(duration * 42 * zoom)), 100_000)
+        let pointsPerSecond = markers.count > 1 ? 84.0 : 42.0
+        return min(max(minimumWidth, CGFloat(duration * pointsPerSecond * zoom)), 100_000)
     }
 
     private func drawGrid(
@@ -131,7 +158,7 @@ public struct ECGWaveformView: View {
                 endTimeSeconds: timeRange.upperBound
             ) {
                 let x = CGFloat(position) * size.width
-                grid.move(to: CGPoint(x: x, y: 0))
+                grid.move(to: CGPoint(x: x, y: waveformTopInset))
                 grid.addLine(to: CGPoint(x: x, y: size.height))
             }
             gridTime += gridInterval
@@ -202,6 +229,38 @@ public struct ECGWaveformView: View {
         size: CGSize,
         timeRange: ClosedRange<Double>
     ) {
+        let intervals = ECGPeakIntervalBuilder.intervals(between: markers)
+        for interval in intervals {
+            guard let startPosition = ECGTimeline.normalizedPosition(
+                for: interval.startTimeSeconds,
+                startTimeSeconds: timeRange.lowerBound,
+                endTimeSeconds: timeRange.upperBound
+            ), let endPosition = ECGTimeline.normalizedPosition(
+                for: interval.endTimeSeconds,
+                startTimeSeconds: timeRange.lowerBound,
+                endTimeSeconds: timeRange.upperBound
+            ) else { continue }
+
+            let startX = CGFloat(startPosition) * size.width
+            let endX = CGFloat(endPosition) * size.width
+            let bracketY: CGFloat = 29
+            var bracket = Path()
+            bracket.move(to: CGPoint(x: startX, y: bracketY))
+            bracket.addLine(to: CGPoint(x: endX, y: bracketY))
+            bracket.move(to: CGPoint(x: startX, y: bracketY - 5))
+            bracket.addLine(to: CGPoint(x: startX, y: bracketY + 5))
+            bracket.move(to: CGPoint(x: endX, y: bracketY - 5))
+            bracket.addLine(to: CGPoint(x: endX, y: bracketY + 5))
+            context.stroke(bracket, with: .color(.orange), lineWidth: 1)
+
+            let milliseconds = Int(interval.durationMilliseconds.rounded())
+            context.draw(
+                Text("\(milliseconds) ms").font(.caption2.bold()),
+                at: CGPoint(x: (startX + endX) / 2, y: 12),
+                anchor: .center
+            )
+        }
+
         for marker in markers {
             guard marker.timeSeconds >= timeRange.lowerBound,
                   marker.timeSeconds <= timeRange.upperBound,
@@ -212,7 +271,7 @@ public struct ECGWaveformView: View {
                   ) else { continue }
             let x = CGFloat(position) * size.width
             var path = Path()
-            path.move(to: CGPoint(x: x, y: 0))
+            path.move(to: CGPoint(x: x, y: waveformTopInset))
             path.addLine(to: CGPoint(x: x, y: size.height))
             context.stroke(path, with: .color(.orange), lineWidth: 1)
         }
@@ -224,6 +283,11 @@ public struct ECGWaveformView: View {
         height: CGFloat
     ) -> CGFloat {
         let normalized = (voltage - range.lowerBound) / (range.upperBound - range.lowerBound)
-        return CGFloat(1 - normalized) * height
+        let drawableHeight = max(1, height - waveformTopInset)
+        return waveformTopInset + CGFloat(1 - normalized) * drawableHeight
+    }
+
+    private var waveformTopInset: CGFloat {
+        markers.count > 1 ? 44 : 0
     }
 }

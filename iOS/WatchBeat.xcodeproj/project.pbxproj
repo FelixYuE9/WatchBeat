@@ -28,6 +28,9 @@
 		A00000000000000000004031 /* WatchBeatApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002031 /* WatchBeatApp.swift */; };
 		A00000000000000000004032 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002032 /* AppContainer.swift */; };
 		A00000000000000000004033 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002033 /* RootView.swift */; };
+		A00000000000000000004034 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002034 /* AppLanguage.swift */; };
+		A00000000000000000004035 /* AppStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002035 /* AppStyle.swift */; };
+		A00000000000000000004036 /* AppHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002036 /* AppHomeView.swift */; };
 		A00000000000000000004041 /* MedicalDisclaimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002041 /* MedicalDisclaimer.swift */; };
 		A00000000000000000004042 /* DisclaimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002042 /* DisclaimerView.swift */; };
 		A00000000000000000004051 /* ECGListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002051 /* ECGListViewModel.swift */; };
@@ -36,6 +39,8 @@
 		A00000000000000000004062 /* ECGDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002062 /* ECGDetailView.swift */; };
 		A00000000000000000004063 /* ECGWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002063 /* ECGWaveformView.swift */; };
 		A00000000000000000004064 /* ECGExportSharing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002064 /* ECGExportSharing.swift */; };
+		A00000000000000000004065 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002065 /* OverviewView.swift */; };
+		A00000000000000000004066 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002066 /* SettingsView.swift */; };
 		A00000000000000000004081 /* ECGHealthKitMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002081 /* ECGHealthKitMapperTests.swift */; };
 		A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002082 /* ECGRepositoryStateTests.swift */; };
 		A00000000000000000004083 /* FakeECGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002083 /* FakeECGReader.swift */; };
@@ -164,6 +169,9 @@
 		A00000000000000000002031 /* WatchBeatApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchBeatApp.swift; sourceTree = "<group>"; };
 		A00000000000000000002032 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 		A00000000000000000002033 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A00000000000000000002034 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		A00000000000000000002035 /* AppStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStyle.swift; sourceTree = "<group>"; };
+		A00000000000000000002036 /* AppHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppHomeView.swift; sourceTree = "<group>"; };
 		A00000000000000000002041 /* MedicalDisclaimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicalDisclaimer.swift; sourceTree = "<group>"; };
 		A00000000000000000002042 /* DisclaimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisclaimerView.swift; sourceTree = "<group>"; };
 		A00000000000000000002051 /* ECGListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGListViewModel.swift; sourceTree = "<group>"; };
@@ -172,6 +180,8 @@
 		A00000000000000000002062 /* ECGDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGDetailView.swift; sourceTree = "<group>"; };
 		A00000000000000000002063 /* ECGWaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGWaveformView.swift; sourceTree = "<group>"; };
 		A00000000000000000002064 /* ECGExportSharing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGExportSharing.swift; sourceTree = "<group>"; };
+		A00000000000000000002065 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
+		A00000000000000000002066 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A00000000000000000002071 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A00000000000000000002072 /* WatchBeatApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchBeatApp.entitlements; sourceTree = "<group>"; };
 		A00000000000000000002081 /* ECGHealthKitMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapperTests.swift; sourceTree = "<group>"; };
@@ -316,6 +326,9 @@
 				A00000000000000000002031 /* WatchBeatApp.swift */,
 				A00000000000000000002032 /* AppContainer.swift */,
 				A00000000000000000002033 /* RootView.swift */,
+				A00000000000000000002034 /* AppLanguage.swift */,
+				A00000000000000000002035 /* AppStyle.swift */,
+				A00000000000000000002036 /* AppHomeView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -351,6 +364,8 @@
 				A0000000000000000000000A /* Disclaimer */,
 				A0000000000000000000000B /* ECGList */,
 				A0000000000000000000000C /* ECGDetail */,
+				A00000000000000000000016 /* Overview */,
+				A00000000000000000000017 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -382,6 +397,22 @@
 				A00000000000000000002064 /* ECGExportSharing.swift */,
 			);
 			path = ECGDetail;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000016 /* Overview */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002065 /* OverviewView.swift */,
+			);
+			path = Overview;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000017 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002066 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		A0000000000000000000000D /* Resources */ = {
@@ -594,6 +625,9 @@
 				A00000000000000000004031 /* WatchBeatApp.swift in Sources */,
 				A00000000000000000004032 /* AppContainer.swift in Sources */,
 				A00000000000000000004033 /* RootView.swift in Sources */,
+				A00000000000000000004034 /* AppLanguage.swift in Sources */,
+				A00000000000000000004035 /* AppStyle.swift in Sources */,
+				A00000000000000000004036 /* AppHomeView.swift in Sources */,
 				A00000000000000000004041 /* MedicalDisclaimer.swift in Sources */,
 				A00000000000000000004042 /* DisclaimerView.swift in Sources */,
 				A00000000000000000004051 /* ECGListViewModel.swift in Sources */,
@@ -602,6 +636,8 @@
 				A00000000000000000004062 /* ECGDetailView.swift in Sources */,
 				A00000000000000000004063 /* ECGWaveformView.swift in Sources */,
 				A00000000000000000004064 /* ECGExportSharing.swift in Sources */,
+				A00000000000000000004065 /* OverviewView.swift in Sources */,
+				A00000000000000000004066 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

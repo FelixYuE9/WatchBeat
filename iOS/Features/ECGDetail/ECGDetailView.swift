@@ -6,31 +6,35 @@ public struct ECGDetailView: View {
     @State private var pendingExportKind: ECGExportKind?
     @State private var sharedExport: ECGTemporaryExportFile?
     @State private var showsExportError = false
+    @Environment(\.appLanguage) private var language
 
     public init(viewModel: ECGDetailViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
     public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                metadataSection
-                stateSection
-                disclaimerSection
+        ZStack {
+            WatchBeatBackground()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    metadataSection
+                    stateSection
+                    disclaimerSection
+                }
+                .padding()
             }
-            .padding()
         }
-        .navigationTitle("ECG Record")
+        .navigationTitle(language.text("ECG Record", "心电图详情"))
         .task { await viewModel.load() }
         .confirmationDialog(
             exportConfirmationTitle,
             isPresented: showsExportConfirmation,
             presenting: pendingExportKind
         ) { kind in
-            Button("Continue to Share") {
+            Button(language.text("Continue to Share", "继续分享")) {
                 prepareExport(kind: kind)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(language.text("Cancel", "取消"), role: .cancel) {}
         } message: { _ in
             Text(exportConfirmationMessage)
         }
@@ -38,47 +42,54 @@ public struct ECGDetailView: View {
             #if canImport(UIKit)
             ECGShareSheet(file: file)
             #else
-            Text("System sharing is available in the iPhone app.")
+            Text(language.text("System sharing is available in the iPhone app.", "系统分享仅在 iPhone App 中可用。"))
                 .padding()
             #endif
         }
-        .alert("Export could not be prepared", isPresented: $showsExportError) {
-            Button("OK", role: .cancel) {}
+        .alert(language.text("Export could not be prepared", "无法准备导出文件"), isPresented: $showsExportError) {
+            Button(language.text("OK", "好"), role: .cancel) {}
         } message: {
-            Text("The temporary file was not retained. Please try again.")
+            Text(language.text(
+                "The temporary file was not retained. Please try again.",
+                "临时文件未被保留，请重试。"
+            ))
         }
     }
 
     private var metadataSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Metadata").font(.headline)
-            row("Source", sourceText)
-            row("Start", startDateText)
-            row("Duration", String(format: "%.1f s", viewModel.record.durationSeconds))
-            row("Apple classification", appleClassificationText)
-            row("Average heart rate", heartRateText)
-            row("Sampling frequency", samplingText)
-            row("Declared measurements", "\(viewModel.record.declaredMeasurementCount)")
-            row("Symptoms", symptomsText)
+            Text(language.text("Metadata", "记录概览")).font(.headline)
+            row(language.text("Source", "来源"), sourceText)
+            row(language.text("Start", "开始时间"), startDateText)
+            row(language.text("Duration", "时长"), language.text(
+                String(format: "%.1f s", viewModel.record.durationSeconds),
+                String(format: "%.1f 秒", viewModel.record.durationSeconds)
+            ))
+            row(language.text("Apple classification", "Apple 分类"), appleClassificationText)
+            row(language.text("Average heart rate", "平均心率"), heartRateText)
+            row(language.text("Sampling frequency", "采样频率"), samplingText)
+            row(language.text("Declared measurements", "声明测量数"), "\(viewModel.record.declaredMeasurementCount)")
+            row(language.text("Symptoms", "症状"), symptomsText)
         }
+        .watchBeatCard()
     }
 
     @ViewBuilder
     private var stateSection: some View {
         switch viewModel.state {
         case .idle, .loading:
-            ProgressView("Loading voltage measurements…")
+            ProgressView(language.text("Loading voltage measurements…", "正在载入电压测量值…"))
         case .loaded(let measurement):
             loadedSections(measurement: measurement, incomplete: false)
         case .loadedWithIncompleteMeasurements(let measurement):
             loadedSections(measurement: measurement, incomplete: true)
         case .failed(let message):
             VStack(alignment: .leading, spacing: 8) {
-                Text("Measurement query failed").font(.headline)
-                Text("Error: \(message)")
+                Text(language.text("Measurement query failed", "测量值查询失败")).font(.headline)
+                Text(language.text("Error: \(message)", "错误：\(message)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Button("Try again") { Task { await viewModel.load() } }
+                Button(language.text("Try again", "重试")) { Task { await viewModel.load() } }
             }
         }
     }
@@ -87,57 +98,70 @@ public struct ECGDetailView: View {
         VStack(alignment: .leading, spacing: 18) {
             if measurement.source == .builtInSyntheticExample {
                 VStack(alignment: .leading, spacing: 4) {
-                    Label("Built-in synthetic example", systemImage: "testtube.2")
+                    Label(language.text("Built-in synthetic example", "内置合成示例"), systemImage: "testtube.2")
                         .font(.headline)
-                    Text("Generated for learning the app. This is not a person's ECG and cannot validate medical accuracy.")
+                    Text(language.text(
+                        "Generated for learning the app. This is not a person's ECG and cannot validate medical accuracy.",
+                        "该波形仅用于学习应用操作，不属于任何人的心电数据，也不能验证医疗准确性。"
+                    ))
                         .font(.caption)
                 }
                 .foregroundStyle(.orange)
             }
-            ECGWaveformView(signal: measurement.signal)
+            ECGWaveformView(signal: measurement.signal, markers: viewModel.waveformMarkers)
+                .watchBeatCard()
             integritySection(measurement: measurement, incomplete: incomplete)
-            exportSection(measurement: measurement)
+            exportSection
         }
     }
 
     private func integritySection(measurement: ECGMeasurement, incomplete: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Measurements").font(.headline)
-            row("Loaded samples", "\(measurement.integrity.sampleCount)")
-            row("Missing voltages", "\(measurement.integrity.missingVoltageIndices.count)")
-            row("Nominal rate", rateText(measurement.signal.nominalSamplingRateHz))
-            row("Inferred rate", rateText(measurement.integrity.inferredSamplingRateHz))
-            row("Timestamps strictly increasing", measurement.integrity.hasStrictlyIncreasingFiniteTimestamps ? "yes" : "no")
+            Text(language.text("Measurements", "测量完整性")).font(.headline)
+            row(language.text("Loaded samples", "已载入采样点"), "\(measurement.integrity.sampleCount)")
+            row(language.text("Missing voltages", "缺失电压"), "\(measurement.integrity.missingVoltageIndices.count)")
+            row(language.text("Nominal rate", "标称采样率"), rateText(measurement.signal.nominalSamplingRateHz))
+            row(language.text("Inferred rate", "推算采样率"), rateText(measurement.integrity.inferredSamplingRateHz))
+            row(
+                language.text("Timestamps strictly increasing", "时间戳严格递增"),
+                measurement.integrity.hasStrictlyIncreasingFiniteTimestamps
+                    ? language.text("yes", "是")
+                    : language.text("no", "否")
+            )
 
             if incomplete {
-                Text("Incomplete measurement data")
+                Text(language.text("Incomplete measurement data", "测量数据不完整"))
                     .font(.subheadline)
                     .bold()
                     .foregroundStyle(.orange)
                 ForEach(measurement.issues, id: \.self) { issue in
-                    Text("· \(issue.displayName)")
+                    Text("· \(issueText(issue))")
                         .font(.caption)
                 }
             }
 
-            Text("Beat analysis is not implemented yet; the waveform display does not classify beats.")
+            Text(language.text(
+                "Beat analysis is not implemented yet; the waveform display does not classify beats.",
+                "心搏分析尚未实现；波形显示不会对心搏进行分类。"
+            ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .watchBeatCard()
     }
 
     private var disclaimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
-            Text("Research use only — not a diagnosis").font(.headline)
-            Text(MedicalDisclaimer.english).font(.caption)
-            Text(MedicalDisclaimer.chinese).font(.caption)
+            Text(language.text("Research use only — not a diagnosis", "仅供研究使用—不构成诊断")).font(.headline)
+            Text(language.text(MedicalDisclaimer.english, MedicalDisclaimer.chinese)).font(.caption)
         }
+        .watchBeatCard()
     }
 
-    private func exportSection(measurement: ECGMeasurement) -> some View {
+    private var exportSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Export").font(.headline)
+            Text(language.text("Export", "导出")).font(.headline)
             Label(
                 exportNoticeText,
                 systemImage: viewModel.source == .healthKit ? "lock.shield" : "testtube.2"
@@ -146,17 +170,18 @@ public struct ECGDetailView: View {
             .foregroundStyle(.secondary)
 
             HStack {
-                Button(ECGExportKind.rawCSV.buttonTitle) {
+                Button(language.text("Share raw CSV", "分享原始 CSV")) {
                     pendingExportKind = .rawCSV
                 }
                 .buttonStyle(.borderedProminent)
 
-                Button(ECGExportKind.metadataJSON.buttonTitle) {
+                Button(language.text("Share metadata JSON", "分享元数据 JSON")) {
                     pendingExportKind = .metadataJSON
                 }
                 .buttonStyle(.bordered)
             }
         }
+        .watchBeatCard()
     }
 
     private var showsExportConfirmation: Binding<Bool> {
@@ -170,44 +195,60 @@ public struct ECGDetailView: View {
 
     private var sourceText: String {
         switch viewModel.source {
-        case .healthKit: return "Apple Health"
-        case .builtInSyntheticExample: return "Built-in synthetic example"
+        case .healthKit: return language.text("Apple Health", "Apple 健康")
+        case .builtInSyntheticExample: return language.text("Built-in synthetic example", "内置合成示例")
         }
     }
 
     private var startDateText: String {
-        guard viewModel.source == .healthKit else { return "not applicable" }
+        guard viewModel.source == .healthKit else { return language.text("not applicable", "不适用") }
         return viewModel.record.startDate.formatted(date: .abbreviated, time: .standard)
     }
 
     private var appleClassificationText: String {
-        guard viewModel.source == .healthKit else { return "not applicable" }
-        return viewModel.record.classification.displayName
+        guard viewModel.source == .healthKit else { return language.text("not applicable", "不适用") }
+        return classificationText(viewModel.record.classification)
     }
 
     private var symptomsText: String {
-        guard viewModel.source == .healthKit else { return "not applicable" }
-        return viewModel.record.symptomsStatus.displayName
+        guard viewModel.source == .healthKit else { return language.text("not applicable", "不适用") }
+        switch viewModel.record.symptomsStatus {
+        case .notSet: return language.text("Not Set", "未设置")
+        case .none: return language.text("None", "无")
+        case .present: return language.text("Present", "有")
+        }
     }
 
     private var exportNoticeText: String {
         if viewModel.source == .builtInSyntheticExample {
-            return "This example is generated and contains no personal Health data."
+            return language.text(
+                "This example is generated and contains no personal Health data.",
+                "此示例由程序生成，不包含个人健康数据。"
+            )
         }
-        return "Exports contain sensitive health data. Share only with people and apps you trust."
+        return language.text(
+            "Exports contain sensitive health data. Share only with people and apps you trust.",
+            "导出文件包含敏感健康数据，请仅分享给你信任的人和应用。"
+        )
     }
 
     private var exportConfirmationTitle: String {
         viewModel.source == .builtInSyntheticExample
-            ? "Share the synthetic example?"
-            : "This export contains sensitive health data"
+            ? language.text("Share the synthetic example?", "分享合成示例？")
+            : language.text("This export contains sensitive health data", "此导出包含敏感健康数据")
     }
 
     private var exportConfirmationMessage: String {
         if viewModel.source == .builtInSyntheticExample {
-            return "The file is generated example data and is clearly labelled as synthetic."
+            return language.text(
+                "The file is generated example data and is clearly labelled as synthetic.",
+                "该文件是生成的示例数据，并已明确标记为合成数据。"
+            )
         }
-        return "Anyone you share it with may keep a copy. No file is created until you continue."
+        return language.text(
+            "Anyone you share it with may keep a copy. No file is created until you continue.",
+            "接收方可能会保留副本；只有继续后才会创建临时文件。"
+        )
     }
 
     private func prepareExport(kind: ECGExportKind) {
@@ -235,17 +276,41 @@ public struct ECGDetailView: View {
     }
 
     private var heartRateText: String {
-        guard let heartRate = viewModel.record.averageHeartRateBPM else { return "not available" }
+        guard let heartRate = viewModel.record.averageHeartRateBPM else { return language.text("not available", "不可用") }
         return String(format: "%.0f BPM", heartRate)
     }
 
     private var samplingText: String {
-        guard let rate = viewModel.record.samplingFrequencyHz else { return "not available" }
+        guard let rate = viewModel.record.samplingFrequencyHz else { return language.text("not available", "不可用") }
         return String(format: "%.0f Hz", rate)
     }
 
     private func rateText(_ rate: Double?) -> String {
-        guard let rate else { return "not available" }
+        guard let rate else { return language.text("not available", "不可用") }
         return String(format: "%.1f Hz", rate)
+    }
+
+    private func classificationText(_ classification: ECGAppleClassification) -> String {
+        switch classification {
+        case .notSet: return language.text("Not Set", "未设置")
+        case .sinusRhythm: return language.text("Sinus Rhythm", "窦性心律")
+        case .atrialFibrillation: return language.text("Atrial Fibrillation", "房颤")
+        case .inconclusiveLowHeartRate: return language.text("Inconclusive — Low Heart Rate", "无法判定—心率过低")
+        case .inconclusiveHighHeartRate: return language.text("Inconclusive — High Heart Rate", "无法判定—心率过高")
+        case .inconclusivePoorReading: return language.text("Inconclusive — Poor Reading", "无法判定—记录质量不佳")
+        case .inconclusiveOther: return language.text("Inconclusive — Other", "无法判定—其他原因")
+        case .unrecognized: return language.text("Unrecognized", "无法识别")
+        }
+    }
+
+    private func issueText(_ issue: ECGMeasurementIssue) -> String {
+        switch issue {
+        case .noMeasurements: return language.text("No voltage measurements were returned.", "未返回电压测量值。")
+        case .missingLeadVoltage: return language.text("Some measurements have no Lead I voltage.", "部分测量缺少 I 导联电压。")
+        case .declaredCountMismatch: return language.text("Returned count differs from the declared count.", "返回数量与声明数量不一致。")
+        case .nonIncreasingTimeOrder: return language.text("Timestamps are not strictly increasing.", "时间戳未严格递增。")
+        case .nonFiniteValue: return language.text("A measurement contains a non-finite value.", "测量中包含非有限值。")
+        case .integrityCheckFailed: return language.text("Structural integrity check failed.", "结构完整性检查失败。")
+        }
     }
 }

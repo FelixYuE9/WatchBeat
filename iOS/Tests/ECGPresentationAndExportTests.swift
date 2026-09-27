@@ -124,6 +124,40 @@ import WatchBeatModels
         #expect(!text.contains("\"startDate\""))
     }
 
+    @Test func syntheticPeakMarkersProduceEveryRRIntervalInMilliseconds() throws {
+        let measurement = try ECGExampleFactory.makeMeasurement()
+        let markers = ECGExampleFactory.syntheticRPeakMarkers()
+        let intervals = ECGPeakIntervalBuilder.intervals(between: markers)
+
+        #expect(markers.count > 30)
+        #expect(intervals.count == markers.count - 1)
+        #expect(markers.allSatisfy { $0.timeSeconds >= 0 && $0.timeSeconds < 30 })
+        #expect(intervals.allSatisfy {
+            abs($0.durationMilliseconds - (60_000.0 / 70.0)) < 1e-9
+        })
+
+        let firstPeak = try #require(markers.first)
+        let sampleIndex = Int((firstPeak.timeSeconds * ECGExampleFactory.samplingFrequencyHz).rounded())
+        let voltage = try #require(measurement.signal.voltageMillivolts[sampleIndex])
+        #expect(voltage > 0.9)
+    }
+
+    @Test func peakIntervalsSkipInvalidOrNonIncreasingMarkerPairs() {
+        let markers = [
+            ECGWaveformMarker(id: "a", timeSeconds: 1.0, label: "R"),
+            ECGWaveformMarker(id: "b", timeSeconds: 0.5, label: "R"),
+            ECGWaveformMarker(id: "c", timeSeconds: 2.0, label: "R"),
+            ECGWaveformMarker(id: "d", timeSeconds: .nan, label: "R")
+        ]
+
+        let intervals = ECGPeakIntervalBuilder.intervals(between: markers)
+
+        #expect(intervals.count == 1)
+        #expect(intervals.first?.startMarkerID == "b")
+        #expect(intervals.first?.endMarkerID == "c")
+        #expect(intervals.first?.durationMilliseconds == 1_500)
+    }
+
     @Test func rawCSVRejectsMismatchedArrays() throws {
         let record = makeRecord(declaredMeasurementCount: 1)
         let signal = ECGSignal(

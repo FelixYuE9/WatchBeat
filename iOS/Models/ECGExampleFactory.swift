@@ -6,6 +6,9 @@ import Foundation
 public enum ECGExampleFactory {
     public static let samplingFrequencyHz = 500.0
     public static let durationSeconds = 30.0
+    public static let averageHeartRateBPM = 70.0
+    public static let beatPeriodSeconds = 60.0 / averageHeartRateBPM
+    private static let rPeakPhase = 0.405
 
     public static func makeMeasurement() throws -> ECGMeasurement {
         let sampleCount = Int(samplingFrequencyHz * durationSeconds)
@@ -34,7 +37,7 @@ public enum ECGExampleFactory {
             startDate: startDate,
             endDate: startDate.addingTimeInterval(durationSeconds),
             classification: .notSet,
-            averageHeartRateBPM: 70,
+            averageHeartRateBPM: averageHeartRateBPM,
             samplingFrequencyHz: samplingFrequencyHz,
             declaredMeasurementCount: sampleCount,
             symptomsStatus: .notSet
@@ -48,13 +51,28 @@ public enum ECGExampleFactory {
         )
     }
 
+    /// Exact peak locations from the generating equation. These are tutorial annotations, not
+    /// detected results and never apply to a person's HealthKit ECG.
+    public static func syntheticRPeakMarkers() -> [ECGWaveformMarker] {
+        var markers: [ECGWaveformMarker] = []
+        var time = rPeakPhase * beatPeriodSeconds
+        var index = 1
+        while time < durationSeconds {
+            markers.append(
+                ECGWaveformMarker(id: "synthetic-r-\(index)", timeSeconds: time, label: "R")
+            )
+            time += beatPeriodSeconds
+            index += 1
+        }
+        return markers
+    }
+
     private static func syntheticVoltageMillivolts(at time: Double) -> Double {
-        let beatPeriod = 60.0 / 70.0
-        let phase = time.truncatingRemainder(dividingBy: beatPeriod) / beatPeriod
+        let phase = time.truncatingRemainder(dividingBy: beatPeriodSeconds) / beatPeriodSeconds
         let baseline = 0.025 * sin(2 * .pi * 0.28 * time)
         let pWave = 0.10 * gaussian(phase, center: 0.18, width: 0.035)
         let qWave = -0.16 * gaussian(phase, center: 0.38, width: 0.012)
-        let rWave = 1.05 * gaussian(phase, center: 0.405, width: 0.010)
+        let rWave = 1.05 * gaussian(phase, center: rPeakPhase, width: 0.010)
         let sWave = -0.28 * gaussian(phase, center: 0.435, width: 0.014)
         let tWave = 0.24 * gaussian(phase, center: 0.68, width: 0.070)
         return baseline + pWave + qWave + rWave + sWave + tWave
