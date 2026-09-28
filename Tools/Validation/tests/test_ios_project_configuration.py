@@ -58,6 +58,17 @@ class IOSProjectConfigurationTests(unittest.TestCase):
                 2,
             )
 
+    def test_embedded_frameworks_load_from_rpath_on_device(self) -> None:
+        # Without an @rpath install name, frameworks default to /Library/Frameworks and the App
+        # aborts in dyld on a real iPhone (the simulator hides this via DYLD_FRAMEWORK_PATH).
+        project = PROJECT_FILE.read_text(encoding="utf-8")
+
+        self.assertEqual(project.count('DYLIB_INSTALL_NAME_BASE = "@rpath";'), 6)
+        self.assertEqual(
+            project.count('INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";'), 6
+        )
+        self.assertEqual(project.count('"@executable_path/Frameworks",'), 10)
+
     def test_shared_scheme_builds_app_and_runs_tests(self) -> None:
         project = PROJECT_FILE.read_text(encoding="utf-8")
         scheme = ET.parse(SCHEME_FILE).getroot()
