@@ -3,7 +3,8 @@
 This directory is development-only and never ships in the iOS runtime.
 
 Milestone 0 includes a standard-library raw CSV checker that mirrors only the structural invariants at
-the `ECGSignal` boundary. It is not an ECG detector and produces no medical classification.
+the `ECGSignal` boundary. It is not an ECG detector and produces no medical classification. The
+provisional analyzer below additionally needs the versions in `prototype-requirements.txt`.
 
 ```bash
 python validate_raw_ecg_csv.py path/to/export.csv
@@ -14,11 +15,66 @@ Expected raw CSV columns are exactly `time_s,voltage_mV`; blank voltage represen
 measurement. The checker reports count, missing/non-finite values, time-order defects, inferred rate
 and interval relative MAD as JSON. A structurally invalid file exits non-zero.
 
-The same standard-library test command also checks safety-critical iOS project configuration:
+The same test command also checks safety-critical iOS project configuration:
 HealthKit must use `CODE_SIGN_ENTITLEMENTS`, the App must remain iPhone-only, its permission plist
 must remain read-only, every embedded framework must have a unique bundle identifier, and the shared
 scheme must include the unit-test bundle. These checks do not replace an Xcode build, signed-product
 inspection or real-device HealthKit validation.
+
+## Swift analyzer mirror (App algorithm on MIT-BIH)
+
+`evaluate_swift_analyzer_mirror.py` is a NumPy transcription of the shipping Swift analyzer
+(`GradientEnergyRPeakDetector.swift` + `PrematureBeatAnalyzer.swift`). It cuts every development
+record into independent 30-second windows, like Apple Watch recordings, and scores them:
+
+```bash
+python evaluate_swift_analyzer_mirror.py
+```
+
+Result for ECGCore `1.0.1-rr-research` (1,800 windows, 150 ms tolerance, 2026-09-28, Windows,
+Python 3.10.9 / NumPy 1.23.5 / SciPy 1.10.0):
+
+| Metric | Value |
+|---|---|
+| R-peak sensitivity | 0.9836 |
+| R-peak positive predictivity | 0.9969 |
+| Premature candidate sensitivity (annotated PAC/PVC-type beats with ≥ 5 prior beats) | 0.449 |
+| Premature candidate positive predictivity | 0.667 |
+
+The R-peak stage is solid; the RR-only premature rule misses about half of annotated premature
+beats (bigeminy, short coupling, AF records) and is the part to improve next. A normal-to-normal RR
+baseline raised sensitivity to 0.51 but dropped predictivity to 0.54, so it was not adopted. If the
+Swift algorithm changes, update the mirror in the same change. These are public-dataset development
+numbers, not Apple Watch accuracy.
+
+## Single-format premature-beat prototype
+
+The analyzer accepts only WatchBeat's raw `time_s,voltage_mV` CSV. It neither parses MIT-BIH `.dat`
+files nor reads annotations. The independent adapter preserves one CSV row per format-212 sample,
+with row order as sample index, `sample index / Hz` as time and calibrated mV as voltage. A blank
+voltage in an iPhone export is retained by the parser; this prototype reports `notAnalyzed` rather
+than deleting or interpolating that sample. No PAC/PVC subtype is inferred from RR timing alone.
+Its semantic input identifier and top-level output schema match `Docs/CONTRACTS.md`; implementation
+and algorithm identifiers remain distinct from the Swift App so offline scores cannot be transferred.
+
+On Windows, with the checksum-verified local MIT-BIH data already downloaded:
+
+```powershell
+python convert_mitdb_to_watchbeat_csv.py 200 --output output/mitdb-200-watchbeat-raw.csv
+python prototype_premature_beats.py output/mitdb-200-watchbeat-raw.csv --output output/prototype-premature-200.json
+python evaluate_prototype_premature_beats.py 200 output/mitdb-200-watchbeat-raw.csv
+```
+
+For a user-triggered iPhone export, run only `prototype_premature_beats.py` with that CSV path.
+The evaluator is separate and accepts only frozen development records. It compares against `.atr`
+after the analyzer has produced its decisions; its simple order-preserving greedy timing match is a
+smoke check, not the official `bxb` score or a release claim. The 200-record run on Windows with
+Python 3.10.9, NumPy 1.23.5 and SciPy 1.10.0 produced 2,593 R peaks and 466 RR candidates;
+of 2,601 annotated QRS, 2,592 matched within 150 ms, and of 856 annotated premature beats,
+458 were flagged. This one-record development check exposes substantial misses and does not
+establish performance on Apple Watch data. v0.4.0 ports the same minimal data flow to an independent,
+dependency-free Swift implementation in `ECGCore`; Python/NumPy/SciPy remain offline-only and the
+one-record figures are not inherited as App performance.
 
 ## Milestone 3 R-peak benchmark foundation
 
@@ -80,66 +136,10 @@ performance cannot establish Apple Watch performance. Reports include a SHA-256 
 benchmark definition, including exact reference peak positions, so comparisons cannot mix changed
 annotations under the same window IDs.
 
-The isolated Swift candidate runner is documented in `../PeakSwiftBenchmark/README.md`. It is not a
-dependency of `ECGCore` or the App. Its PeakSwift/native-code graph compiled and all four adapter
-XCTest cases ran on the user's Intel Mac. The user ran
-`../run-peakswift-development-benchmark.sh` and supplied all nine public algorithms' `development`
-comparison plus three candidate prediction files. The comparison tool rejects mixed datasets,
-benchmark definitions, windows, splits or matching policies and never selects a production detector.
-
-`vote_r_peak_predictions.py` is a separate, label-blind three-detector experiment. It accepts only
-`development` prediction files with exactly the frozen development windows. Each detector can cast
-at most one vote per candidate peak; the greedy policy prefers more votes, then tighter alignment.
-The configurable vote threshold is 2/3 or 3/3 and alignment tolerance is greater than zero and at
-most 150 ms. For example, from the repository root with the original Mac run directory:
-
-```bash
-RUN_DIR=Tools/Validation/output/peakswift-development-<run-id>
-python3 Tools/Validation/vote_r_peak_predictions.py \
-  Tools/Validation/output/mitdb-rpeak-manifest-v1.json \
-  "$RUN_DIR/peakswift-neurokit-development-predictions.json" \
-  "$RUN_DIR/peakswift-pan-tompkins-development-predictions.json" \
-  "$RUN_DIR/peakswift-kalidas-development-predictions.json" \
-  --min-votes 2 --alignment-tolerance-ms 100 \
-  --output "$RUN_DIR/peakswift-vote-2of3-100ms-development-predictions.json"
-
-python3 Tools/Validation/evaluate_r_peaks.py \
-  Tools/Validation/output/mitdb-rpeak-manifest-v1.json \
-  "$RUN_DIR/peakswift-vote-2of3-100ms-development-predictions.json" \
-  --split development \
-  --output "$RUN_DIR/peakswift-vote-2of3-100ms-development-report.json"
-```
-
-The initial 2/3 vote at 100 ms scored F1 0.9855 on the MIT-BIH development split, compared with
-0.9826 for the best single-algorithm F1 in this screen. A 3/3 vote reduced false positives but
-missed many reference peaks. The 100 ms vote also performed worse than `neurokit` on record 208,
-so the aggregate gain is not a detector decision or
-Apple Watch result; see `../../Docs/VALIDATION.md` for the parameter sweep and outlier records.
-
-The next independent check uses official WFDB command-line tools on macOS. Once `wrann`, `rdann`,
-and `bxb` are available in the Mac checkout, run this from the repository root:
-
-```bash
-bash Tools/run-peakswift-vote-bxb-development.sh
-```
-
-The command finds the unique complete `peakswift-development-*` run directory, creates the 2/3 vote
-at 100 ms from the three original prediction files, evaluates it, compares all four reports, and
-then invokes the WFDB cross-check. If more than one complete run exists, pass the chosen directory
-as the single argument rather than silently selecting one.
-
-The WFDB script rechecks the frozen manifest and public-data hashes, prepares only development records,
-round-trips every prediction sample through `wrann` and `rdann`, then saves one `bxb` report per
-record under a unique ignored output directory. It includes the first five minutes with `-f 0`
-and stops at the last complete 30-second window. Since `bxb` compares continuous records using
-AAMI annotation rules, its counts may differ from this repository's window-isolated matcher.
-On Windows, `prepare_bxb_crosscheck.py prepare` can generate and audit the inputs, but it cannot
-stand in for the official `bxb` execution.
-
 `data/` and `output/` are Git-ignored. The complete dataset and generated manifest exist only in the
-local development workspace; neither is committed. The official WFDB `bxb` cross-check, detector
-validation outside development and any pinned third-party Python environment remain pending. No external Python
-dependency is installed or declared yet.
+local development workspace; neither is committed. The earlier PeakSwift candidate benchmark, the
+three-detector vote and the WFDB `bxb` preparation scripts were removed in the MVP cleanup; they
+remain in Git history (commit `c3c3e0e`).
 
 Primary references:
 

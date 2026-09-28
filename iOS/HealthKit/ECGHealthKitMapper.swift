@@ -49,7 +49,7 @@ public enum ECGHealthKitMapper {
         return quantity.doubleValue(for: millivoltUnit)
     }
 
-    /// Builds an `ECGSignal` in arrival order.
+    /// Builds the canonical `watchbeat.ecg.signal.v1` model input in arrival order.
     public static func signal(
         from samples: [ECGVoltageSample],
         declaredMeasurementCount: Int?,

@@ -1,26 +1,14 @@
 # Third-party notices
 
-## Current release contents
+## Current release contents (v0.5.0)
 
-The shipping `ECGCore` and iOS App still do **not** bundle, link, or declare any third-party runtime
+The shipping `ECGCore` and iOS App do **not** bundle, link, or declare any third-party runtime
 package dependency. `ECGCore/Package.swift` and `iOS/Package.swift` have no external remote package.
+The on-device waveform analyzer is implemented in this repository with Foundation/Swift only.
 
-Milestone 3 adds a separate, development-only `Tools/PeakSwiftBenchmark` package. Resolving that
-tool downloads the following reviewed sources; none is currently linked into the App:
-
-- CardioKit/PeakSwift v1.0.0, revision
-  `18fe5e7c674f915c3666e0414c7f2ac39b241bb9` — Apache License 2.0, copyright 2023
-  Maximilian Kapsecker; no NOTICE file was present at the reviewed revision.
-- Jounce/Surge 2.3.2, revision `6e4a47e63da8801afe6188cf039e9f04eb577721` — MIT License,
-  copyright 2014–2019 the Surge contributors.
-- berndporr/iir1 submodule revision `9ef2a04ac3a44a8762b6a209c18e3bdb00394e5b` — MIT License,
-  copyright Vinnie Falco and Bernd Porr.
-- rafat/wavelib submodule revision `a92456d2e20451772dd76c2a0a3368537ee94184` — BSD
-  3-Clause License, copyright Rafat Hussain and Holger Nahrstaedt.
-
-Exact URLs and audit notes are in `Tools/PeakSwiftBenchmark/dependency-lock.json`. Licenses remain
-in each package checkout managed by SwiftPM. If a detector is later selected for the App, the
-distributed product must expose the required complete license texts and attributions before release.
+Offline validation tools under `Tools/Validation/` optionally use NumPy and SciPy (BSD-3-Clause,
+versions in `prototype-requirements.txt`); they never ship in the App. The earlier development-only
+PeakSwift benchmark package was removed in the MVP cleanup.
 
 The project's own source is distributed under the MIT License in `LICENSE`.
 

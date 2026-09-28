@@ -4,6 +4,7 @@ import WatchBeatModels
 enum ECGExportKind: String, Identifiable {
     case rawCSV
     case metadataJSON
+    case analysisJSON
 
     var id: String { rawValue }
 }
@@ -32,6 +33,11 @@ enum ECGTemporaryExportWriter {
             fileName = measurement.source == .builtInSyntheticExample
                 ? ECGExportEncoder.syntheticMetadataJSONFileName
                 : ECGExportEncoder.metadataJSONFileName
+        case .analysisJSON:
+            data = try ECGExportEncoder.analysisJSON(for: measurement)
+            fileName = measurement.source == .builtInSyntheticExample
+                ? ECGExportEncoder.syntheticAnalysisJSONFileName
+                : ECGExportEncoder.analysisJSONFileName
         }
 
         let fileManager = FileManager.default

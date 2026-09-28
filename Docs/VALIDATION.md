@@ -1,5 +1,11 @@
 # Validation
 
+> **2026-09-28 MVP cleanup:** the PeakSwift benchmark, three-detector vote and WFDB `bxb`
+> preparation tooling described in historical sections below were removed from the tree (see Git
+> history `c3c3e0e`). Current App-algorithm numbers come from
+> `Tools/Validation/evaluate_swift_analyzer_mirror.py`; the Mac checklist for this build is
+> [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).
+
 ## 验证状态摘要
 
 截至 2026-09-28，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
@@ -8,13 +14,17 @@ iOS 26.5 模拟器安装和启动，且之后的截图确认能显示 15,000 点
 用户随后确认 v0.3.0 (3) 整体在模拟器运行正常，并提供了中文数据页截图。v0.3.0 (4)
 把合成示例改为固定数据记录后，用户又报告所要求的 Mac/Xcode 测试通过；但未提供带测试
 数量的最终摘要，因此属于用户验收记录，不等于已归档的 shared-scheme 自动测试证据。
+v0.4.0 (5) 已在源码中接通 HealthKit/合成 `ECGSignal` → 纯 Swift analyzer →
+`ECGAnalysisReport` → 详情页/JSON；Xcode App target 同时具备自动签名与 Archive 配置，选择
+Team/唯一 Bundle ID 后可以打包安装到实际 iPhone。本轮 Windows 无法运行 Swift/Xcode，
+所以“可以打包安装”的工程能力与“当前 commit 已在真机实际运行”的验证证据必须区分。
 现已有 MIT-BIH 公开数据的 development-only R 峰初筛结果；尚无独立 validation、官方 `bxb`
 交叉核对、beat 分类性能报告或 Apple Watch 域准确率。不得把下文开发集的 sensitivity、
 precision、recall 或 F1 改称为正式 App 或 Apple Watch 的性能。
 
-当前关键限制：模拟器已经可用，且用户报告 **v0.3.0 (4) 测试通过，但完整 Xcode build/test
-日志未归档，也没有完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在
-签名产物与真机上验证。
+当前关键限制：模拟器已经可用，且用户报告 **v0.3.0 (4) 测试通过，但 v0.4.0 (5) 的完整
+Xcode build/test 日志未归档，也没有完成签名真机运行**。HealthKit entitlement、自动签名、
+Archive 和完整数据流的工程配置已完成，仍须在签名产物与真机上验证。
 
 ## 实际环境审计（2026-09-26 / 2026-09-27）
 
@@ -76,9 +86,21 @@ follow-up 又增加显式 split projection、held-out 防误用、精确 package
 无标签解码、版本元数据一致性与 process-local HTTPS rewrite 检查。Mac 首次构建通过后，又增加
 development-only 九算法编排、release/debug 配置记录，以及报告的数据集/window/split/matching/count
 一致性比较。比较器还核对包含参考峰位置的完整基准定义哈希和逐窗口计数。当前 Python suite
-合计 47 tests，全部通过；本机重新生成 2,880 个窗口的 manifest 与锁文件一致。该环境没有
+合计 70 tests，全部通过；本机重新生成 2,880 个窗口的 manifest 与锁文件一致。该环境没有
 Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
+
+### v0.4.0 (5) 统一 App 闭环的本机检查（2026-09-28）
+
+- `python -m unittest discover -s Tools/Validation/tests -p "test_*.py"`：70/70 通过。
+- `test_ios_project_configuration.py`：8/8 通过，包含新 Swift 源文件 target membership、
+  HealthKit、iPhone-only、framework ID、只读用途字符串与 shared scheme 检查。
+- `git diff --check`：通过。
+- 以与 Swift 实现相同的 biquad、梯度能量、积分、阈值、细化和 RR 规则做数值等价检查：
+  现有 30 秒/500 Hz 内置波形检测 35 个 R 峰、0 个提前候选；15 秒/250 Hz 提前样例检测
+  14 个峰，并在 6.200 秒得到唯一候选（ratio 0.70）；规则样例为 14 峰/0 候选。
+- 当前 Swift tests 源码数量：`ECGCore` 12 项、iOS 26 项；Windows 没有 Swift/Xcode，未执行，
+  必须在 Mac 复跑后才可写成通过。
 
 ### PeakSwift macOS 构建证据（2026-09-28）
 
@@ -233,7 +255,8 @@ macOS 26.7 + Swift 6.2.4（仅 Command Line Tools）。链接期有两条无害�
 Xcode 26.6 安装后同一脚本再次执行（`bash Tools/run-core-tests.sh --parallel`，Xcode 工具链
 Swift 6.3.3）：同样是 `Test run with 7 tests in 2 suites passed`。
 
-这证明 Milestone 0 的 `ECGCore` 契约与完整性检查**已真实编译并通过测试**，不再是"未验证的源码"。
+这证明旧版 Milestone 0 的 `ECGCore` 契约与完整性检查**已真实编译并通过测试**。当前新增
+analyzer 后共有 12 项测试，仍需重新编译，不能把旧 7 项结果冒充为 build 5 结果。
 
 ## iOS App 实际执行结果（2026-09-26 / 2026-09-27）
 
@@ -312,7 +335,7 @@ scheme build/test 与签名产物检查。
 | 环境与 Git 审计 | 完成 | 上表记录实际输出 |
 | 文档结构 | 完成 | `README.md`、`Docs/`、`TODO.md` 等 |
 | 平台无关 ECGCore | 完成：已编译 | `swift build` / `swift test` 见上 |
-| 最小 pure-function tests | 完成：7 tests 通过 | `Tools/run-core-tests.sh --parallel` |
+| 最小 pure-function tests | 旧 7 tests 通过；当前 12 tests 待 Mac 复跑 | `Tools/run-core-tests.sh --parallel` |
 | Python raw CSV checker | 完成并在 Python 3.10.9 通过 3 tests | 仅结构检查，不是 ECG 算法 |
 | dependency ADR | 完成 | `Docs/ADR/0001-...md` |
 | 私有 ECG Git 隔离 | 完成 | `.gitignore` 与目录安全说明 |
@@ -332,7 +355,7 @@ scheme build/test 与签名产物检查。
 | mV 换算（只做一次） | 源码完成 + 测试通过 | `ECGHealthKitMapper.millivolts(from:)` |
 | 区分 unavailable/empty/failure/incomplete | 源码完成 + 4 项状态测试 | `ECGListState`、`ECGMeasurementIssue` |
 | 首次启动与结果页免责声明 | 源码完成 | `Features/Disclaimer/` |
-| 本机编译与单元测试 | 既有版本通过 SwiftPM 构建与 16 tests；修复后工程待 macOS 复验 | 16 tests 在 macOS 执行，Xcode iOS test bundle 仅构建 |
+| 本机编译与单元测试 | 既有版本通过 SwiftPM 构建与 16 tests；build 5 的 26 tests 待 macOS 复验 | 16 tests 在 macOS 执行，当前新增源码仅通过静态检查 |
 | Xcode 工程构建（App + 测试 bundle） | 通过：3 条 `xcodebuild -target` 命令 BUILD SUCCEEDED | Xcode 26.6，iOS 26.5 / iOS Simulator 26.5 SDK |
 | iPhone-only、framework IDs 与共享 scheme | 源码完成 + 5 项配置测试通过 | 需在 macOS 重新执行共享 scheme |
 | Xcode scheme + destination 构建 | 模拟器安装/启动已观察；命令待重跑 | 用户截图，缺完整 build/test 输出 |
@@ -347,13 +370,28 @@ scheme build/test 与签名产物检查。
 | 滚动/缩放波形与 timestamp marker | v0.3.0 (3) 模拟器已显示 | SwiftUI Canvas，1×–8×；缺自动测试输出 |
 | 内置合成教学 ECG | v0.3.0 (3) 模拟器已显示 | UI/JSON/文件名显式 synthetic；不是人体或验证数据 |
 | 概览/数据/设置导航与语言切换 | v0.3.0 (3) 用户手工运行正常 | 无 shared-scheme 自动测试输出 |
-| 合成 ECG 逐个 R–R 毫秒标注 | 源码完成 | 来自生成方程的已知 marker；不是 detector；真实 ECG 不显示 |
+| 合成/HealthKit 共用模型 R–R marker | build 5 源码完成 | marker 均来自同一 `ECGAnalysisReport`；待 Xcode/真机运行 |
 | “示例 ECG 数据”固定记录卡 | v0.3.0 (4) 用户确认通过 | 已删除数据空状态内的“查看内置示例”按钮；缺完整 Xcode 日志 |
-| raw CSV 与 metadata JSON | 源码完成 | 用户确认 + share sheet + 临时文件清理；待 iOS 构建 |
-| 当前 Swift tests | 用户报告通过 | 预期 25 tests；未提供最终 Xcode 测试数量/摘要，故尚未形成审计证据 |
+| raw CSV、metadata JSON、analysis JSON | build 5 源码完成 | 统一 v1 输入/输出；share sheet + 临时文件清理；待 Xcode 构建 |
+| 当前 Swift tests | 源码完成 | 预期 26 iOS tests；build 4 用户报告通过，build 5 未运行 |
+| 可打包/安装工程配置 | 完成 | automatic signing、HealthKit、Archive；需本地 Team/Bundle ID |
 | 真实 HealthKit 导出一致性 | 未验证 | 必须在真机逐样本核对 |
 
 ## Milestone 3 验收表（进行中）
+
+在进一步比较/投票 R 峰算法之前，2026-09-28 已在 Windows 用同一个 WatchBeat CSV
+输入契约跑通最小波形分析闭环：MIT-BIH 200 号 `.hea/.dat` 经独立 adapter 转为
+650,000 行 `time_s,voltage_mV`，分析器只读此 CSV，输出 R 峰、RR 和
+`prematureUncertain` 候选。`.atr` 标注仅在之后的独立 smoke-check 中读取。
+命令为 `convert_mitdb_to_watchbeat_csv.py 200 --output ...`、
+`prototype_premature_beats.py <converted.csv> --output ...` 和
+`evaluate_prototype_premature_beats.py 200 <converted.csv>`；Windows Python 3.10.9、
+NumPy 1.23.5、SciPy 1.10.0，未使用 Mac/WFDB CLI。结果为 2,593 个检测峰、
+466 个提前候选；与 2,601 个参考 QRS 的简单 150 ms 顺序匹配为 TP 2,592、FP 1、
+FN 9；856 个参考提前心搏中 458 个被标记，398 个漏标，另有 8 个候选落在其他
+或未匹配位置。该顺序匹配不是官方 `bxb`，只有一个 development record，不能泛化为
+公开数据总体、Apple Watch 或 PAC/PVC 准确率。build 5 已把等价最小流程用纯 Swift 接入
+iOS；这不代表 Python/SciPy 进入 App，也不把该单记录数字转移成 App 性能声明。
 
 | 条件 | 状态 | 证据/限制 |
 |---|---|---|
@@ -373,12 +411,12 @@ swift test --parallel
 ```
 
 已执行（macOS 26.7 + Swift 6.2.4，仅 Command Line Tools）：`swift test --parallel` 通过
-7 tests / 2 suites。
+7 tests / 2 suites（历史基线）。当前 build 5 应执行 12 tests；尚未在 Mac 复跑。
 
 共享 `WatchBeatApp` scheme 和 simulator runtime 均已存在。现在必须对当前 revision 执行
 `xcodebuild build` 和 `xcodebuild test`，并操作合成示例的 waveform/export。命令、Xcode/Swift
-版本、destination、签名 entitlement 和完整结果摘要要回填本文件；真机读取仍受 device/signing
-条件限制。
+版本、destination、签名 entitlement 和完整结果摘要要回填本文件；工程可以打包安装，真机
+实际运行仍需要本地 Team、唯一 Bundle ID、兼容设备和 HealthKit 数据。
 
 ## 计划中的离线验证
 

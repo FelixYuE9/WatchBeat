@@ -10,33 +10,12 @@ public enum ECGAppleClassification: String, Codable, CaseIterable, Sendable, Equ
     case inconclusivePoorReading
     case inconclusiveOther
     case unrecognized
-
-    public var displayName: String {
-        switch self {
-        case .notSet: return "Not Set"
-        case .sinusRhythm: return "Sinus Rhythm"
-        case .atrialFibrillation: return "Atrial Fibrillation"
-        case .inconclusiveLowHeartRate: return "Inconclusive — Low Heart Rate"
-        case .inconclusiveHighHeartRate: return "Inconclusive — High Heart Rate"
-        case .inconclusivePoorReading: return "Inconclusive — Poor Reading"
-        case .inconclusiveOther: return "Inconclusive — Other"
-        case .unrecognized: return "Unrecognized"
-        }
-    }
 }
 
 public enum ECGSymptomsStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case notSet
     case none
     case present
-
-    public var displayName: String {
-        switch self {
-        case .notSet: return "Not Set"
-        case .none: return "None"
-        case .present: return "Present"
-        }
-    }
 }
 
 /// Metadata-only view of one HealthKit ECG record. No voltage data is held here.

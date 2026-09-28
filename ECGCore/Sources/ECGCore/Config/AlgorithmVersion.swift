@@ -1,5 +1,5 @@
 public enum AlgorithmVersion {
-    /// Milestone 0 defines contracts only; no clinical classifier exists yet.
-    public static let semanticVersion = "0.0.1-m0"
-    public static let configSchemaVersion = "0.1.0"
+    /// 1.0.1: edge-padded zero-phase filtering and a centered integration window.
+    public static let semanticVersion = "1.0.1-rr-research"
+    public static let configSchemaVersion = "1.0.0"
 }

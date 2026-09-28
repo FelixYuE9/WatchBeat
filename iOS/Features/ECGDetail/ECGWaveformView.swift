@@ -7,12 +7,17 @@ import WatchBeatModels
 public struct ECGWaveformView: View {
     private let signal: ECGSignal
     private let markers: [ECGWaveformMarker]
+    /// Computed once; scanning every sample on each redraw made zooming sluggish.
+    private let timeRange: ClosedRange<Double>?
+    private let voltageRange: ClosedRange<Double>?
     @State private var zoom = 1.0
     @Environment(\.appLanguage) private var language
 
     public init(signal: ECGSignal, markers: [ECGWaveformMarker] = []) {
         self.signal = signal
         self.markers = markers
+        self.timeRange = Self.makeTimeRange(of: signal)
+        self.voltageRange = Self.makeVoltageRange(of: signal)
     }
 
     public var body: some View {
@@ -88,8 +93,8 @@ public struct ECGWaveformView: View {
                 if markers.count > 1 {
                     Label(
                         language.text(
-                            "Orange brackets show known synthetic R–R intervals in milliseconds.",
-                            "橙色括号以毫秒显示已知的合成 R–R 间期。"
+                            "Orange lines are model R peaks; red lines are premature candidates.",
+                            "橙线是模型 R 峰；红线是疑似早搏候选。"
                         ),
                         systemImage: "ruler"
                     )
@@ -97,8 +102,8 @@ public struct ECGWaveformView: View {
                     .foregroundStyle(.secondary)
                 } else {
                     Text(language.text(
-                        "R–R intervals require a validated peak detector and are not estimated for HealthKit records yet.",
-                        "R–R 间期需要经过验证的峰值检测器；目前不会对 HealthKit 记录进行猜测。"
+                        "No model-derived R–R intervals are available for this signal.",
+                        "这段信号没有可用的模型 R–R 间期。"
                     ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -118,13 +123,13 @@ public struct ECGWaveformView: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var timeRange: ClosedRange<Double>? {
+    private static func makeTimeRange(of signal: ECGSignal) -> ClosedRange<Double>? {
         let finiteTimes = signal.timeSeconds.filter { $0.isFinite }
         guard let lower = finiteTimes.min(), let upper = finiteTimes.max() else { return nil }
         return lower...(upper > lower ? upper : lower + 1)
     }
 
-    private var voltageRange: ClosedRange<Double>? {
+    private static func makeVoltageRange(of signal: ECGSignal) -> ClosedRange<Double>? {
         let finiteVoltages = signal.voltageMillivolts.compactMap { value -> Double? in
             guard let value, value.isFinite else { return nil }
             return value
@@ -273,7 +278,8 @@ public struct ECGWaveformView: View {
             var path = Path()
             path.move(to: CGPoint(x: x, y: waveformTopInset))
             path.addLine(to: CGPoint(x: x, y: size.height))
-            context.stroke(path, with: .color(.orange), lineWidth: 1)
+            let markerColor: Color = marker.label == "Early" ? .red : .orange
+            context.stroke(path, with: .color(markerColor), lineWidth: marker.label == "Early" ? 2 : 1)
         }
     }
 

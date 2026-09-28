@@ -110,6 +110,10 @@ public struct ECGDetailView: View {
             }
             ECGWaveformView(signal: measurement.signal, markers: viewModel.waveformMarkers)
                 .watchBeatCard()
+            ECGAnalysisResultView(
+                report: measurement.analysis,
+                analysisDurationSeconds: measurement.analysisDurationSeconds
+            )
             integritySection(measurement: measurement, incomplete: incomplete)
             exportSection
         }
@@ -141,8 +145,9 @@ public struct ECGDetailView: View {
             }
 
             Text(language.text(
-                "Beat analysis is not implemented yet; the waveform display does not classify beats.",
-                "心搏分析尚未实现；波形显示不会对心搏进行分类。"
+                "The original full-resolution samples above are the exact samples passed to the " +
+                    "model; display downsampling never changes model input.",
+                "上方完整分辨率原始采样就是传入模型的数据；显示降采样不会改变模型输入。"
             ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -169,16 +174,24 @@ public struct ECGDetailView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
-            HStack {
+            VStack(spacing: 8) {
+                Button(language.text("Share analysis JSON", "分享分析结果 JSON")) {
+                    pendingExportKind = .analysisJSON
+                }
+                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
+
                 Button(language.text("Share raw CSV", "分享原始 CSV")) {
                     pendingExportKind = .rawCSV
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
 
                 Button(language.text("Share metadata JSON", "分享元数据 JSON")) {
                     pendingExportKind = .metadataJSON
                 }
                 .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
             }
         }
         .watchBeatCard()
@@ -313,4 +326,5 @@ public struct ECGDetailView: View {
         case .integrityCheckFailed: return language.text("Structural integrity check failed.", "结构完整性检查失败。")
         }
     }
+
 }

@@ -1,6 +1,7 @@
 # ADR-0002: Pin PeakSwift only inside an offline benchmark boundary
 
-- Status: Accepted for Milestone 3 benchmark implementation
+- Status: Superseded (2026-09-28) — the MVP cleanup removed `Tools/PeakSwiftBenchmark` and its
+  scripts; ADR-0003's pure-Swift detector ships instead. The code remains in Git history (`c3c3e0e`).
 - Date: 2026-09-28
 - Owners: Project contributors
 

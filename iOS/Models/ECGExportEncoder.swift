@@ -9,8 +9,10 @@ public enum ECGExportEncodingError: Error, Equatable, Sendable {
 public enum ECGExportEncoder {
     public static let rawCSVFileName = "watchbeat-ecg-raw.csv"
     public static let metadataJSONFileName = "watchbeat-ecg-metadata.json"
+    public static let analysisJSONFileName = "watchbeat-ecg-analysis.json"
     public static let syntheticRawCSVFileName = "watchbeat-synthetic-example-raw.csv"
     public static let syntheticMetadataJSONFileName = "watchbeat-synthetic-example-metadata.json"
+    public static let syntheticAnalysisJSONFileName = "watchbeat-synthetic-example-analysis.json"
 
     /// Preserves source order, real timestamps and missing voltages. A missing voltage is an empty
     /// field, matching `Tools/Validation/validate_raw_ecg_csv.py`.
@@ -37,10 +39,19 @@ public enum ECGExportEncoder {
 
     public static func metadataJSON(for measurement: ECGMeasurement) throws -> Data {
         let payload = MetadataPayload(measurement: measurement)
+        return try sortedJSON(payload)
+    }
+
+    /// Stable model-output JSON. The payload contains no HealthKit identifier or acquisition date.
+    public static func analysisJSON(for measurement: ECGMeasurement) throws -> Data {
+        try sortedJSON(measurement.analysis)
+    }
+
+    private static func sortedJSON<T: Encodable>(_ value: T) throws -> Data {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return try encoder.encode(payload)
+        return try encoder.encode(value)
     }
 }
 

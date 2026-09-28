@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A00000000000000000004001 /* BeatClassifying.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002001 /* BeatClassifying.swift */; };
 		A00000000000000000004002 /* AlgorithmVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002002 /* AlgorithmVersion.swift */; };
 		A00000000000000000004003 /* ECGAlgorithmConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002003 /* ECGAlgorithmConfig.swift */; };
-		A00000000000000000004004 /* ECGQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002004 /* ECGQuality.swift */; };
 		A00000000000000000004005 /* ECGSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002005 /* ECGSignal.swift */; };
-		A00000000000000000004006 /* RPeakDetecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002006 /* RPeakDetecting.swift */; };
 		A00000000000000000004007 /* ECGSignalInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002007 /* ECGSignalInspector.swift */; };
+		A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002008 /* PrematureBeatAnalyzer.swift */; };
+		A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002009 /* ECGAnalysisReport.swift */; };
+		A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */; };
 		A00000000000000000004011 /* ECGRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002011 /* ECGRecord.swift */; };
 		A00000000000000000004012 /* ECGMeasurement.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002012 /* ECGMeasurement.swift */; };
 		A00000000000000000004013 /* ECGReaderState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002013 /* ECGReaderState.swift */; };
@@ -41,6 +41,7 @@
 		A00000000000000000004064 /* ECGExportSharing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002064 /* ECGExportSharing.swift */; };
 		A00000000000000000004065 /* OverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002065 /* OverviewView.swift */; };
 		A00000000000000000004066 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002066 /* SettingsView.swift */; };
+		A00000000000000000004067 /* ECGAnalysisResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002067 /* ECGAnalysisResultView.swift */; };
 		A00000000000000000004081 /* ECGHealthKitMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002081 /* ECGHealthKitMapperTests.swift */; };
 		A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002082 /* ECGRepositoryStateTests.swift */; };
 		A00000000000000000004083 /* FakeECGReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002083 /* FakeECGReader.swift */; };
@@ -148,13 +149,13 @@
 		A00000000000000000003003 /* WatchBeatHealthKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatHealthKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000003004 /* WatchBeatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchBeatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000003005 /* WatchBeatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchBeatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000002001 /* BeatClassifying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatClassifying.swift; sourceTree = "<group>"; };
 		A00000000000000000002002 /* AlgorithmVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlgorithmVersion.swift; sourceTree = "<group>"; };
 		A00000000000000000002003 /* ECGAlgorithmConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAlgorithmConfig.swift; sourceTree = "<group>"; };
-		A00000000000000000002004 /* ECGQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGQuality.swift; sourceTree = "<group>"; };
 		A00000000000000000002005 /* ECGSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignal.swift; sourceTree = "<group>"; };
-		A00000000000000000002006 /* RPeakDetecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPeakDetecting.swift; sourceTree = "<group>"; };
 		A00000000000000000002007 /* ECGSignalInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignalInspector.swift; sourceTree = "<group>"; };
+		A00000000000000000002008 /* PrematureBeatAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrematureBeatAnalyzer.swift; sourceTree = "<group>"; };
+		A00000000000000000002009 /* ECGAnalysisReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnalysisReport.swift; sourceTree = "<group>"; };
+		A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientEnergyRPeakDetector.swift; sourceTree = "<group>"; };
 		A00000000000000000002011 /* ECGRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecord.swift; sourceTree = "<group>"; };
 		A00000000000000000002012 /* ECGMeasurement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGMeasurement.swift; sourceTree = "<group>"; };
 		A00000000000000000002013 /* ECGReaderState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGReaderState.swift; sourceTree = "<group>"; };
@@ -182,6 +183,7 @@
 		A00000000000000000002064 /* ECGExportSharing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGExportSharing.swift; sourceTree = "<group>"; };
 		A00000000000000000002065 /* OverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverviewView.swift; sourceTree = "<group>"; };
 		A00000000000000000002066 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A00000000000000000002067 /* ECGAnalysisResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnalysisResultView.swift; sourceTree = "<group>"; };
 		A00000000000000000002071 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A00000000000000000002072 /* WatchBeatApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchBeatApp.entitlements; sourceTree = "<group>"; };
 		A00000000000000000002081 /* ECGHealthKitMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGHealthKitMapperTests.swift; sourceTree = "<group>"; };
@@ -281,7 +283,8 @@
 		A00000000000000000000011 /* Classification */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000002001 /* BeatClassifying.swift */,
+				A00000000000000000002009 /* ECGAnalysisReport.swift */,
+				A00000000000000000002008 /* PrematureBeatAnalyzer.swift */,
 			);
 			path = Classification;
 			sourceTree = "<group>";
@@ -298,7 +301,6 @@
 		A00000000000000000000013 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000002004 /* ECGQuality.swift */,
 				A00000000000000000002005 /* ECGSignal.swift */,
 			);
 			path = Models;
@@ -307,7 +309,7 @@
 		A00000000000000000000014 /* Peaks */ = {
 			isa = PBXGroup;
 			children = (
-				A00000000000000000002006 /* RPeakDetecting.swift */,
+				A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */,
 			);
 			path = Peaks;
 			sourceTree = "<group>";
@@ -393,6 +395,7 @@
 			children = (
 				A00000000000000000002061 /* ECGDetailViewModel.swift */,
 				A00000000000000000002062 /* ECGDetailView.swift */,
+				A00000000000000000002067 /* ECGAnalysisResultView.swift */,
 				A00000000000000000002063 /* ECGWaveformView.swift */,
 				A00000000000000000002064 /* ECGExportSharing.swift */,
 			);
@@ -583,13 +586,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A00000000000000000004001 /* BeatClassifying.swift in Sources */,
 				A00000000000000000004002 /* AlgorithmVersion.swift in Sources */,
 				A00000000000000000004003 /* ECGAlgorithmConfig.swift in Sources */,
-				A00000000000000000004004 /* ECGQuality.swift in Sources */,
 				A00000000000000000004005 /* ECGSignal.swift in Sources */,
-				A00000000000000000004006 /* RPeakDetecting.swift in Sources */,
 				A00000000000000000004007 /* ECGSignalInspector.swift in Sources */,
+				A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */,
+				A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */,
+				A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -638,6 +641,7 @@
 				A00000000000000000004064 /* ECGExportSharing.swift in Sources */,
 				A00000000000000000004065 /* OverviewView.swift in Sources */,
 				A00000000000000000004066 /* SettingsView.swift in Sources */,
+				A00000000000000000004067 /* ECGAnalysisResultView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -819,6 +823,7 @@
 		A00000000000000000008401 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -834,6 +839,7 @@
 		A00000000000000000008402 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

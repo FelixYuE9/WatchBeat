@@ -116,6 +116,9 @@ import WatchBeatModels
         #expect(first.signal.timeSeconds.count == 15_000)
         #expect(first.integrity.sampleCount == 15_000)
         #expect(first.isComplete)
+        #expect(first.analysis.status == .analyzed)
+        #expect(first.analysis.inputFormat == ECGSignal.formatIdentifier)
+        #expect(first.analysis.summary.rPeakCount > 30)
 
         let metadata = try ECGExportEncoder.metadataJSON(for: first)
         let text = try #require(String(data: metadata, encoding: .utf8))
@@ -124,22 +127,35 @@ import WatchBeatModels
         #expect(!text.contains("\"startDate\""))
     }
 
-    @Test func syntheticPeakMarkersProduceEveryRRIntervalInMilliseconds() throws {
+    @Test func analysisExportUsesTheVersionedOutputContractAndOmitsHealthKitID() throws {
         let measurement = try ECGExampleFactory.makeMeasurement()
-        let markers = ECGExampleFactory.syntheticRPeakMarkers()
-        let intervals = ECGPeakIntervalBuilder.intervals(between: markers)
+        let data = try ECGExportEncoder.analysisJSON(for: measurement)
+        let text = try #require(String(data: data, encoding: .utf8))
 
-        #expect(markers.count > 30)
-        #expect(intervals.count == markers.count - 1)
-        #expect(markers.allSatisfy { $0.timeSeconds >= 0 && $0.timeSeconds < 30 })
-        #expect(intervals.allSatisfy {
-            abs($0.durationMilliseconds - (60_000.0 / 70.0)) < 1e-9
-        })
+        #expect(text.contains("\"schemaVersion\" : 1"))
+        #expect(text.contains("\"inputFormat\" : \"watchbeat.ecg.signal.v1\""))
+        #expect(text.contains("\"status\" : \"analyzed\""))
+        #expect(text.contains("\"researchOnly\" : true"))
+        #expect(text.contains("\"detectorIdentifier\" : \"watchbeat-gradient-energy-rr-v1\""))
+        #expect(text.contains("\"prematurityThreshold\" : 0.8"))
+        #expect(!text.contains(measurement.record.id.uuidString))
+    }
 
-        let firstPeak = try #require(markers.first)
-        let sampleIndex = Int((firstPeak.timeSeconds * ECGExampleFactory.samplingFrequencyHz).rounded())
-        let voltage = try #require(measurement.signal.voltageMillivolts[sampleIndex])
-        #expect(voltage > 0.9)
+    @Test func builtInExampleShowsModelDetectedPrematureCandidates() throws {
+        let measurement = try ECGExampleFactory.makeMeasurement()
+        let report = measurement.analysis
+
+        #expect(report.status == .analyzed)
+        #expect(report.summary.rPeakCount == 35)
+        #expect(report.summary.prematureCandidateCount == 2)
+        #expect(measurement.analysisDurationSeconds >= 0)
+
+        let intervals = ECGPeakIntervalBuilder.intervals(
+            between: report.beats.map {
+                ECGWaveformMarker(id: "\($0.sampleIndex)", timeSeconds: $0.timeSeconds, label: "R")
+            }
+        )
+        #expect(intervals.count == report.beats.count - 1)
     }
 
     @Test func peakIntervalsSkipInvalidOrNonIncreasingMarkerPairs() {

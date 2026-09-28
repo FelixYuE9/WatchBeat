@@ -1,193 +1,89 @@
-# macOS, Xcode and real-iPhone validation required
+# Mac 打包与测试清单 — v0.5.0 (6) MVP
 
-This repository was initialized on Windows 10, where Swift and Xcode were unavailable. Work has since
-moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app`.
-On 2026-09-27 user-provided screenshots confirmed the App running on an iPhone 17 Pro simulator
-with iOS 26.5, rendering the 15,000-sample synthetic waveform and the v0.3.0 (3)
-overview/language/R–R UI; the user reported the service was running normally. The exact scheme
-command and earlier automated simulator output were not recorded. The user subsequently reported
-that the requested v0.3.0 (4) Mac/Xcode check passed, including the persistent example-record change;
-the exact test summary/count and all signed real-iPhone checks remain to be recorded.
+本版在 Windows 上整理完成：Python 工具与工程配置测试 46/46 通过，App 算法的 NumPy 镜像已在
+MIT-BIH 上复测；**Swift 源码尚未在本版本编译**，请按下列顺序在 Mac 上跑一遍并记录结果。
 
-## 1. Validate ECGCore first — DONE
+历史记录（供对照）：macOS 26.7 / Xcode 26.6 (17F113，位于 `~/Downloads/Xcode.app`) 曾通过
+ECGCore 7 项测试、App/测试 target 构建，并在 iPhone 17 Pro / iOS 26.5 模拟器上运行 v0.3.0。
+
+如果 `xcode-select` 仍指向 Command Line Tools，先执行：
 
 ```bash
-sw_vers
-uname -a
-swift --version
-xcodebuild -version
-cd ECGCore
-swift package describe
-swift test --parallel
+export DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"
 ```
 
-Actual results (2026-09-26):
+## 1. 单元测试（约 2 分钟）
 
-- `sw_vers` → macOS 26.7, build 25G229; `uname -a` → Darwin 25.6.0 x86_64.
-- `swift --version` → Apple Swift 6.2.4 (swiftlang-6.2.4.1.4, clang-1700.6.4.2), swift-driver 1.127.15.
-- `xcodebuild -version` → **fails**: `tool 'xcodebuild' requires Xcode, but active developer
-  directory '/Library/Developer/CommandLineTools' is a command line tools instance`.
-- `Tools/run-core-tests.sh --parallel` (= `swift test --parallel` plus Swift Testing search paths)
-  → `Test run with 7 tests in 2 suites passed`, exit 0.
+在仓库根目录：
 
-Fix real compile/test failures without deleting tests or weakening safety assertions. Update
-`Docs/VALIDATION.md` with exact results.
+```bash
+bash Tools/run-core-tests.sh --parallel   # ECGCore：应为 13 项全部通过
+bash Tools/run-app-tests.sh --parallel    # iOS 包：WatchBeatAppTests 全部通过
+```
 
-## 2. Create the iOS target — DONE (Xcode 26.6, build 17F113)
+预期 ECGCore 13 项 = ECGSignalInspectorTests 5 项 + PublicContractTests 8 项：结果词汇、默认配置/版本 `1.0.1-rr-research`、输入契约、早搏检出、规则心律
+0 候选、缺测拒判、不规则采样拒判、**直流偏移不改变检测结果（新增）**。
+iOS 包中新增 `builtInExampleShowsModelDetectedPrematureCandidates`：内置示例应检出 35 个 R 峰、
+2 个疑似早搏候选。
 
-`iOS/WatchBeat.xcodeproj` now exists with five targets: `ECGCore`, `WatchBeatModels`,
-`WatchBeatHealthKit` (frameworks), `WatchBeatApp` (application) and `WatchBeatAppTests`
-(unit-test bundle). `ECGCore` is compiled from `../ECGCore/Sources` instead of being resolved as a
-SwiftPM package dependency, which keeps `import ECGCore` working.
-
-Verified on 2026-09-27 (`DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"`):
+## 2. Xcode 构建与模拟器测试
 
 ```bash
 cd iOS
-xcodebuild -project WatchBeat.xcodeproj -list
-xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
-           -configuration Debug -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project WatchBeat.xcodeproj -target WatchBeatAppTests \
-           -configuration Debug -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
-xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
-           -configuration Debug -sdk iphoneos26.5 -arch arm64 CODE_SIGNING_ALLOWED=NO build
-```
-
-All three builds report **BUILD SUCCEEDED**. `-target` is used instead of `-scheme` because a scheme
-build requires a destination, and this host has no simulator runtime and no iOS 26.5 device support:
-
-```text
-xcodebuild: error: Unable to find a destination matching the provided destination specifier:
-    { generic:1, platform:iOS Simulator }
-  Ineligible destinations for the "WatchBeatApp" scheme:
-    { platform:iOS, ..., error:iOS 26.5 is not installed. Please download and install the
-      platform from Xcode > Settings > Components. }
-```
-
-The repository contains a shared `WatchBeatApp` scheme and an iPhone-only target. The simulator
-runtime is now available. Before a real-iPhone run, replace the placeholder bundle identifier
-`com.watchbeat.WatchBeat`, select a real team, then build through that scheme. The isolated
-`Tools/PeakSwiftBenchmark` candidate must remain outside the App until benchmark selection.
-
-Verify before the first signed run:
-
-- `CODE_SIGN_ENTITLEMENTS` resolves to `Resources/WatchBeatApp.entitlements`, the HealthKit
-  capability is enabled, and the signed App contains `com.apple.developer.healthkit`.
-- A read-purpose description that clearly says the app reads saved ECGs for on-device research
-  analysis.
-- ECG read authorization only; `toShare` is empty.
-- No network, analytics, crash-upload, iCloud health-data container or background modes.
-
-Check the generated project for user-specific signing values before commit. Do not commit
-provisioning profiles, certificates or device IDs.
-
-## 3. Simulator and unit checks — USER-REPORTED PASS; EXACT TEST SUMMARY PENDING
-
-The original 16 tests passed through SwiftPM on macOS under Swift 6.2.4 and Swift 6.3.3. The current
-source adds 9 tests (expected total: 25). The user reports the requested build-4 test passed, but no
-final Xcode summary/count was supplied. Re-run both commands below when retaining release evidence.
-
-Simulator/mock tests may cover navigation, typed errors, cancellation, stale-result protection,
-unit conversion, measurement ordering, missing voltage and sample-count mismatch. They do not count
-as HealthKit end-to-end evidence.
-
-Discover and use an actual destination:
-
-```bash
+xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations
 xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
-           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' build
-xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
-           -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' test
+           -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
-Then launch the App and verify it opens on Overview; switch among Overview, Data and Settings; change
-language among Follow System, Simplified Chinese and English; and confirm the change is immediate.
-On Data, confirm one persistent `Example ECG Data` / `示例 ECG 数据` card is shown above the
-separate Apple Health section and that the old `Explore built-in synthetic ECG` action is absent.
-Open that record and confirm its orange synthetic label, a millisecond bracket between every
-adjacent R peak (about 857 ms at 70 bpm), horizontal scrolling, 1×–8× zoom, raw CSV confirmation/share
-sheet and metadata JSON confirmation/share sheet. The exported example filenames must contain
-`synthetic-example`. A HealthKit record must show the detector-not-validated note rather than guessed
-R–R labels.
+本版从 Xcode 工程中移除了 `BeatClassifying.swift`、`ECGQuality.swift`、`RPeakDetecting.swift`
+三个文件（`project.pbxproj` 已同步修改）。如果 Xcode 提示找不到文件，说明工程引用没对齐，请告诉我。
 
-## 4. PeakSwift offline candidate — MACOS BUILD AND DEVELOPMENT SCREEN PASSED
+## 3. 真机打包安装
 
-This development-only package is intentionally separate from the App. From the repository root run:
+1. 打开 `iOS/WatchBeat.xcodeproj` → target **WatchBeatApp** → **Signing & Capabilities**。
+2. 选择你的 Team，把 Bundle ID `com.watchbeat.WatchBeat` 改成你自己的唯一 ID；确认 HealthKit 仍在。
+3. 选择已连接并解锁的 iPhone（iOS 17+，必要时开启开发者模式）→ **Run**。
+4. 打包 Release：**Product → Archive**，或参见 [Docs/IPHONE_INSTALL.md](Docs/IPHONE_INSTALL.md)。
 
-```bash
-bash Tools/run-peakswift-benchmark-tests.sh
-```
+签名证书、描述文件、Team ID 不要提交到 Git。
 
-The script selects the existing Xcode under `~/Downloads` when present, applies a process-local HTTPS
-rewrite for PeakSwift's SSH wavelib submodule, resolves the exact lock, runs all Python validation
-tests, and compiles/runs the Swift adapter tests. It does not change global Git configuration, run a
-detector on held-out data, or modify the iOS App. Retain the complete final Swift test summary and any
-dependency-resolution error. Do not work around a revision mismatch by deleting `Package.resolved`.
+## 4. 测速
 
-Actual user-run result on 2026-09-28:
+详情页的“本机研究分析”卡片新增 **分析耗时（Analysis time）**，是 `PrematureBeatAnalyzer.analyze`
+单次执行的墙钟时间（不含 HealthKit 读取和绘图）。
 
-- PeakSwift `1.0.0` and Surge `2.3.2` resolved successfully;
-- all 38 then-current Python validation tests passed;
-- the native C/C++/Objective-C++ dependency graph linked successfully in 80.78 seconds;
-- SwiftPM printed `[4/4]` for the four `WFDB212ReaderTests` XCTest cases on
-  `x86_64-apple-macos14.0`;
-- the final Swift Testing message reported zero tests because this package uses XCTest, not because
-  the preceding four XCTest cases were skipped or failed.
+1. **用 Release 构建测速**（Debug 未优化，Swift 数组代码会慢 5–20 倍）：Scheme → Edit Scheme →
+   Run → Build Configuration 选 Release，或直接安装 Archive 出来的包。
+2. 打开“数据 → 示例 ECG 数据”（30 秒、500 Hz、15,000 点），记录分析耗时。
+   注意：示例在 App 启动时分析一次，这个数字包含冷启动开销，可重启 App 多看几次。
+3. 打开 3–5 条真实 Apple Watch ECG（30 秒、约 512 Hz、约 15,360 点），逐条记录分析耗时。
+   每次进入详情页都会重新读取并分析，可以反复进出取中位数。
+4. 同时粗略感受“点进详情 → 波形出现”的总等待时间（主要是 HealthKit 读取）。
 
-The run emitted a harmless warning that the directly pinned Surge package was not named by a root
-target. Surge is now declared as an explicit target product as well as an exact root constraint, so
-future runs should retain the pin without that warning.
+需要更细的剖析时，用 Instruments 的 Time Profiler 录一次“打开真实记录”的过程。
 
-The user reran the test script after that change: 47 Python tests and all four adapter XCTest cases
-passed. The user also ran the complete nine-algorithm development-only screen:
+参考量级：算法主要是两次双向 biquad 滤波 + 每 30 秒块若干次排序，复杂度约 O(n log n)；
+15k 点在现代 iPhone 的 Release 构建下预期为毫秒级。若超过 ~50 ms，请把数字发给我。
 
-```bash
-bash Tools/run-peakswift-development-benchmark.sh
-```
+## 5. 真机功能验收
 
-The command verified exact dependency revisions, downloaded/re-verified public MIT-BIH data,
-regenerated the locked manifest, ran all nine public PeakSwift algorithms in release configuration on
-`development`, and wrote a research-only comparison under the ignored `Tools/Validation/output/`
-directory. The user provided its comparison and three candidate prediction files; their reproducible
-2/3 voting experiment is documented in `Tools/Validation/README.md` and `Docs/VALIDATION.md`.
+使用 Apple 健康中已有 Apple Watch 心电记录的 iPhone：
 
-The local development-only voting audit found one-algorithm-only misses in record 203 and shared
-false positives in two zero-reference windows of record 207. The next macOS gate is the independent
-WFDB `bxb` cross-check. After this checkout and the 2/3-at-100-ms prediction file are available on
-Mac, install or locate official `wrann`, `rdann`, and `bxb`, then run the command in
-`Tools/Validation/README.md`. The script verifies every written annotation by round-trip before
-comparing; it has not yet been executed with WFDB tools. Freeze single-detector and/or voting
-candidates only after inspecting that result, then use `validation`. `held-out-test` remains locked
-until a detector/configuration ADR exists. No development result authorizes production integration.
+1. 首次安装先出现研究用途声明。
+2. 申请权限时，健康权限页只出现心电**读取**，没有写入项。
+3. 拒绝/不授权时，界面显示“没有可访问的心电”，不断言“已拒绝”。
+4. 授权后列表加载正常；打开一条记录，核对开始时间、时长、采样率、测量数、平均心率、
+   Apple 分类、症状与“健康”App 一致。
+5. 详情页显示模型 R 峰（橙线）、R–R 间期与疑似早搏候选（红线），或给出具体的拒判原因。
+6. 快速切换记录，旧记录结果不会覆盖当前页面。
+7. 分享原始 CSV / metadata JSON / analysis JSON：CSV 行数、顺序、时间戳与 HealthKit 测量一致；
+   JSON 的 `dataSource` 为 `healthKit`；文件名和内容中没有 HealthKit UUID。
+8. 设置页“版本”显示 `0.5.0 (6)`。
+9. 抽查签名产物包含 `com.apple.developer.healthkit`，且没有网络上传行为。
 
-## 5. Real-iPhone acceptance steps
+内置合成示例只用于教程和测速，不能替代任何真机 HealthKit 验收项。
 
-Use a compatible iPhone signed into a Health database containing Apple Watch ECG records.
+## 6. 记录方式
 
-1. Fresh install: confirm the research disclaimer appears before analysis.
-2. Request access: inspect the Health permission sheet and confirm only ECG read access is requested.
-3. Deny/withhold access: confirm the UI says no ECG is accessible and does not assert denial.
-4. Grant access: confirm latest/history metadata loads and list navigation is responsive.
-5. Open one ECG: compare start/end, duration, optional sampling frequency, declared measurement count,
-   average heart rate, Apple classification and symptoms metadata against the Health record.
-6. Verify every returned measurement keeps `timeSinceSampleStart` order and converts
-   `.appleWatchSimilarToLeadI` to mV exactly once.
-7. Exercise cancellation by switching records quickly; an older query must not replace the selected one.
-8. Test records with missing lead quantity, missing sampling frequency and any available malformed edge
-   case; confirm typed states rather than crash/force unwrap.
-9. Inspect the installed App's signed entitlements and confirm HealthKit is present and no unexpected
-   capability was added.
-10. Inspect device/network behavior: no ECG leaves the device and no sensitive values appear in logs.
-11. Export raw CSV and metadata JSON through the share sheet. Compare CSV row count/order/timestamps/
-    missing fields with the selected HealthKit measurements, confirm JSON says `dataSource: healthKit`,
-    and confirm no HealthKit UUID appears in either filename or JSON.
-
-The built-in synthetic example is a UI tutorial only and does not satisfy any real-iPhone item.
-
-## 6. Evidence to record safely
-
-Record device model/OS in a non-identifying aggregate form, Xcode/Swift/app commit, pass/fail counts and
-sanitized error codes. Do not record ECG waveforms, HealthKit identifiers, exact acquisition dates,
-Apple account details or device identifiers in the repository.
-
-Only after these checks may Milestone 1 be described as compiled and truthfully device-validated.
+记录设备型号/系统版本、Xcode/Swift 版本、提交号、测试通过数、分析耗时（中位数）和脱敏错误码。
+不要把心电波形、HealthKit 标识、精确采集时间、Apple 账号或设备标识写进仓库。

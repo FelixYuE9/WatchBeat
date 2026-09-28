@@ -26,7 +26,6 @@ Run what the environment supports and report exactly what ran:
 ```bash
 Tools/run-core-tests.sh --parallel        # ECGCore
 bash Tools/run-app-tests.sh --parallel    # iOS app package (iOS/); chmod +x once to drop `bash`
-bash Tools/run-peakswift-benchmark-tests.sh  # isolated detector candidate; macOS/Xcode only
 
 cd iOS && swift build                # macOS target: SwiftUI + HealthKit
 cd iOS && swift build --triple x86_64-apple-ios17.0-macabi --target WatchBeatHealthKit
@@ -53,10 +52,7 @@ xcodebuild -project WatchBeat.xcodeproj -target WatchBeatApp \
            -sdk iphonesimulator26.5 -arch x86_64 CODE_SIGNING_ALLOWED=NO build
 ```
 
-Use `-target`, not `-scheme`: a scheme build needs a destination and this host has no simulator
-runtime and no iOS 26.5 device support. Re-run `Tools/install-swift-test-shim.sh` if you switch
-`xcode-select` to Xcode — the wrapper has to stop passing Command Line Tools paths to the Xcode
-toolchain.
+Use `-target`, not `-scheme`, when the host has no simulator runtime or device support.
 
 The shared `WatchBeatApp` scheme is committed for destination-based builds and tests. Once a runtime
 is installed, use `xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp -showdestinations`,

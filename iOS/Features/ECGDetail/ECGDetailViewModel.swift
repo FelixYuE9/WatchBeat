@@ -1,3 +1,4 @@
+import ECGCore
 import Foundation
 import Observation
 import WatchBeatHealthKit
@@ -8,7 +9,6 @@ import WatchBeatModels
 public final class ECGDetailViewModel {
     public let record: ECGRecord
     public let source: ECGMeasurementSource
-    public let waveformMarkers: [ECGWaveformMarker]
     public private(set) var state: ECGDetailState = .idle
 
     private let repository: ECGRepository?
@@ -17,16 +17,12 @@ public final class ECGDetailViewModel {
         self.repository = repository
         self.record = record
         self.source = .healthKit
-        self.waveformMarkers = []
     }
 
     public init(example measurement: ECGMeasurement) {
         self.repository = nil
         self.record = measurement.record
         self.source = measurement.source
-        self.waveformMarkers = measurement.source == .builtInSyntheticExample
-            ? ECGExampleFactory.syntheticRPeakMarkers()
-            : []
         self.state = measurement.isComplete
             ? .loaded(measurement)
             : .loadedWithIncompleteMeasurements(measurement)
@@ -38,6 +34,18 @@ public final class ECGDetailViewModel {
             return measurement
         case .idle, .loading, .failed:
             return nil
+        }
+    }
+
+    /// Markers always come from the same model report, never from source-specific annotations.
+    public var waveformMarkers: [ECGWaveformMarker] {
+        guard let measurement, measurement.analysis.status == .analyzed else { return [] }
+        return measurement.analysis.beats.map { beat in
+            ECGWaveformMarker(
+                id: "model-r-\(beat.sampleIndex)",
+                timeSeconds: beat.timeSeconds,
+                label: beat.classification == .prematureUncertain ? "Early" : "R"
+            )
         }
     }
 

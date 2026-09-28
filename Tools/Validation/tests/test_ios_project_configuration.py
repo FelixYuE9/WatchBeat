@@ -82,13 +82,17 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         self.assertTrue(info.get("NSHealthShareUsageDescription"))
         self.assertNotIn("NSHealthUpdateUsageDescription", info)
 
-    def test_milestone_two_sources_are_members_of_xcode_targets(self) -> None:
+    def test_shipping_sources_are_members_of_xcode_targets(self) -> None:
         project = PROJECT_FILE.read_text(encoding="utf-8")
         source_files = {
+            "PrematureBeatAnalyzer.swift",
+            "ECGAnalysisReport.swift",
+            "GradientEnergyRPeakDetector.swift",
             "ECGDisplay.swift",
             "ECGExportEncoder.swift",
             "ECGExampleFactory.swift",
             "ECGWaveformView.swift",
+            "ECGAnalysisResultView.swift",
             "ECGExportSharing.swift",
             "ECGPresentationAndExportTests.swift",
             "AppLanguage.swift",
@@ -112,6 +116,41 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         self.assertIn('language.text("Example ECG Data", "示例 ECG 数据")', list_view)
         self.assertNotIn("Explore built-in synthetic ECG", list_view)
         self.assertNotIn("查看内置合成心电示例", list_view)
+
+    def test_release_is_configured_for_real_iphone_packaging(self) -> None:
+        project = PROJECT_FILE.read_text(encoding="utf-8")
+        scheme = ET.parse(SCHEME_FILE).getroot()
+        with (IOS_ROOT / "Resources" / "Info.plist").open("rb") as file:
+            info = plistlib.load(file)
+
+        self.assertEqual(project.count("CODE_SIGN_STYLE = Automatic;"), 2)
+        self.assertEqual(project.count("TARGETED_DEVICE_FAMILY = 1;"), 2)
+        archive_action = scheme.find("./ArchiveAction")
+        self.assertIsNotNone(archive_action)
+        self.assertEqual(archive_action.attrib["buildConfiguration"], "Release")
+        self.assertEqual(info["CFBundleShortVersionString"], "0.5.0")
+        self.assertEqual(info["CFBundleVersion"], "6")
+        self.assertIs(info["LSRequiresIPhoneOS"], True)
+
+    def test_healthkit_and_synthetic_measurements_share_analysis_contract(self) -> None:
+        measurement = (IOS_ROOT / "Models" / "ECGMeasurement.swift").read_text(
+            encoding="utf-8"
+        )
+        mapper = (IOS_ROOT / "HealthKit" / "ECGHealthKitMapper.swift").read_text(
+            encoding="utf-8"
+        )
+        example = (IOS_ROOT / "Models" / "ECGExampleFactory.swift").read_text(
+            encoding="utf-8"
+        )
+        detail_model = (
+            IOS_ROOT / "Features" / "ECGDetail" / "ECGDetailViewModel.swift"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("self.analysis = analyzer.analyze(signal)", measurement)
+        self.assertIn("ECGSignal(", mapper)
+        self.assertIn("ECGSignal(", example)
+        self.assertIn("measurement.analysis.beats.map", detail_model)
+        self.assertNotIn("syntheticRPeakMarkers()", detail_model)
 
 
 if __name__ == "__main__":

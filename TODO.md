@@ -58,7 +58,7 @@ end to end; those claims remain governed by the later milestones and recorded ru
   command/result. App launch is observed; automated destination tests are not yet recorded.
 - [ ] Perform real-iPhone authorization/list/detail verification and record evidence without committing ECG.
 
-## Milestone 2 — waveform and export (implemented in source; macOS runtime validation pending)
+## Milestone 2 — waveform and export (implemented in source; current revision macOS validation pending)
 
 - [x] Full-resolution analysis/export data remains separate from timestamp-preserving display
   downsampling, with original extrema and missing-value gaps represented.
@@ -69,12 +69,33 @@ end to end; those claims remain governed by the later milestones and recorded ru
   from Apple Health data and available even when no HealthKit record is accessible.
 - [x] Add a default card-style overview, bottom Overview/Data/Settings navigation and immediate
   Follow System/Simplified Chinese/English language selection.
-- [x] Label every adjacent R–R interval in the synthetic tutorial in milliseconds, using exact marker
-  timestamps from the generator rather than a detector. Real HealthKit ECG labels remain pending a
-  benchmark-selected and validated R-peak detector.
+- [x] Label adjacent model-detected R–R intervals in milliseconds. The synthetic tutorial and real
+  HealthKit records now use the same report-to-marker path; generator-known peaks remain test-only.
 - [x] Present the built-in synthetic ECG as a persistent, explicitly labelled `Example ECG Data`
   record in the Data list instead of a separate "view example" action.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
+
+## Milestone 2.5 — single-format premature-beat vertical slice
+
+This takes priority over further detector voting, parameter sweeps and PAC/PVC subtype work.
+
+- [x] Make the WatchBeat raw ECG CSV (`time_s,voltage_mV`) the Python analyzer's only waveform
+  input. Preserve one row per source sample, including blank voltage positions.
+- [x] Put MIT-BIH format-212 decoding in a separate adapter that converts into that same CSV.
+  Reference annotations are not an input to the adapter or detector.
+- [x] Run a provisional R-peak → RR → `prematureUncertain` pipeline on Windows with synthetic
+  tests and one actual development record; report misses rather than tuning them away.
+- [x] Port the proven minimal flow to dependency-free Swift in `ECGCore`; make every
+  `ECGMeasurement` produce the same versioned report; show guarded candidates and model R–R markers
+  on the detail page.
+- [x] Export model output as `ECGAnalysisReport` v1 JSON and freeze model input as
+  `watchbeat.ecg.signal.v1` for HealthKit, synthetic and offline adapter paths.
+- [x] Configure v0.4.0 (5) as an automatically signed, archiveable iPhone App and document the
+  Team/Bundle-ID steps needed to package and install it on a real iPhone.
+- [ ] Rebuild the v0.5.0 (6) MVP and run the ECGCore + iOS Swift tests on macOS/Xcode; follow
+  `NEEDS_MACOS_VALIDATION.md` (Windows cannot execute Swift/Xcode).
+- [ ] Verify one actual user-exported HealthKit CSV against the in-app signal sample by sample,
+  without committing private ECG data.
 
 ## Milestone 3 — reproducible detector benchmark
 
@@ -96,10 +117,10 @@ end to end; those claims remain governed by the later milestones and recorded ru
   outliers; preserve these as research-only metrics, not an App accuracy claim.
 - [x] Add and test a label-blind, development-only three-detector voting experiment with configurable
   2/3 or 3/3 vote threshold and peak-alignment tolerance.
-- [ ] Cross-check vote grouping at difficult windows and freeze one or more candidate configurations
-  before independent validation; do not assume a single detector must win.
-- [ ] Add a production `RPeakDetecting` adapter only after benchmark selection and a new ADR.
-- [ ] Compare at least two suitable PeakSwift detectors and Python references without Apple labels.
+- [x] MVP cleanup (2026-09-28): removed the PeakSwift benchmark, vote and `bxb` preparation tooling
+  (kept in Git history `c3c3e0e`); App algorithm is scored by `evaluate_swift_analyzer_mirror.py`.
+- [ ] Improve premature-candidate sensitivity (currently 0.449 / +P 0.667 on development windows)
+  without losing predictivity; then freeze and score on the validation split once.
 - [ ] Publish per-record R-peak metrics, timing errors, failures and detector-selection ADR.
 
 ## Milestones 4–9

@@ -1,31 +1,47 @@
 import ECGCore
 import Foundation
 
-/// Creates the educational ECG bundled with every build. The signal is analytic, deterministic
-/// and contains no human health data. It is for learning the UI, not algorithm validation.
+/// Creates the educational ECG bundled with every build. It produces the exact same canonical
+/// `ECGSignal` consumed by the HealthKit path and is analyzed by the exact same on-device model.
+/// The signal is analytic, deterministic and contains no human health data; it is not validation.
+///
+/// The rhythm is regular at 70 BPM except for one early narrow (PAC-like) beat and one early wide
+/// (PVC-like) beat, so the tutorial shows what a flagged candidate looks like. Their positions are
+/// never passed to the analyzer or the UI; any marker on screen comes from the model report.
 public enum ECGExampleFactory {
     public static let samplingFrequencyHz = 500.0
     public static let durationSeconds = 30.0
     public static let averageHeartRateBPM = 70.0
     public static let beatPeriodSeconds = 60.0 / averageHeartRateBPM
-    private static let rPeakPhase = 0.405
+
+    private static let firstRPeakSeconds = 0.347
+    private static let pacLikeBeatNumber = 11
+    private static let pvcLikeBeatNumber = 25
+    private static let prematureCouplingRatio = 0.62
 
     public static func makeMeasurement() throws -> ECGMeasurement {
         let sampleCount = Int(samplingFrequencyHz * durationSeconds)
-        var times: [Double] = []
-        var voltages: [Double?] = []
-        times.reserveCapacity(sampleCount)
-        voltages.reserveCapacity(sampleCount)
+        let times = (0..<sampleCount).map { Double($0) / samplingFrequencyHz }
+        var voltages: [Double] = times.map { 0.025 * sin(2 * Double.pi * 0.28 * $0) }
 
-        for index in 0..<sampleCount {
-            let time = Double(index) / samplingFrequencyHz
-            times.append(time)
-            voltages.append(syntheticVoltageMillivolts(at: time))
+        // Each beat only affects samples within ±0.7 s of its R peak.
+        let reachSamples = Int(0.7 * samplingFrequencyHz)
+        for beat in beats() {
+            let center = Int((beat.rPeakSeconds * samplingFrequencyHz).rounded())
+            let lower = max(0, center - reachSamples)
+            let upper = min(sampleCount - 1, center + reachSamples)
+            guard lower <= upper else { continue }
+            for index in lower...upper {
+                voltages[index] += beatVoltage(
+                    offsetSeconds: times[index] - beat.rPeakSeconds,
+                    isVentricular: beat.isVentricular
+                )
+            }
         }
 
         let signal = ECGSignal(
             timeSeconds: times,
-            voltageMillivolts: voltages,
+            voltageMillivolts: voltages.map { Optional.some($0) },
             nominalSamplingRateHz: samplingFrequencyHz
         )
         let startDate = Date(timeIntervalSince1970: 946_684_800)
@@ -51,31 +67,49 @@ public enum ECGExampleFactory {
         )
     }
 
-    /// Exact peak locations from the generating equation. These are tutorial annotations, not
-    /// detected results and never apply to a person's HealthKit ECG.
-    public static func syntheticRPeakMarkers() -> [ECGWaveformMarker] {
-        var markers: [ECGWaveformMarker] = []
-        var time = rPeakPhase * beatPeriodSeconds
-        var index = 1
-        while time < durationSeconds {
-            markers.append(
-                ECGWaveformMarker(id: "synthetic-r-\(index)", timeSeconds: time, label: "R")
-            )
-            time += beatPeriodSeconds
-            index += 1
-        }
-        return markers
+    private struct SyntheticBeat {
+        let rPeakSeconds: Double
+        let isVentricular: Bool
     }
 
-    private static func syntheticVoltageMillivolts(at time: Double) -> Double {
-        let phase = time.truncatingRemainder(dividingBy: beatPeriodSeconds) / beatPeriodSeconds
-        let baseline = 0.025 * sin(2 * .pi * 0.28 * time)
-        let pWave = 0.10 * gaussian(phase, center: 0.18, width: 0.035)
-        let qWave = -0.16 * gaussian(phase, center: 0.38, width: 0.012)
-        let rWave = 1.05 * gaussian(phase, center: rPeakPhase, width: 0.010)
-        let sWave = -0.28 * gaussian(phase, center: 0.435, width: 0.014)
-        let tWave = 0.24 * gaussian(phase, center: 0.68, width: 0.070)
-        return baseline + pWave + qWave + rWave + sWave + tWave
+    private static func beats() -> [SyntheticBeat] {
+        var beats: [SyntheticBeat] = []
+        var time = firstRPeakSeconds
+        var number = 0
+        while time < durationSeconds + 1 {
+            let isPAC = number == pacLikeBeatNumber
+            let isPVC = number == pvcLikeBeatNumber
+            beats.append(SyntheticBeat(rPeakSeconds: time, isVentricular: isPVC))
+
+            let nextIsPremature = number + 1 == pacLikeBeatNumber || number + 1 == pvcLikeBeatNumber
+            if nextIsPremature {
+                time += prematureCouplingRatio * beatPeriodSeconds
+            } else if isPAC {
+                // Non-compensatory pause.
+                time += 1.05 * beatPeriodSeconds
+            } else if isPVC {
+                // Fully compensatory pause.
+                time += (2 - prematureCouplingRatio) * beatPeriodSeconds
+            } else {
+                time += beatPeriodSeconds
+            }
+            number += 1
+        }
+        return beats
+    }
+
+    private static func beatVoltage(offsetSeconds dt: Double, isVentricular: Bool) -> Double {
+        if isVentricular {
+            // No P wave, wide QRS and discordant T wave.
+            return 1.25 * gaussian(dt, center: 0, width: 0.028)
+                - 0.55 * gaussian(dt, center: 0.07, width: 0.03)
+                - 0.30 * gaussian(dt, center: 0.30, width: 0.07)
+        }
+        return 0.10 * gaussian(dt, center: -0.193, width: 0.030)
+            - 0.16 * gaussian(dt, center: -0.0214, width: 0.0103)
+            + 1.05 * gaussian(dt, center: 0, width: 0.00857)
+            - 0.28 * gaussian(dt, center: 0.0257, width: 0.012)
+            + 0.24 * gaussian(dt, center: 0.235, width: 0.060)
     }
 
     private static func gaussian(_ value: Double, center: Double, width: Double) -> Double {

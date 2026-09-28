@@ -39,8 +39,8 @@ Apple 当前明确允许 App 通过 In-App Purchase 接受给开发者的 tip。
 但每次 release 都必须：
 
 - 保留本项目 MIT License；
-- 对实际链接/分发的 PeakSwift（Apache-2.0）、Surge/IIR（MIT）和 wavelib（BSD-3-Clause）
-  保留完整版权、许可证和所需 notices；
+- 对将来实际链接/分发的任何第三方代码保留完整版权、许可证和所需 notices（当前 App 无第三方
+  runtime 依赖）；
 - 对修改过的 Apache 文件作显著说明，并检查上游是否出现 NOTICE；
 - 不把 PhysioNet 数据、许可证或公开数据指标包装成自有临床证据；
 - 新依赖先做许可证扫描，避免把 GPL、禁止商业使用、禁止医疗使用或来源不明的代码误接入 App；

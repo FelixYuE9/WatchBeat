@@ -44,7 +44,7 @@ public struct SettingsView: View {
                 }
 
                 Section(language.text("About", "关于")) {
-                    LabeledContent(language.text("Version", "版本"), value: "0.3.0 (4)")
+                    LabeledContent(language.text("Version", "版本"), value: appVersion)
                     Text(language.text(
                         "Research use only — not a medical diagnosis.",
                         "仅供研究使用，不构成医疗诊断。"
@@ -55,5 +55,12 @@ public struct SettingsView: View {
             .scrollContentBackground(.hidden)
         }
         .navigationTitle(language.text("Settings", "设置"))
+    }
+
+    private var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
     }
 }
