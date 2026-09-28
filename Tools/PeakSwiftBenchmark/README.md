@@ -55,8 +55,8 @@ production-detector selection. Official WFDB `bxb` cross-checking and Apple Watc
 remain separate gates.
 
 The dependency graph and four adapter XCTest cases passed on the user's Intel Mac on 2026-09-28.
-To perform the first complete, development-only screen of all nine algorithms, return to the
-repository root and run:
+The user subsequently ran the complete development-only screen of all nine algorithms. To
+reproduce that screen on macOS, return to the repository root and run:
 
 ```bash
 bash Tools/run-peakswift-development-benchmark.sh
@@ -65,5 +65,6 @@ bash Tools/run-peakswift-development-benchmark.sh
 That command verifies the reviewed dependency revisions, downloads only the public checksum-verified
 MIT-BIH files, uses release configuration, keeps each run in a unique ignored output directory,
 continues after an individual candidate failure, and produces JSON plus Markdown comparison artifacts.
-It cannot request `validation` or
-`held-out-test`.
+It cannot request `validation` or `held-out-test`. Three candidate prediction files can also be
+combined by the development-only voting experiment in `../Validation/vote_r_peak_predictions.py`;
+that experiment is not part of PeakSwift or the App.

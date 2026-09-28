@@ -110,7 +110,7 @@ sheet and metadata JSON confirmation/share sheet. The exported example filenames
 `synthetic-example`. A HealthKit record must show the detector-not-validated note rather than guessed
 R–R labels.
 
-## 4. PeakSwift offline candidate — MACOS BUILD PASSED; DEVELOPMENT SCREEN PENDING
+## 4. PeakSwift offline candidate — MACOS BUILD AND DEVELOPMENT SCREEN PASSED
 
 This development-only package is intentionally separate from the App. From the repository root run:
 
@@ -138,17 +138,27 @@ The run emitted a harmless warning that the directly pinned Surge package was no
 target. Surge is now declared as an explicit target product as well as an exact root constraint, so
 future runs should retain the pin without that warning.
 
-The next gate is development-only candidate execution:
+The user reran the test script after that change: 47 Python tests and all four adapter XCTest cases
+passed. The user also ran the complete nine-algorithm development-only screen:
 
 ```bash
 bash Tools/run-peakswift-development-benchmark.sh
 ```
 
-This verifies the exact dependency revisions, downloads/re-verifies public MIT-BIH data, regenerates
-the locked manifest, runs all nine public PeakSwift algorithms in release configuration on
-`development`, and writes a research-only comparison
-under the ignored `Tools/Validation/output/` directory. `validation` is for frozen finalists;
-`held-out-test` remains locked until a winner/configuration ADR exists.
+The command verified exact dependency revisions, downloaded/re-verified public MIT-BIH data,
+regenerated the locked manifest, ran all nine public PeakSwift algorithms in release configuration on
+`development`, and wrote a research-only comparison under the ignored `Tools/Validation/output/`
+directory. The user provided its comparison and three candidate prediction files; their reproducible
+2/3 voting experiment is documented in `Tools/Validation/README.md` and `Docs/VALIDATION.md`.
+
+The local development-only voting audit found one-algorithm-only misses in record 203 and shared
+false positives in two zero-reference windows of record 207. The next macOS gate is the independent
+WFDB `bxb` cross-check. After this checkout and the 2/3-at-100-ms prediction file are available on
+Mac, install or locate official `wrann`, `rdann`, and `bxb`, then run the command in
+`Tools/Validation/README.md`. The script verifies every written annotation by round-trip before
+comparing; it has not yet been executed with WFDB tools. Freeze single-detector and/or voting
+candidates only after inspecting that result, then use `validation`. `held-out-test` remains locked
+until a detector/configuration ADR exists. No development result authorizes production integration.
 
 ## 5. Real-iPhone acceptance steps
 

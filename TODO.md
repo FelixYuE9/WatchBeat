@@ -85,11 +85,19 @@ end to end; those claims remain governed by the later milestones and recorded ru
 - [x] Download and checksum-verify all 48 records locally, audit subject identities, and freeze the
   actual development/validation/held-out record manifest before detector evaluation.
 - [ ] Cross-check evaluator output against the official WFDB `bxb` implementation.
+- [x] Prepare and test development-only `wrann` inputs and a sample-exact `rdann` round-trip gate;
+  official `bxb` execution remains pending on a host with WFDB tools.
 - [ ] Freeze any required WFDB/NeuroKit/BioSPPy Python versions and hashes before adding them.
 - [x] Audit and pin PeakSwift v1.0.0 plus Surge/IIR/wavelib full revisions in an isolated,
   development-only prediction adapter; its macOS dependency build and four adapter tests passed.
 - [x] Add a development-only nine-algorithm runner and compatible-report comparison that cannot
   access validation or held-out-test splits.
+- [x] Run all nine PeakSwift algorithms on the frozen development split and inspect per-record
+  outliers; preserve these as research-only metrics, not an App accuracy claim.
+- [x] Add and test a label-blind, development-only three-detector voting experiment with configurable
+  2/3 or 3/3 vote threshold and peak-alignment tolerance.
+- [ ] Cross-check vote grouping at difficult windows and freeze one or more candidate configurations
+  before independent validation; do not assume a single detector must win.
 - [ ] Add a production `RPeakDetecting` adapter only after benchmark selection and a new ADR.
 - [ ] Compare at least two suitable PeakSwift detectors and Python references without Apple labels.
 - [ ] Publish per-record R-peak metrics, timing errors, failures and detector-selection ADR.
@@ -100,7 +108,8 @@ end to end; those claims remain governed by the later milestones and recorded ru
 - [ ] M5: refined RR and robust premature-candidate detection.
 - [ ] M6: independent personal template, QRS and morphology features.
 - [ ] M7: conservative explainable PAC/PVC/Uncertain evidence classifier.
-- [ ] M8: UI integration, research mode, feature export and settings reset.
+- [ ] M8: UI integration, research mode, feature export and settings reset; expose only validated,
+  effective advanced parameters with configuration provenance and a baseline reset.
 - [ ] M9: end-to-end tests, independent Apple Watch domain validation and release audit.
 - [ ] M9 distribution: keep one App / one Bundle ID, review optional IAP tipping, and complete
   storefront-specific medical-device, privacy, tax, consumer and open-source compliance review.

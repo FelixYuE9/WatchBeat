@@ -82,14 +82,59 @@ annotations under the same window IDs.
 
 The isolated Swift candidate runner is documented in `../PeakSwiftBenchmark/README.md`. It is not a
 dependency of `ECGCore` or the App. Its PeakSwift/native-code graph compiled and all four adapter
-XCTest cases ran on the user's Intel Mac. No detector dataset result exists yet. Use
-`../run-peakswift-development-benchmark.sh` to screen all nine public algorithms on `development`
-only; its comparison tool rejects mixed datasets, benchmark definitions, windows, splits or matching
-policies and never selects a production detector.
+XCTest cases ran on the user's Intel Mac. The user ran
+`../run-peakswift-development-benchmark.sh` and supplied all nine public algorithms' `development`
+comparison plus three candidate prediction files. The comparison tool rejects mixed datasets,
+benchmark definitions, windows, splits or matching policies and never selects a production detector.
+
+`vote_r_peak_predictions.py` is a separate, label-blind three-detector experiment. It accepts only
+`development` prediction files with exactly the frozen development windows. Each detector can cast
+at most one vote per candidate peak; the greedy policy prefers more votes, then tighter alignment.
+The configurable vote threshold is 2/3 or 3/3 and alignment tolerance is greater than zero and at
+most 150 ms. For example, from the repository root with the original Mac run directory:
+
+```bash
+RUN_DIR=Tools/Validation/output/peakswift-development-<run-id>
+python3 Tools/Validation/vote_r_peak_predictions.py \
+  Tools/Validation/output/mitdb-rpeak-manifest-v1.json \
+  "$RUN_DIR/peakswift-neurokit-development-predictions.json" \
+  "$RUN_DIR/peakswift-pan-tompkins-development-predictions.json" \
+  "$RUN_DIR/peakswift-kalidas-development-predictions.json" \
+  --min-votes 2 --alignment-tolerance-ms 100 \
+  --output "$RUN_DIR/peakswift-vote-2of3-100ms-development-predictions.json"
+
+python3 Tools/Validation/evaluate_r_peaks.py \
+  Tools/Validation/output/mitdb-rpeak-manifest-v1.json \
+  "$RUN_DIR/peakswift-vote-2of3-100ms-development-predictions.json" \
+  --split development \
+  --output "$RUN_DIR/peakswift-vote-2of3-100ms-development-report.json"
+```
+
+The initial 2/3 vote at 100 ms scored F1 0.9855 on the MIT-BIH development split, compared with
+0.9826 for the best single-algorithm F1 in this screen. A 3/3 vote reduced false positives but
+missed many reference peaks. The 100 ms vote also performed worse than `neurokit` on record 208,
+so the aggregate gain is not a detector decision or
+Apple Watch result; see `../../Docs/VALIDATION.md` for the parameter sweep and outlier records.
+
+The next independent check uses official WFDB command-line tools on macOS. Once `wrann`, `rdann`,
+and `bxb` are available, and the prediction file is present in the Mac checkout, run:
+
+```bash
+bash Tools/run-bxb-development-crosscheck.sh \
+  Tools/Validation/output/peakswift-vote-2of3-100ms-development-predictions.json
+```
+
+The script rechecks the frozen manifest and public-data hashes, prepares only development records,
+round-trips every prediction sample through `wrann` and `rdann`, then saves one `bxb` report per
+record under a unique ignored output directory. It includes the first five minutes with `-f 0`
+and stops at the last complete 30-second window. Since `bxb` compares continuous records using
+AAMI annotation rules, its counts may differ from this repository's window-isolated matcher.
+On Windows, `prepare_bxb_crosscheck.py prepare` can generate and audit the inputs, but it cannot
+stand in for the official `bxb` execution.
 
 `data/` and `output/` are Git-ignored. The complete dataset and generated manifest exist only in the
 local development workspace; neither is committed. The official WFDB `bxb` cross-check, detector
-execution on macOS and any pinned third-party Python environment remain pending. No external Python
+validation outside development and any pinned third-party Python environment remain pending. No external Python
 dependency is installed or declared yet.
 
 Primary references:

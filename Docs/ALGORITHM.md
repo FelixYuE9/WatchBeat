@@ -6,6 +6,10 @@
 模板、QRS 特征或 PAC/PVC 分类器。`ECGAlgorithmConfig.researchDefaults` 中的数值只是待
 验证的研究假设，不能解释为医学阈值，也没有形成生产默认值。
 
+离线 MIT-BIH development 初筛已覆盖九种 PeakSwift R 峰算法，并用三种算法试验 2/3、
+3/3 峰位投票。这不改变上述 App 实现边界。融合候选不要求最终只能选一个算法；其票数与
+对齐容差必须按配置版本记录，经过独立 validation 和 Apple Watch 域验证后才可能进入 App。
+
 ## 输入契约
 
 ```swift
@@ -83,3 +87,7 @@ quality gate
 
 任何会改变结果的参数或逻辑都需要版本变更、可重现测试和验证记录。稳定 config hash 的
 规范将在实际分析管线出现前定义；在此之前不得把对象默认编码的 hash 当作跨版本标识。
+投票门槛与峰位对齐容差是离线融合参数；`prematurityThreshold`、
+`morphologyCorrelationThreshold` 等是尚未启用的后续分类研究参数；PeakSwift 算法内部
+阈值是否可配置还须单独审计。未来高级设置只能暴露真正接入、边界明确且验证过的参数，
+并提供恢复基准配置和随结果记录配置版本的能力。

@@ -85,8 +85,9 @@ PAC/PVC 分类或置信度的输入。
   47-subject split、2,880 个 30 秒窗口、109,150 个参考 QRS、生成物 SHA-256 lock、150 ms
   一对一 R 峰匹配和按窗口/分组/全局汇总指标；原始数据与大 manifest 不进入 Git。
 - PeakSwift v1.0.0 候选已完成精确 commit/传递许可证审计，并放进与 App 隔离的离线预测
-  package；其 macOS 原生依赖构建和 4 项适配器测试已通过，但 development 数据集指标尚未生成，
-  因此真实 HealthKit ECG 仍不显示算法峰值。
+  package；其 macOS 原生依赖构建和 4 项适配器测试已通过。九种算法及三算法投票已有
+  MIT-BIH development-only 指标，尚缺官方 `bxb` 核对、独立 validation 和 Apple Watch
+  域验证，因此真实 HealthKit ECG 仍不显示算法峰值。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现

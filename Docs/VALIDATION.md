@@ -8,9 +8,9 @@ iOS 26.5 模拟器安装和启动，且之后的截图确认能显示 15,000 点
 用户随后确认 v0.3.0 (3) 整体在模拟器运行正常，并提供了中文数据页截图。v0.3.0 (4)
 把合成示例改为固定数据记录后，用户又报告所要求的 Mac/Xcode 测试通过；但未提供带测试
 数量的最终摘要，因此属于用户验收记录，不等于已归档的 shared-scheme 自动测试证据。
-仍然没有 R 峰或 beat 分类性能报告，也没有
-Apple Watch 域准确率。任何 sensitivity、specificity、precision、recall 或 accuracy
-声明在当前阶段都是不真实的。
+现已有 MIT-BIH 公开数据的 development-only R 峰初筛结果；尚无独立 validation、官方 `bxb`
+交叉核对、beat 分类性能报告或 Apple Watch 域准确率。不得把下文开发集的 sensitivity、
+precision、recall 或 F1 改称为正式 App 或 Apple Watch 的性能。
 
 当前关键限制：模拟器已经可用，且用户报告 **v0.3.0 (4) 测试通过，但完整 Xcode build/test
 日志未归档，也没有完成签名真机运行**。HealthKit entitlement 的工程配置已修正，仍须在
@@ -95,9 +95,103 @@ runner 的 `0 tests in 0 suites` 只表示该 package 没有使用 Swift Testing
 已由 SwiftPM 的 parallel XCTest runner 执行。该命令没有运行任何 detector 数据集，因此不能据此
 产生准确率结论。
 
+用户随后再次运行同一测试脚本并提供完整末尾输出：47 项 Python tests 通过，Swift debug
+构建完成（`Build complete! (0.31s)`），适配器 XCTest 显示 `[4/4]`；末尾的 Swift Testing
+`0 tests` 仍是另一运行器的结果。
+
 该次构建报告 Surge 未被 root target 直接使用；这是为了收窄 PeakSwift 的传递依赖版本而添加的
 exact root constraint。后续源码同时把 Surge product 声明为 benchmark-support target dependency，
 保留精确约束并消除该非功能性警告；这项小改动仍会在下一次 benchmark 命令中重新编译验证。
+
+### PeakSwift development-only 初筛（2026-09-28）
+
+用户提供 Mac 端生成的九算法 `comparison.json`，以及 `neurokit` 和 `pan-tompkins` 的逐窗口
+report JSON。九份汇总均为同一 `development` split：1,800 个 30 秒窗口、67,351 个参考 QRS。
+比较文件的 `benchmarkDefinitionSHA256` 为
+`8c99c5a9e92abb89c400918a5773ec97545c9dc19eb4f393dfd7e8e695ecf00d`，与本机从锁定
+manifest 重算的值一致。两份逐窗口报告通过本仓库比较器检查，且各自的配置哈希、基准哈希、
+TP/FP/FN 与九算法比较文件一致。原始 Mac 运行未在本机复现；这里记录的是用户提供的产物。
+
+| PeakSwift 算法 | F1 | Recall | PPV | FP | FN | 时间误差 p95 (ms) |
+|---|---:|---:|---:|---:|---:|---:|
+| neurokit | 0.9826 | 0.9758 | 0.9895 | 697 | 1,632 | 11.1 |
+| pan-tompkins | 0.9808 | 0.9850 | 0.9765 | 1,594 | 1,010 | 97.2 |
+| kalidas | 0.9753 | 0.9697 | 0.9810 | 1,262 | 2,040 | 44.4 |
+| two-average | 0.9644 | 0.9709 | 0.9580 | 2,866 | 1,961 | 80.6 |
+| hamilton | 0.9586 | 0.9744 | 0.9433 | 3,944 | 1,722 | 111.1 |
+| nabian2018 | 0.9284 | 0.9139 | 0.9433 | 3,701 | 5,800 | 8.3 |
+| engzee | 0.9130 | 0.8453 | 0.9925 | 433 | 10,422 | 5.6 |
+| christov | 0.8838 | 0.9843 | 0.8019 | 16,374 | 1,059 | 61.1 |
+| unsw | 0.7432 | 0.9988 | 0.5918 | 46,401 | 81 | 16.7 |
+
+表中的 `neurokit` 是 PeakSwift v1.0.0 的算法名，不表示已安装或评测 Python NeuroKit2。
+按逐记录 F1，`neurokit` 在 30 条中的 26 条领先，但有两个明显失效点：记录 207 为
+TP 1,321 / FP 57 / FN 529 / F1 0.8185（`pan-tompkins` 为 1,824 / 354 / 26 / 0.9057）；
+记录 231 为 1,546 / 407 / 19 / 0.8789（`pan-tompkins` 为 1,539 / 67 / 26 / 0.9707）。
+记录 203 的 `neurokit` 也有 270 次漏检，`pan-tompkins` 为 75 次。官方数据库说明记录 207
+包含复杂的室扑和传导阻滞，记录 231 包含 2:1 房室传导阻滞与右束支传导阻滞；这些是需要逐段
+排查的线索，不构成对具体误差机制的证明。
+
+`neurokit`、`pan-tompkins` 与 `kalidas` 是下一轮优先核查的单算法候选，而非生产 detector
+选择。先与官方 WFDB `bxb` 核对匹配器，再冻结候选配置并使用独立 validation；held-out-test
+继续封存。`bxb` 默认
+跳过每条记录前 5 分钟，而当前 30 秒窗口初筛包含这段数据，因此两套汇总数字不能直接等同。
+MIT-BIH 的双导联动态 ECG 结果也不能说明 Apple Watch 单导联 ECG 的性能，更不能说明 PAC/PVC
+分类效果。记录说明与 `bxb` 规则见：
+<https://physionet.org/physiobank/database/html/mitdbdir/records.htm>、
+<https://physionet.org/physiotools/wag/bxb-1.htm>。
+
+### 三算法投票的 development-only 探索（2026-09-28）
+
+用户随后提供上述三种算法的逐峰预测文件。本机用相同的 manifest 重新评测三份预测；其中
+`neurokit` 和 `pan-tompkins` 的新报告与用户提供的 Mac 报告逐字段相同。新增离线工具只根据
+窗口元数据和三个检测结果对齐峰位，同一算法对同一候选最多投一票，不查看参考标注；每组
+参数再交给原评测器计分。投票先按票数多、组内跨度小的确定性贪心规则选择峰组；这只是待检验
+的融合策略，不能被解释为已验证的最优匹配。
+
+三份用户提供的原始预测文件 SHA-256 分别为：`neurokit`
+`b1f75d3994dfab0bc7aed26e1e6c09896322719fbfc4ceb9a067877b785b795f`，
+`pan-tompkins` `ce1bdfbf6e07e3455650c3849f774db8838ea0e46c3e5cc63735a939c482d067`，
+`kalidas` `11fa25081830b69c3141477359c4b2e5087ce142b5c69e729c64131fd0dba015`。
+本机 Windows Python 回归测试现为 59/59；没有再次声称 macOS Swift 构建已运行。
+
+| 投票门槛 | 对齐容差 (ms) | F1 | Recall | PPV | FP | FN |
+|---|---:|---:|---:|---:|---:|---:|
+| 2/3 | 60 | 0.9744 | 0.9584 | 0.9910 | 588 | 2,799 |
+| 2/3 | 80 | 0.9831 | 0.9765 | 0.9898 | 681 | 1,581 |
+| 2/3 | 100 | 0.9855 | 0.9826 | 0.9884 | 779 | 1,173 |
+| 2/3 | 120 | 0.9853 | 0.9832 | 0.9875 | 840 | 1,134 |
+| 2/3 | 150 | 0.9857 | 0.9850 | 0.9865 | 908 | 1,012 |
+| 3/3 | 80 | 0.7290 | 0.5738 | 0.9993 | 29 | 28,705 |
+| 3/3 | 120 | 0.9583 | 0.9204 | 0.9994 | 40 | 5,358 |
+| 3/3 | 150 | 0.9671 | 0.9371 | 0.9992 | 49 | 4,239 |
+
+相对于三个单算法，2/3 投票在 100–150 ms 范围提高了该开发集的总体 F1，但改变了
+误报/漏检平衡，不存在只凭一个总分就能定的参数。100 ms 版本在记录 207 的 F1 为
+0.9394（单算法最高为 `kalidas` 0.9065），记录 231 为 0.9825（单算法最高为
+`kalidas` 0.9767）；记录 203 则仍落后于 `pan-tompkins`（0.9761 对 0.9784）。
+3/3 投票看似有极高 PPV，却漏掉大量真实峰，不适合仅按误报数选用。
+
+逐峰复核显示：记录 203 有 44 个参考峰仅被 `pan-tompkins` 命中，2/3 投票会将其舍弃；
+全开发集另有 194 个参考峰被至少两种单算法分别命中、却未被 100 ms 投票命中；
+逐个检查后，这 194 个峰的命中位置在算法之间均相差超过 100 ms，没有发现容差内的
+双算法峰被贪心分组抢走。记录 208 单独占其中 104 个：`neurokit` 为
+TP 2,906 / FP 4 / FN 40 / F1 0.9925，而 100 ms 2/3 投票为
+2,791 / 5 / 155 / 0.9721。150 ms 投票使记录 208 的 F1 回到 0.9904，
+却将记录 207 的误报从 181 增到 212（F1 从 0.9394 降至 0.9349），
+因此没有一个仅凭总体 F1 就可确定的通用容差。
+记录 207 的两个零参考峰窗口中，100 ms 的 2/3 投票分别仍输出 33 和 23 个假峰，
+说明多数投票不能替代信号质量门控。这些是开发集诊断，不应用记录特例去拟合生产规则。
+
+已新增独立 WFDB 交叉核对准备工具；本机运行 100 ms、2/3 投票输入生成成功，覆盖
+30 条 development 记录、1,800 个窗口、66,957 个预测峰，各记录都止于 30 分钟完整窗口。
+Mac 脚本会先重新校验 manifest 锁，再用官方 `wrann` 写入、`rdann` 回读逐样本核验，最后以
+`bxb -f 0` 比较。当前 Windows 环境没有 `wrann`、`rdann` 或 `bxb`，**尚未执行官方比较**；
+`bxb` 使用连续记录和 AAMI 注释规则，数字不保证与逐窗口自定义评测器完全相同。
+
+这些参数是研究工具的 `minVotes` 和对齐容差，不等同于 PeakSwift 内部检测阈值；后者
+尚未审计可配置接口。投票提升仅限本次 MIT-BIH development，尚须复核峰组边界、官方
+`bxb`、独立 validation 和 Apple Watch 单导联域。App 暂不加入投票或可改阈值的设置。
 
 同日的 Milestone 2 follow-up 新增 9 项 Swift 测试，覆盖显示降采样不修改原始数据、extrema、
 缺测 gap、真实 timestamp 映射、CSV 顺序/缺测、JSON 去除 HealthKit ID，以及内置合成示例的
@@ -266,9 +360,9 @@ scheme build/test 与签名产物检查。
 | MIT-BIH v1.0.0 固定下载 | 完成（本地、Git 忽略） | 48 records / 145 files / 约 104.3 MB；官方 SHA-256 全部通过 |
 | 30 s manifest 与 split 防泄漏 | 已冻结 | 47 subjects / 2,880 windows / 109,150 QRS；201/202 同 subject；有 lock 校验 |
 | R 峰一对一匹配 | 源码 + 回归测试通过 | 150 ms；最大匹配数后最小总误差；尚须与 WFDB `bxb` 交叉核对 |
-| PeakSwift 候选 adapter | macOS build + 4 adapter tests 通过 | v1.0.0/full SHA + Surge/IIR/wavelib pins；独立工具；development 指标待运行 |
+| PeakSwift 候选 adapter | macOS build + 4 adapter tests 通过 | v1.0.0/full SHA + Surge/IIR/wavelib pins；独立工具 |
 | Split 使用顺序 | 工具强制 | CLI 必须显式指定；held-out-test 还需第二个 unlock flag |
-| R 峰性能报告 | 未开始 | 没有 detector 预测、没有数据集指标、没有 Apple Watch 性能声明 |
+| R 峰性能报告 | development 初筛完成 | 9 个 PeakSwift 算法的公开数据汇总；缺 `bxb`、独立 validation、Python reference 与 Apple Watch 域验证 |
 
 ## 首次可用 Swift 环境的必跑命令
 
