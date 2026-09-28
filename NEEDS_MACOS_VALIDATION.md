@@ -5,8 +5,9 @@ moved to a macOS 26.7 host. Xcode 26.6 (build 17F113) is installed at `~/Downloa
 On 2026-09-27 user-provided screenshots confirmed the App running on an iPhone 17 Pro simulator
 with iOS 26.5, rendering the 15,000-sample synthetic waveform and the v0.3.0 (3)
 overview/language/R–R UI; the user reported the service was running normally. The exact scheme
-command, automated simulator tests, the v0.3.0 (4) persistent example-record card and all signed
-real-iPhone checks remain to be recorded.
+command and earlier automated simulator output were not recorded. The user subsequently reported
+that the requested v0.3.0 (4) Mac/Xcode check passed, including the persistent example-record change;
+the exact test summary/count and all signed real-iPhone checks remain to be recorded.
 
 ## 1. Validate ECGCore first — DONE
 
@@ -65,8 +66,8 @@ xcodebuild: error: Unable to find a destination matching the provided destinatio
 
 The repository contains a shared `WatchBeatApp` scheme and an iPhone-only target. The simulator
 runtime is now available. Before a real-iPhone run, replace the placeholder bundle identifier
-`com.watchbeat.WatchBeat`, select a real team, then build through that scheme. Do not add PeakSwift
-or another detector candidate yet.
+`com.watchbeat.WatchBeat`, select a real team, then build through that scheme. The isolated
+`Tools/PeakSwiftBenchmark` candidate must remain outside the App until benchmark selection.
 
 Verify before the first signed run:
 
@@ -80,11 +81,11 @@ Verify before the first signed run:
 Check the generated project for user-specific signing values before commit. Do not commit
 provisioning profiles, certificates or device IDs.
 
-## 3. Simulator and unit checks — APP LAUNCH OBSERVED; CURRENT TESTS PENDING
+## 3. Simulator and unit checks — USER-REPORTED PASS; EXACT TEST SUMMARY PENDING
 
 The original 16 tests passed through SwiftPM on macOS under Swift 6.2.4 and Swift 6.3.3. The current
-source adds 9 tests (expected total: 25) that have only received Windows-side static/project checks so far.
-Run both commands below and retain their final summaries.
+source adds 9 tests (expected total: 25). The user reports the requested build-4 test passed, but no
+final Xcode summary/count was supplied. Re-run both commands below when retaining release evidence.
 
 Simulator/mock tests may cover navigation, typed errors, cancellation, stale-result protection,
 unit conversion, measurement ordering, missing voltage and sample-count mismatch. They do not count
@@ -109,7 +110,25 @@ sheet and metadata JSON confirmation/share sheet. The exported example filenames
 `synthetic-example`. A HealthKit record must show the detector-not-validated note rather than guessed
 R–R labels.
 
-## 4. Real-iPhone acceptance steps
+## 4. PeakSwift offline candidate — SOURCE READY; MACOS BUILD PENDING
+
+This development-only package is intentionally separate from the App. From the repository root run:
+
+```bash
+bash Tools/run-peakswift-benchmark-tests.sh
+```
+
+The script selects the existing Xcode under `~/Downloads` when present, applies a process-local HTTPS
+rewrite for PeakSwift's SSH wavelib submodule, resolves the exact lock, runs all Python validation
+tests, and compiles/runs the Swift adapter tests. It does not change global Git configuration, run a
+detector on held-out data, or modify the iOS App. Retain the complete final Swift test summary and any
+dependency-resolution error. Do not work around a revision mismatch by deleting `Package.resolved`.
+
+Only after this passes should the separate development benchmark be run. `development` comes first;
+`validation` is for frozen finalists; `held-out-test` remains locked until a winner/configuration ADR
+exists.
+
+## 5. Real-iPhone acceptance steps
 
 Use a compatible iPhone signed into a Health database containing Apple Watch ECG records.
 
@@ -133,7 +152,7 @@ Use a compatible iPhone signed into a Health database containing Apple Watch ECG
 
 The built-in synthetic example is a UI tutorial only and does not satisfy any real-iPhone item.
 
-## 5. Evidence to record safely
+## 6. Evidence to record safely
 
 Record device model/OS in a non-identifying aggregate form, Xcode/Swift/app commit, pass/fail counts and
 sanitized error codes. Do not record ECG waveforms, HealthKit identifiers, exact acquisition dates,

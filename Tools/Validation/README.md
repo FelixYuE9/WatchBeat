@@ -25,17 +25,36 @@ inspection or real-device HealthKit validation.
 The first benchmark layer remains standard-library-only:
 
 ```bash
-# Optional public dataset download; all 48 records are the default.
-python download_mitdb.py --records 100
+# Download and re-verify all 48 records (four bounded workers are the default).
+python download_mitdb.py --workers 4
+
+# Rebuild the deterministic manifest and prove that it matches the committed lock.
+python build_mitdb_manifest.py
 
 # Evaluate one detector prediction file against a frozen window manifest.
-python evaluate_r_peaks.py manifest.json predictions.json --output output/report.json
+python evaluate_r_peaks.py output/mitdb-rpeak-manifest-v1.json predictions.json \
+  --split development \
+  --output output/report.json
 ```
 
 `download_mitdb.py` is fixed to MIT-BIH Arrhythmia Database v1.0.0 and its official 48-record list.
 It downloads only `.hea`, `.dat` and current `.atr` files, verifies each against the versioned official
-`SHA256SUMS.txt`, and writes a local receipt plus attribution notice. It refuses unknown record names
-and never runs automatically.
+`SHA256SUMS.txt`, and writes a local receipt plus attribution notice. Safe nested paths in the official
+checksum file are accepted, while absolute paths, traversal and Windows drive syntax are rejected.
+It refuses unknown record names and never runs automatically.
+
+`build_mitdb_manifest.py` rehashes every required input against that receipt before parsing it. The
+committed `mitdb_split_v1.json` keeps records 201 and 202 in one subject group, applies a reproducible
+subject-level stratified split, and was frozen before any detector result was evaluated. The builder
+prefers MLII and otherwise selects channel 0, parses official MIT binary annotations, and retains every
+complete 30-second window—including windows with no reference QRS, where detections correctly count
+as false positives.
+
+The generated manifest is intentionally ignored because it is about 2.7 MB, but its exact content is
+guarded by committed `mitdb_manifest_v1.lock.json`. The frozen result contains 48 records / 47 subjects,
+2,880 windows and 109,150 reference QRS annotations. Default generation fails if any input, split or
+serialized output differs from the lock. `--update-lock` is reserved for an intentionally reviewed
+benchmark revision; it must never be used merely to silence a mismatch.
 
 `evaluate_r_peaks.py` validates a version-1 manifest with:
 
@@ -50,13 +69,24 @@ and never runs automatically.
 - per-window, per-split and aggregate TP/FP/FN, sensitivity/recall, positive predictivity/precision,
   F1, FP/FN per 30 seconds, and absolute timing-error median/p95.
 
+The command requires an explicit `--split`. During detector development, use only `development`;
+compare frozen finalists on `validation`, and run `held-out-test` once only after the detector and
+configuration have been selected. Predictions must contain exactly the windows in the requested
+stage, so a development report cannot silently consume held-out predictions.
+
 The report is always marked `research-only-unvalidated` and requires a future cross-check against the
 official `bxb` tool. It evaluates R-peak timing only, not PAC/PVC classification, and public-dataset
 performance cannot establish Apple Watch performance.
 
-`data/` and `output/` are Git-ignored. Actual MIT-BIH download, the audited patient/record manifest,
-WFDB adapters and pinned third-party Python environments remain pending. No external Python dependency
-is installed or declared yet.
+The isolated Swift candidate runner is documented in `../PeakSwiftBenchmark/README.md`. It is not a
+dependency of `ECGCore` or the App. Its source and pins pass cross-platform static checks, but its
+PeakSwift/native-code build must be run on macOS before any prediction is treated as executable
+evidence.
+
+`data/` and `output/` are Git-ignored. The complete dataset and generated manifest exist only in the
+local development workspace; neither is committed. The official WFDB `bxb` cross-check, detector
+execution on macOS and any pinned third-party Python environment remain pending. No external Python
+dependency is installed or declared yet.
 
 Primary references:
 

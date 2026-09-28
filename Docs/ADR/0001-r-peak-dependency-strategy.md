@@ -1,6 +1,6 @@
 # ADR-0001: Isolate and benchmark R-peak detector candidates
 
-- Status: Accepted for Milestone 0
+- Status: Accepted for Milestone 0; benchmark integration sequence refined by ADR-0002
 - Date: 2026-09-26
 - Owners: Project contributors
 
@@ -22,9 +22,10 @@ surface for a narrow query. WFDB, NeuroKit2, and BioSPPy are suitable only for o
 2. Define the `RPeakDetecting` protocol before integrating any implementation.
 3. Treat PeakSwift as the preferred **candidate baseline**, not the selected production detector and
    never as a PAC/PVC classifier.
-4. In Milestone 3, implement a `PeakSwiftRPeakDetector` adapter and benchmark at least two suitable
+4. In Milestone 3, first implement an isolated prediction adapter and benchmark at least two suitable
    PeakSwift algorithms on a frozen public-data protocol and available Apple Watch compatibility
-   samples. Detector selection cannot use Apple's ECG classification.
+   samples. Add a production `RPeakDetecting` adapter only after selection. Detector selection cannot
+   use Apple's ECG classification. ADR-0002 defines this isolation boundary.
 5. If integrated, pin an exact released tag plus resolved full commit SHA; preserve Apache-2.0
    attribution/NOTICE and audit all transitive and vendored components.
 6. Keep WFDB/NeuroKit2/BioSPPy in `Tools/Validation`; none enters App runtime.

@@ -82,10 +82,13 @@ end to end; those claims remain governed by the later milestones and recorded ru
   verifies each selected `.hea`/`.dat`/`.atr` file against PhysioNet's SHA-256 manifest.
 - [x] Define and test a versioned 30 s window/prediction contract, subject/record split-leakage
   checks, and deterministic one-to-one R-peak matching with the official `bxb` 150 ms default window.
-- [ ] Download the dataset, audit subject identities, freeze actual development/validation/held-out
-  record manifests, and cross-check evaluator output against the official WFDB `bxb` implementation.
+- [x] Download and checksum-verify all 48 records locally, audit subject identities, and freeze the
+  actual development/validation/held-out record manifest before detector evaluation.
+- [ ] Cross-check evaluator output against the official WFDB `bxb` implementation.
 - [ ] Freeze any required WFDB/NeuroKit/BioSPPy Python versions and hashes before adding them.
-- [ ] Add PeakSwift adapter pinned to exact tag/full SHA after full license/transitive audit.
+- [x] Audit and pin PeakSwift v1.0.0 plus Surge/IIR/wavelib full revisions in an isolated,
+  development-only prediction adapter; macOS build/runtime validation remains pending.
+- [ ] Add a production `RPeakDetecting` adapter only after benchmark selection and a new ADR.
 - [ ] Compare at least two suitable PeakSwift detectors and Python references without Apple labels.
 - [ ] Publish per-record R-peak metrics, timing errors, failures and detector-selection ADR.
 
@@ -97,6 +100,8 @@ end to end; those claims remain governed by the later milestones and recorded ru
 - [ ] M7: conservative explainable PAC/PVC/Uncertain evidence classifier.
 - [ ] M8: UI integration, research mode, feature export and settings reset.
 - [ ] M9: end-to-end tests, independent Apple Watch domain validation and release audit.
+- [ ] M9 distribution: keep one App / one Bundle ID, review optional IAP tipping, and complete
+  storefront-specific medical-device, privacy, tax, consumer and open-source compliance review.
 
 ## Deferred, not MVP
 

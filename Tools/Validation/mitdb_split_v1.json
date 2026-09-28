@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "dataset": {
+    "name": "MIT-BIH Arrhythmia Database",
+    "version": "1.0.0",
+    "sourceURL": "https://physionet.org/content/mitdb/1.0.0/",
+    "license": "Open Data Commons Attribution License v1.0"
+  },
+  "strategy": {
+    "name": "subject-level-stratified-sha256-v1",
+    "frozenBeforeDetectorEvaluation": true,
+    "hashInputPrefix": "watchbeat-mitdb-split-v1:",
+    "pacedRecords": ["102", "104", "107", "217"],
+    "allocations": {
+      "paced": {"development": 2, "validation": 1, "held-out-test": 1},
+      "randomNonPaced": {"development": 12, "validation": 4, "held-out-test": 4},
+      "selectedNonPaced": {"development": 15, "validation": 4, "held-out-test": 4}
+    },
+    "description": "Subjects were ranked by SHA-256 within paced, random-cohort non-paced, and selected-cohort non-paced strata. Allocation is 2/1/1, 12/4/4, and 15/4/4 subjects to development/validation/held-out-test respectively. The explicit lists below are authoritative."
+  },
+  "subjectGroups": [
+    {
+      "id": "mitdb-subject-201-202",
+      "records": ["201", "202"],
+      "evidenceURL": "https://physionet.org/files/mitdb/1.0.0/mitdbdir/intro.htm"
+    }
+  ],
+  "splits": {
+    "development": [
+      "100", "102", "103", "107", "111", "112", "114", "115", "116", "118",
+      "119", "122", "123", "124", "200", "201", "202", "203", "205", "207",
+      "208", "212", "213", "214", "220", "222", "228", "231", "232", "234"
+    ],
+    "validation": ["101", "104", "105", "108", "113", "210", "219", "223", "233"],
+    "held-out-test": ["106", "109", "117", "121", "209", "215", "217", "221", "230"]
+  }
+}

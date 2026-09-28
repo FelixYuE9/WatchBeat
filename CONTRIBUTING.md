@@ -26,6 +26,7 @@ Run what the environment supports and report exactly what ran:
 ```bash
 Tools/run-core-tests.sh --parallel        # ECGCore
 bash Tools/run-app-tests.sh --parallel    # iOS app package (iOS/); chmod +x once to drop `bash`
+bash Tools/run-peakswift-benchmark-tests.sh  # isolated detector candidate; macOS/Xcode only
 
 cd iOS && swift build                # macOS target: SwiftUI + HealthKit
 cd iOS && swift build --triple x86_64-apple-ios17.0-macabi --target WatchBeatHealthKit

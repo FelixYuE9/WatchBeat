@@ -51,6 +51,7 @@ ECGCore/                      # 已建立；平台无关 Swift Package
   Tests/ECGCoreTests/        # 确定性测试源码
 Docs/                        # 设计、验证、数据、隐私与合规记录
 Tools/Validation/            # 离线验证骨架；无运行时依赖
+Tools/PeakSwiftBenchmark/    # 与 App 隔离的第三方 detector 候选预测工具
 PrivateValidationData/       # 内容被 Git 忽略
 iOS/                         # Milestone 1 App：SwiftPM 包 + Xcode 工程
   App/                       # @main 入口、scene container、root 路由
@@ -85,8 +86,9 @@ HealthKit 异步查询必须支持 cooperative cancellation 和请求 identity �
 ## 依赖倒置
 
 `RPeakDetecting` 隔离 PeakSwift 或未来的独立 detector；`BeatClassifying` 隔离规则系统和
-未来可选模型。Milestone 0 没有加入任何候选实现。详见
-[ADR-0001](ADR/0001-r-peak-dependency-strategy.md)。
+未来可选模型。shipping targets 尚未加入候选实现；PeakSwift 只存在于不会被 App 引用的离线
+benchmark package。详见 [ADR-0001](ADR/0001-r-peak-dependency-strategy.md) 与
+[ADR-0002](ADR/0002-peakswift-benchmark-boundary.md)。
 
 ## 状态
 

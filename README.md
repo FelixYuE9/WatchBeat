@@ -4,20 +4,20 @@
 Apple Watch 官方 ECG App 已保存到 Apple Health 的单导联 ECG，并以保守、
 可审计的方式标记疑似提前心搏。
 
-> **当前状态：Milestone 2 界面已在模拟器手工运行；v0.3.0 (4) 的示例记录改动等待 macOS 复验。** `ECGCore` 已编译并通过 7 项单元测试。
+> **当前状态：v0.3.0 (4) 已由用户在 Mac/Xcode 环境确认测试通过；Milestone 3 离线验证流程正在实现。** `ECGCore` 已编译并通过 7 项单元测试。
 > iOS 17 读取层源码已完成（SwiftUI App、只读 HealthKit ECG 授权、metadata 列表、惰性电压读取、
 > mV 映射、状态区分与免责声明），并在本机真实编译：
 >
 > - `swift build`：macOS 目标全量通过；以真实 iPhoneOS 26.5 / iPhoneSimulator 26.5 SDK 通过。
 > - Xcode 26.6（build 17F113，位于 `~/Downloads/Xcode.app`）：`iOS/WatchBeat.xcodeproj` 的
 >   App target 与单元测试 bundle 均 `BUILD SUCCEEDED`。
-> - 既有 16 项读取层单元测试通过（SwiftPM/macOS）；当前源码另有 9 项波形、合成示例、导出和 R–R 显示测试，
->   当前 Windows 环境无法执行 Swift，须在 macOS 上运行后再登记结果。
+> - 既有 16 项读取层单元测试通过（SwiftPM/macOS）；当前源码另有 9 项波形、合成示例、导出和 R–R 显示测试。
+>   用户报告 v0.3.0 (4) 测试通过，但尚未保存带测试数量的 Xcode 摘要，故仍不把预期 25 项写成已审计结果。
 >
 > **运行证据：** 2026-09-27 的用户截图确认 App 已在 iPhone 17 Pro / iOS 26.5 模拟器成功安装
 > 和启动，并已打开 15,000 点的内置合成 ECG 波形；用户随后确认 v0.3.0 (3) 整体服务运行正常。
-> 当前 v0.3.0 (4) 只把示例入口改成数据列表中的固定记录，尚未在 Xcode 重建；shared scheme
-> 自动测试和真机 HealthKit 也仍未验证。详见
+> 当前 v0.3.0 (4) 已确认示例入口显示为数据列表中的固定记录；shared scheme 的完整日志
+> 和真机 HealthKit 仍未验证。详见
 > [NEEDS_MACOS_VALIDATION.md](NEEDS_MACOS_VALIDATION.md) 与
 > [Docs/VALIDATION.md](Docs/VALIDATION.md)。
 > 后续审查已修正 entitlement、iPhone-only、共享 scheme 与 SwiftUI 状态生命周期；该修复提交
@@ -80,14 +80,17 @@ PAC/PVC 分类或置信度的输入。
 - 内置合成 ECG 使用生成方程的已知 R 峰位置，在波形上逐个显示 R–R 间隔（ms）；这不是 detector 结果。
 - 数据页把合成示例作为一条固定的“示例 ECG 数据”记录展示，而不是另外的功能按钮。
 - 用户确认后通过系统 share sheet 导出原始 CSV 或 metadata JSON；临时文件分享后清理。
-- 16 项读取层测试此前已通过；当前另有 9 项波形/导出/R–R 测试，等待 macOS 执行。
-- Milestone 3 离线基础：固定 MIT-BIH v1.0.0 记录列表与 SHA-256 校验下载器，以及
-  30 秒窗口、分组防泄漏、150 ms 一对一 R 峰匹配和按窗口/分组/全局汇总指标。
+- 16 项读取层测试此前已通过；用户报告当前测试通过，预期 25 项的完整 Xcode 摘要仍待归档。
+- Milestone 3 离线基础：已在本地校验 MIT-BIH v1.0.0 全部 48 records / 145 files，并冻结
+  47-subject split、2,880 个 30 秒窗口、109,150 个参考 QRS、生成物 SHA-256 lock、150 ms
+  一对一 R 峰匹配和按窗口/分组/全局汇总指标；原始数据与大 manifest 不进入 Git。
+- PeakSwift v1.0.0 候选已完成精确 commit/传递许可证审计，并放进与 App 隔离的离线预测
+  package；macOS 原生构建与 detector 指标尚未完成，因此真实 HealthKit ECG 仍不显示算法峰值。
 - 隐私、算法、验证、数据集、监管和依赖决策文档。
 
 ## 尚未实现
 
-- shared scheme 的 simulator 自动测试，以及 v0.3.0 (4)“示例 ECG 数据”固定记录卡的 Xcode 编译与 UI 复验。
+- shared scheme simulator 自动测试的完整日志与测试数量归档。
 - 真机 HealthKit 授权、真实波形显示和导出逐样本一致性校验。
 - 真实 HealthKit ECG 的已验证 R 峰 detector 与 R–R 显示；当前不会用未验证算法猜峰值。
 - 数字滤波、完整信号质量门控、模板、QRS 和分类器（Milestones 4–7）。
@@ -189,8 +192,10 @@ All ECG processing is performed locally on the user's device.
 - [数据集登记](Docs/DATASETS.md)
 - [隐私](Docs/PRIVACY.md)
 - [监管与产品表述](Docs/REGULATORY.md)
+- [赞助、App Store 与发行边界](Docs/DISTRIBUTION.md)
 - [依赖登记](Docs/DEPENDENCIES.md)
 - [ADR-0001：R 峰依赖策略](Docs/ADR/0001-r-peak-dependency-strategy.md)
+- [ADR-0002：PeakSwift 离线评测边界](Docs/ADR/0002-peakswift-benchmark-boundary.md)
 - [工作清单](TODO.md)
 - [第三方声明](THIRD_PARTY_NOTICES.md)
 

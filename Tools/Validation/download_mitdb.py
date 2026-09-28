@@ -16,8 +16,9 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Sequence
 
 
 DATASET_NAME = "MIT-BIH Arrhythmia Database"
@@ -57,7 +58,13 @@ def parse_sha256_manifest(text: str) -> dict[str, str]:
                 f"invalid SHA256SUMS.txt line {line_number}: {raw_line!r}"
             )
         name = match.group("name")
-        if Path(name).name != name or name in {".", ".."}:
+        parts = name.split("/")
+        if (
+            name.startswith("/")
+            or "\\" in name
+            or ":" in name
+            or any(part in {"", ".", ".."} for part in parts)
+        ):
             raise DownloadValidationError(f"unsafe checksum path at line {line_number}: {name}")
         if name in checksums:
             raise DownloadValidationError(f"duplicate checksum entry: {name}")
@@ -141,9 +148,12 @@ def download_dataset(
     destination: Path,
     records: Sequence[str] = OFFICIAL_RECORDS,
     timeout_seconds: float = 60.0,
+    workers: int = 4,
+    progress: Callable[[int, int, str, str], None] | None = None,
 ) -> dict:
     selected = validate_record_selection(records)
     timeout_seconds = _positive_timeout(timeout_seconds)
+    workers = _positive_worker_count(workers)
     destination.mkdir(parents=True, exist_ok=True)
 
     manifest_bytes = _request_bytes(f"{BASE_URL}/SHA256SUMS.txt", timeout_seconds)
@@ -162,13 +172,23 @@ def download_dataset(
         )
 
     statuses: dict[str, str] = {}
-    for name in names:
-        statuses[name] = _download_verified_file(
-            name,
-            checksums[name],
-            destination,
-            timeout_seconds,
-        )
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mitdb-download") as executor:
+        futures = {
+            executor.submit(
+                _download_verified_file,
+                name,
+                checksums[name],
+                destination,
+                timeout_seconds,
+            ): name
+            for name in names
+        }
+        for completed_count, future in enumerate(as_completed(futures), start=1):
+            name = futures[future]
+            status = future.result()
+            statuses[name] = status
+            if progress is not None:
+                progress(completed_count, len(names), name, status)
 
     (destination / "SHA256SUMS.txt").write_bytes(manifest_bytes)
     attribution = (
@@ -225,6 +245,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="official record names; defaults to all 48 records",
     )
     parser.add_argument("--timeout", type=float, default=60.0)
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="bounded concurrent downloads (default: 4)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -232,6 +258,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.destination,
             records=args.records,
             timeout_seconds=_positive_timeout(args.timeout),
+            workers=_positive_worker_count(args.workers),
+            progress=lambda completed, total, name, status: (
+                print(f"Verified {completed}/{total}: {name} ({status})", flush=True)
+                if completed == total or completed % 12 == 0
+                else None
+            ),
         )
     except (
         DownloadValidationError,
@@ -259,6 +291,12 @@ def _positive_timeout(value: float) -> float:
     ):
         raise DownloadValidationError("timeout must be greater than zero")
     return float(value)
+
+
+def _positive_worker_count(value: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 8:
+        raise DownloadValidationError("workers must be an integer from 1 through 8")
+    return value
 
 
 if __name__ == "__main__":

@@ -1,0 +1,64 @@
+{
+  "dataset": {
+    "license": "Open Data Commons Attribution License v1.0",
+    "name": "MIT-BIH Arrhythmia Database",
+    "sourceURL": "https://physionet.org/content/mitdb/1.0.0/",
+    "version": "1.0.0"
+  },
+  "edgeCases": {
+    "nonMLIISelectedChannels": [
+      {
+        "recordId": "102",
+        "selectedChannelName": "V5"
+      },
+      {
+        "recordId": "104",
+        "selectedChannelName": "V5"
+      }
+    ],
+    "zeroReferencePeakWindowIds": [
+      "mitdb-207-000561600-000572400",
+      "mitdb-207-000572400-000583200"
+    ]
+  },
+  "lockSchemaVersion": 1,
+  "manifest": {
+    "byteCount": 2665330,
+    "schemaVersion": 1,
+    "sha256": "55143a8301860ec3744fdf7e8d9cef31c0d6ed3ea82b8f73a42d2452b416f382"
+  },
+  "provenance": {
+    "annotationFormat": "WFDB MIT binary",
+    "channelPolicy": "MLII when present, otherwise signal 0",
+    "referenceAnnotator": "atr",
+    "sourceFileCount": 145,
+    "splitDefinitionSHA256": "8c6959831a4483d0994c0ae75c9545d9a148d69a044faed452497c5263b50751",
+    "verifiedDatasetContentSHA256": "a1b46eaca7f0e1c1053384490f688022eb4dbc0466f9633750efa99aa174d21e"
+  },
+  "summary": {
+    "recordCount": 48,
+    "referencePeakCount": 109150,
+    "splits": {
+      "development": {
+        "recordCount": 30,
+        "referencePeakCount": 67351,
+        "subjectCount": 29,
+        "windowCount": 1800
+      },
+      "held-out-test": {
+        "recordCount": 9,
+        "referencePeakCount": 21151,
+        "subjectCount": 9,
+        "windowCount": 540
+      },
+      "validation": {
+        "recordCount": 9,
+        "referencePeakCount": 20648,
+        "subjectCount": 9,
+        "windowCount": 540
+      }
+    },
+    "subjectCount": 47,
+    "windowCount": 2880
+  }
+}

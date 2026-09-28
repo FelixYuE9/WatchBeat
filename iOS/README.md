@@ -1,14 +1,15 @@
 # iOS application boundary
 
-Status: **v0.3.0 (3) was manually confirmed in the simulator; the build-4 example-record change and automated tests are pending.**
+Status: **The user reports v0.3.0 (4) passes the requested Mac/Xcode checks; the exact test summary is not yet archived.**
 
 Xcode 26.6 (build 17F113) is installed at `~/Downloads/Xcode.app` and builds the app target and the
 unit-test bundle against the real iPhoneOS 26.5 and iPhoneSimulator 26.5 SDKs. A user-provided
 2026-09-27 screenshots confirm the corrected App installs and runs on an iPhone 17 Pro simulator
 with iOS 26.5, renders the full 15,000-sample synthetic ECG, and presents the v0.3.0 (3)
 overview/data/settings UI. The user reported that the service and test data looked correct. The exact
-command and shared-scheme test action were not recorded. Build 4 now presents the synthetic example
-as a persistent data record; that revision has not been rebuilt, and there is still no real-iPhone evidence.
+command and earlier shared-scheme test action were not recorded. Build 4 now presents the synthetic
+example as a persistent data record, and the user reports the requested follow-up test passed. The
+exact Xcode summary/test count is still missing, and there is still no real-iPhone evidence.
 
 A follow-up review corrected entitlement wiring, made the target iPhone-only, committed a shared
 scheme and stabilized view-model ownership. Those corrections pass repository configuration tests
@@ -29,7 +30,7 @@ sudo xcode-select -s "$HOME/Downloads/Xcode.app/Contents/Developer"
 |---|---|---|---|
 | `WatchBeatModels` | records, measurements, typed states, display downsampling, export encoding, synthetic tutorial | no | yes |
 | `WatchBeatHealthKit` | `ECGHealthKitReading` (protocol), `LiveHealthKitECGReader`, `ECGHealthKitMapper`, `ECGRepository` | no | yes |
-| `WatchBeatApp` | SwiftUI app: disclaimer, overview/data/settings tabs, language setting, ECG list/detail, waveform and share sheet | yes | yes (build 3 observed; build-4 example-record change awaits rebuild) |
+| `WatchBeatApp` | SwiftUI app: disclaimer, overview/data/settings tabs, language setting, ECG list/detail, waveform and share sheet | yes | yes (build 4 user-confirmed; exact log not archived) |
 | `WatchBeatAppTests` | Swift Testing suites for the mapper and repository states | no | yes (build) |
 
 The same modules exist twice: as SwiftPM targets (`Package.swift`) and as Xcode targets

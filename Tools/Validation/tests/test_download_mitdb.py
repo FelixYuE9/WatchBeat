@@ -29,19 +29,28 @@ class MITDBDownloadTests(unittest.TestCase):
     def test_checksum_manifest_parser_accepts_standard_format(self) -> None:
         first = "a" * 64
         second = "b" * 64
+        third = "c" * 64
 
         result = MODULE.parse_sha256_manifest(
-            f"{first} 100.hea\n{second} 100.dat\n"
+            f"{first} 100.hea\n{second} 100.dat\n{third} mitdbdir/records.htm\n"
         )
 
-        self.assertEqual(result, {"100.hea": first, "100.dat": second})
+        self.assertEqual(
+            result,
+            {
+                "100.hea": first,
+                "100.dat": second,
+                "mitdbdir/records.htm": third,
+            },
+        )
 
     def test_checksum_manifest_rejects_unsafe_path(self) -> None:
-        with self.assertRaisesRegex(
-            MODULE.DownloadValidationError,
-            "unsafe checksum path",
-        ):
-            MODULE.parse_sha256_manifest(f"{'a' * 64} ../100.dat\n")
+        for name in ("../100.dat", "folder/../100.dat", "/100.dat", "C:/100.dat", "folder\\100.dat"):
+            with self.subTest(name=name), self.assertRaisesRegex(
+                MODULE.DownloadValidationError,
+                "unsafe checksum path",
+            ):
+                MODULE.parse_sha256_manifest(f"{'a' * 64} {name}\n")
 
     def test_verify_file_detects_hash_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -70,6 +79,15 @@ class MITDBDownloadTests(unittest.TestCase):
                 "timeout must be greater than zero",
             ):
                 MODULE._positive_timeout(value)
+
+    def test_worker_count_is_bounded(self) -> None:
+        self.assertEqual(MODULE._positive_worker_count(4), 4)
+        for value in (0, 9, True, 1.5):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                MODULE.DownloadValidationError,
+                "workers must be an integer from 1 through 8",
+            ):
+                MODULE._positive_worker_count(value)
 
 
 if __name__ == "__main__":

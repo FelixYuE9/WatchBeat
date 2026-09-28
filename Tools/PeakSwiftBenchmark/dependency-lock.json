@@ -1,0 +1,44 @@
+{
+  "auditSchemaVersion": 1,
+  "reviewedAt": "2026-09-28",
+  "scope": "development-only R-peak benchmark candidate; not linked into the iOS App",
+  "packages": {
+    "peakswift": {
+      "url": "https://github.com/CardioKit/PeakSwift.git",
+      "tag": "v1.0.0",
+      "version": "1.0.0",
+      "revision": "18fe5e7c674f915c3666e0414c7f2ac39b241bb9",
+      "license": "Apache-2.0",
+      "noticeFilePresent": false
+    },
+    "surge": {
+      "url": "https://github.com/Jounce/Surge.git",
+      "tag": "2.3.2",
+      "version": "2.3.2",
+      "revision": "6e4a47e63da8801afe6188cf039e9f04eb577721",
+      "license": "MIT"
+    }
+  },
+  "peakSwiftGitSubmodules": {
+    "iir1": {
+      "url": "https://github.com/berndporr/iir1",
+      "path": "Sources/IIR",
+      "revision": "9ef2a04ac3a44a8762b6a209c18e3bdb00394e5b",
+      "license": "MIT"
+    },
+    "wavelib": {
+      "upstreamURL": "git@github.com:rafat/wavelib.git",
+      "httpsURL": "https://github.com/rafat/wavelib.git",
+      "path": "Sources/wavelib",
+      "revision": "a92456d2e20451772dd76c2a0a3368537ee94184",
+      "license": "BSD-3-Clause"
+    }
+  },
+  "reviewNotes": [
+    "A dependency package's own Package.resolved is ignored by SwiftPM consumers, so this top-level package constrains Surge exactly.",
+    "PeakSwift imports HealthKit in its main target and includes C, C++ and Objective-C++ targets; an Apple-platform build is required.",
+    "The upstream wavelib submodule uses an SSH URL. The repository test script applies a process-local Git HTTPS rewrite without changing global Git configuration.",
+    "PeakSwift exposes eleven enum cases although its README advertises nine detectors. The benchmark CLI exposes only the nine named public detector algorithms.",
+    "No candidate is selected for production and no accuracy claim is made by this audit."
+  ]
+}

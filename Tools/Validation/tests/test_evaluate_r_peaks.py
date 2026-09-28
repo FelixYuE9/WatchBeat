@@ -116,6 +116,21 @@ class RPeakBenchmarkTests(unittest.TestCase):
         self.assertIsNone(metrics["positivePredictivityPrecision"])
         self.assertEqual(metrics["f1"], 0.0)
 
+    def test_empty_reference_window_is_kept_and_counts_false_positives(self) -> None:
+        manifest_document = manifest_payload()
+        manifest_document["windows"][0]["referencePeakSamples"] = []
+        manifest = MODULE.validate_manifest(manifest_document)
+        predictions = MODULE.validate_predictions(predictions_payload([360]), manifest)
+
+        metrics = MODULE.evaluate(manifest, predictions)["aggregate"]
+
+        self.assertEqual(metrics["truePositiveCount"], 0)
+        self.assertEqual(metrics["falsePositiveCount"], 1)
+        self.assertEqual(metrics["falseNegativeCount"], 0)
+        self.assertIsNone(metrics["sensitivityRecall"])
+        self.assertEqual(metrics["positivePredictivityPrecision"], 0.0)
+        self.assertEqual(metrics["f1"], 0.0)
+
     def test_manifest_rejects_subject_leakage_between_splits(self) -> None:
         payload = manifest_payload()
         second = copy.deepcopy(payload["windows"][0])
@@ -165,6 +180,43 @@ class RPeakBenchmarkTests(unittest.TestCase):
             "configHash must be a non-empty string",
         ):
             MODULE.validate_predictions(payload, manifest)
+
+    def test_split_projection_requires_an_explicit_valid_stage(self) -> None:
+        manifest = MODULE.validate_manifest(manifest_payload())
+
+        with self.assertRaisesRegex(
+            MODULE.BenchmarkValidationError,
+            "at least one benchmark split",
+        ):
+            MODULE.select_manifest_splits(manifest, [])
+        with self.assertRaisesRegex(
+            MODULE.BenchmarkValidationError,
+            "unknown benchmark splits",
+        ):
+            MODULE.select_manifest_splits(manifest, ["future-split"])
+
+    def test_split_projection_excludes_unrequested_windows(self) -> None:
+        payload = manifest_payload()
+        held_out = copy.deepcopy(payload["windows"][0])
+        held_out.update(
+            {
+                "id": "record-b-000000-010800",
+                "subjectId": "subject-b",
+                "recordId": "record-b",
+                "split": "held-out-test",
+            }
+        )
+        payload["windows"].append(held_out)
+
+        projected = MODULE.select_manifest_splits(
+            MODULE.validate_manifest(payload),
+            ["development"],
+        )
+
+        self.assertEqual([window.window_id for window in projected.windows], [
+            "record-a-000000-010800"
+        ])
+        MODULE.validate_predictions(predictions_payload(), projected)
 
 
 if __name__ == "__main__":

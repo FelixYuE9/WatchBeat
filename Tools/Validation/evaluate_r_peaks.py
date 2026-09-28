@@ -229,7 +229,7 @@ def validate_manifest(payload: Any) -> BenchmarkManifest:
             f"{path}.referencePeakSamples",
             start_sample,
             end_sample_exclusive,
-            allow_empty=False,
+            allow_empty=True,
         )
 
         windows.append(
@@ -321,6 +321,37 @@ def validate_predictions(payload: Any, manifest: BenchmarkManifest) -> DetectorP
     return DetectorPredictions(
         detector=detector,
         peaks_by_window_id=peaks_by_window_id,
+    )
+
+
+def select_manifest_splits(
+    manifest: BenchmarkManifest,
+    splits: Sequence[str],
+) -> BenchmarkManifest:
+    """Project a frozen manifest to explicitly requested benchmark stages.
+
+    Detector development must not silently include held-out-test windows. The CLI therefore
+    requires at least one ``--split`` and validates predictions against only that projection.
+    """
+
+    requested = tuple(dict.fromkeys(splits))
+    if not requested:
+        raise BenchmarkValidationError("at least one benchmark split must be selected")
+    invalid = sorted(set(requested) - VALID_SPLITS)
+    if invalid:
+        raise BenchmarkValidationError(
+            "unknown benchmark splits: " + ", ".join(invalid)
+        )
+    windows = tuple(window for window in manifest.windows if window.split in requested)
+    if not windows:
+        raise BenchmarkValidationError(
+            "selected benchmark splits contain no manifest windows"
+        )
+    return BenchmarkManifest(
+        dataset=manifest.dataset,
+        windows=windows,
+        matching_tolerance_milliseconds=manifest.matching_tolerance_milliseconds,
+        window_duration_seconds=manifest.window_duration_seconds,
     )
 
 
@@ -573,8 +604,14 @@ def load_json_document(path: Path) -> Any:
         return json.load(file)
 
 
-def build_report(manifest_path: Path, predictions_path: Path) -> dict[str, Any]:
+def build_report(
+    manifest_path: Path,
+    predictions_path: Path,
+    splits: Sequence[str] | None = None,
+) -> dict[str, Any]:
     manifest = validate_manifest(load_json_document(manifest_path))
+    if splits is not None:
+        manifest = select_manifest_splits(manifest, splits)
     predictions = validate_predictions(
         load_json_document(predictions_path),
         manifest,
@@ -588,11 +625,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("manifest", type=Path)
     parser.add_argument("predictions", type=Path)
+    parser.add_argument(
+        "--split",
+        action="append",
+        choices=sorted(VALID_SPLITS),
+        required=True,
+        help="benchmark stage to evaluate; repeat only for an intentional combined report",
+    )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
 
     try:
-        report = build_report(args.manifest, args.predictions)
+        report = build_report(args.manifest, args.predictions, splits=args.split)
         serialized = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True)
