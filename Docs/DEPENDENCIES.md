@@ -22,8 +22,9 @@ PeakSwift 的候选审计已经冻结：Surge 2.3.2 / `6e4a47e63da8801afe6188cf0
 `a92456d2e20451772dd76c2a0a3368537ee94184`（BSD-3-Clause）。精确记录见
 `Tools/PeakSwiftBenchmark/dependency-lock.json`。上游 wavelib submodule 使用 SSH URL，测试脚本
 仅对子进程改写 HTTPS；主 target 还包含 C/C++/Objective-C++ 并直接 import HealthKit，因此必须
-在目标 Xcode/Swift 环境实际编译。仓库 README 的 branch-based 安装示例不是本项目允许的
-pinning 策略。
+在目标 Xcode/Swift 环境实际编译。该依赖图已于 2026-09-28 在用户的 Intel Mac 上完成链接并
+执行 4 项 adapter XCTest；detector 数据集执行仍是单独关卡。仓库 README 的 branch-based 安装
+示例不是本项目允许的 pinning 策略。
 
 ## 引入门槛
 

@@ -93,6 +93,7 @@ class RPeakBenchmarkTests(unittest.TestCase):
         report = MODULE.evaluate(manifest, predictions)
 
         self.assertEqual(report["claimStatus"], "research-only-unvalidated")
+        self.assertEqual(len(report["benchmarkDefinitionSHA256"]), 64)
         self.assertTrue(report["matching"]["wfdbBxbCrossCheckRequired"])
         self.assertEqual(report["aggregate"]["truePositiveCount"], 3)
         self.assertEqual(report["aggregate"]["falsePositiveCount"], 0)
@@ -102,6 +103,30 @@ class RPeakBenchmarkTests(unittest.TestCase):
         self.assertAlmostEqual(
             report["aggregate"]["absoluteTimingErrorP95Milliseconds"],
             1_000 * 3 / 360,
+        )
+
+    def test_benchmark_definition_hash_tracks_reference_positions(self) -> None:
+        baseline_manifest = MODULE.validate_manifest(manifest_payload())
+        baseline_predictions = MODULE.validate_predictions(
+            predictions_payload(), baseline_manifest
+        )
+        baseline = MODULE.evaluate(baseline_manifest, baseline_predictions)
+
+        changed_payload = manifest_payload()
+        changed_payload["windows"][0]["referencePeakSamples"][0] += 1
+        changed_manifest = MODULE.validate_manifest(changed_payload)
+        changed_predictions = MODULE.validate_predictions(
+            predictions_payload(), changed_manifest
+        )
+        changed = MODULE.evaluate(changed_manifest, changed_predictions)
+
+        self.assertEqual(
+            baseline["aggregate"]["referencePeakCount"],
+            changed["aggregate"]["referencePeakCount"],
+        )
+        self.assertNotEqual(
+            baseline["benchmarkDefinitionSHA256"],
+            changed["benchmarkDefinitionSHA256"],
         )
 
     def test_empty_predictions_are_valid_and_count_as_missed_peaks(self) -> None:

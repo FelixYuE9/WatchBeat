@@ -73,9 +73,31 @@ plist/entitlement 与共享 scheme；Milestone 2 又增加 1 项 Xcode source-me
 MIT annotation 解析、完整数据重哈希、冻结 split 推导、manifest lock、零参考 QRS 窗口，以及
 30 秒窗口、split 防泄漏、150 ms 一对一匹配、配置哈希、空预测和指标汇总。PeakSwift
 follow-up 又增加显式 split projection、held-out 防误用、精确 package/submodule revision、许可证、
-无标签解码、版本元数据一致性与 process-local HTTPS rewrite 检查。当前 Python suite 合计 38 tests，全部通过；该环境没有
+无标签解码、版本元数据一致性与 process-local HTTPS rewrite 检查。Mac 首次构建通过后，又增加
+development-only 九算法编排、release/debug 配置记录，以及报告的数据集/window/split/matching/count
+一致性比较。比较器还核对包含参考峰位置的完整基准定义哈希和逐窗口计数。当前 Python suite
+合计 47 tests，全部通过；本机重新生成 2,880 个窗口的 manifest 与锁文件一致。该环境没有
 Swift/Xcode，因此没有把静态检查写成
 本次 Swift/Xcode 复验。
+
+### PeakSwift macOS 构建证据（2026-09-28）
+
+用户在仓库根目录实际执行：
+
+```bash
+bash Tools/run-peakswift-benchmark-tests.sh
+```
+
+结果：PeakSwift `1.0.0` 与 Surge `2.3.2` 成功解析；当时的 38 项 Python tests 全部通过；
+SwiftPM 完成包含 C/C++/Objective-C++ 子模块的 debug 链接（`Build complete! (80.78s)`），并在
+`x86_64-apple-macos14.0` 上打印 `[4/4]` 执行四项 `WFDB212ReaderTests`。末尾 Swift Testing
+runner 的 `0 tests in 0 suites` 只表示该 package 没有使用 Swift Testing 风格用例；四项 XCTest
+已由 SwiftPM 的 parallel XCTest runner 执行。该命令没有运行任何 detector 数据集，因此不能据此
+产生准确率结论。
+
+该次构建报告 Surge 未被 root target 直接使用；这是为了收窄 PeakSwift 的传递依赖版本而添加的
+exact root constraint。后续源码同时把 Surge product 声明为 benchmark-support target dependency，
+保留精确约束并消除该非功能性警告；这项小改动仍会在下一次 benchmark 命令中重新编译验证。
 
 同日的 Milestone 2 follow-up 新增 9 项 Swift 测试，覆盖显示降采样不修改原始数据、extrema、
 缺测 gap、真实 timestamp 映射、CSV 顺序/缺测、JSON 去除 HealthKit ID，以及内置合成示例的
@@ -244,7 +266,7 @@ scheme build/test 与签名产物检查。
 | MIT-BIH v1.0.0 固定下载 | 完成（本地、Git 忽略） | 48 records / 145 files / 约 104.3 MB；官方 SHA-256 全部通过 |
 | 30 s manifest 与 split 防泄漏 | 已冻结 | 47 subjects / 2,880 windows / 109,150 QRS；201/202 同 subject；有 lock 校验 |
 | R 峰一对一匹配 | 源码 + 回归测试通过 | 150 ms；最大匹配数后最小总误差；尚须与 WFDB `bxb` 交叉核对 |
-| PeakSwift 候选 adapter | 源码/依赖审计完成 | v1.0.0/full SHA + Surge/IIR/wavelib pins；独立工具；等待 macOS compile/test |
+| PeakSwift 候选 adapter | macOS build + 4 adapter tests 通过 | v1.0.0/full SHA + Surge/IIR/wavelib pins；独立工具；development 指标待运行 |
 | Split 使用顺序 | 工具强制 | CLI 必须显式指定；held-out-test 还需第二个 unlock flag |
 | R 峰性能报告 | 未开始 | 没有 detector 预测、没有数据集指标、没有 Apple Watch 性能声明 |
 

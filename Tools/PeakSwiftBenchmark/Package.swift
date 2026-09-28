@@ -22,7 +22,15 @@ let package = Package(
         .target(
             name: "PeakSwiftBenchmarkSupport",
             dependencies: [
-                .product(name: "PeakSwift", package: "PeakSwift")
+                .product(name: "PeakSwift", package: "PeakSwift"),
+                // Declare the reviewed transitive product here as well as constraining its
+                // package exactly above. This keeps the root pin active without SwiftPM's
+                // misleading "dependency is not used by any target" warning.
+                .product(name: "Surge", package: "Surge")
+            ],
+            swiftSettings: [
+                .define("PEAKSWIFT_BENCHMARK_DEBUG", .when(configuration: .debug)),
+                .define("PEAKSWIFT_BENCHMARK_RELEASE", .when(configuration: .release))
             ]
         ),
         .executableTarget(

@@ -176,7 +176,9 @@ struct ManifestWindow: Decodable {
 }
 
 struct DetectorConfiguration: Codable, Equatable {
+    let adapterSchemaVersion: Int
     let algorithm: PeakSwiftAlgorithmName
+    let buildConfiguration: String
     let inputUnit: String
     let manifestSHA256: String
     let peakIndexPolicy: String

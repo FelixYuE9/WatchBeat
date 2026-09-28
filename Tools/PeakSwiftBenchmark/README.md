@@ -53,3 +53,17 @@ The adapter:
 No result from this harness is an Apple Watch accuracy claim, PAC/PVC classifier, diagnosis, or
 production-detector selection. Official WFDB `bxb` cross-checking and Apple Watch-domain validation
 remain separate gates.
+
+The dependency graph and four adapter XCTest cases passed on the user's Intel Mac on 2026-09-28.
+To perform the first complete, development-only screen of all nine algorithms, return to the
+repository root and run:
+
+```bash
+bash Tools/run-peakswift-development-benchmark.sh
+```
+
+That command verifies the reviewed dependency revisions, downloads only the public checksum-verified
+MIT-BIH files, uses release configuration, keeps each run in a unique ignored output directory,
+continues after an individual candidate failure, and produces JSON plus Markdown comparison artifacts.
+It cannot request `validation` or
+`held-out-test`.

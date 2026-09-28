@@ -110,7 +110,7 @@ sheet and metadata JSON confirmation/share sheet. The exported example filenames
 `synthetic-example`. A HealthKit record must show the detector-not-validated note rather than guessed
 R–R labels.
 
-## 4. PeakSwift offline candidate — SOURCE READY; MACOS BUILD PENDING
+## 4. PeakSwift offline candidate — MACOS BUILD PASSED; DEVELOPMENT SCREEN PENDING
 
 This development-only package is intentionally separate from the App. From the repository root run:
 
@@ -124,9 +124,31 @@ tests, and compiles/runs the Swift adapter tests. It does not change global Git 
 detector on held-out data, or modify the iOS App. Retain the complete final Swift test summary and any
 dependency-resolution error. Do not work around a revision mismatch by deleting `Package.resolved`.
 
-Only after this passes should the separate development benchmark be run. `development` comes first;
-`validation` is for frozen finalists; `held-out-test` remains locked until a winner/configuration ADR
-exists.
+Actual user-run result on 2026-09-28:
+
+- PeakSwift `1.0.0` and Surge `2.3.2` resolved successfully;
+- all 38 then-current Python validation tests passed;
+- the native C/C++/Objective-C++ dependency graph linked successfully in 80.78 seconds;
+- SwiftPM printed `[4/4]` for the four `WFDB212ReaderTests` XCTest cases on
+  `x86_64-apple-macos14.0`;
+- the final Swift Testing message reported zero tests because this package uses XCTest, not because
+  the preceding four XCTest cases were skipped or failed.
+
+The run emitted a harmless warning that the directly pinned Surge package was not named by a root
+target. Surge is now declared as an explicit target product as well as an exact root constraint, so
+future runs should retain the pin without that warning.
+
+The next gate is development-only candidate execution:
+
+```bash
+bash Tools/run-peakswift-development-benchmark.sh
+```
+
+This verifies the exact dependency revisions, downloads/re-verifies public MIT-BIH data, regenerates
+the locked manifest, runs all nine public PeakSwift algorithms in release configuration on
+`development`, and writes a research-only comparison
+under the ignored `Tools/Validation/output/` directory. `validation` is for frozen finalists;
+`held-out-test` remains locked until a winner/configuration ADR exists.
 
 ## 5. Real-iPhone acceptance steps
 

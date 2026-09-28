@@ -76,12 +76,16 @@ stage, so a development report cannot silently consume held-out predictions.
 
 The report is always marked `research-only-unvalidated` and requires a future cross-check against the
 official `bxb` tool. It evaluates R-peak timing only, not PAC/PVC classification, and public-dataset
-performance cannot establish Apple Watch performance.
+performance cannot establish Apple Watch performance. Reports include a SHA-256 of the selected
+benchmark definition, including exact reference peak positions, so comparisons cannot mix changed
+annotations under the same window IDs.
 
 The isolated Swift candidate runner is documented in `../PeakSwiftBenchmark/README.md`. It is not a
-dependency of `ECGCore` or the App. Its source and pins pass cross-platform static checks, but its
-PeakSwift/native-code build must be run on macOS before any prediction is treated as executable
-evidence.
+dependency of `ECGCore` or the App. Its PeakSwift/native-code graph compiled and all four adapter
+XCTest cases ran on the user's Intel Mac. No detector dataset result exists yet. Use
+`../run-peakswift-development-benchmark.sh` to screen all nine public algorithms on `development`
+only; its comparison tool rejects mixed datasets, benchmark definitions, windows, splits or matching
+policies and never selects a production detector.
 
 `data/` and `output/` are Git-ignored. The complete dataset and generated manifest exist only in the
 local development workspace; neither is committed. The official WFDB `bxb` cross-check, detector

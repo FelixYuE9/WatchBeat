@@ -16,6 +16,7 @@ class PeakSwiftBenchmarkConfigurationTests(unittest.TestCase):
 
         self.assertIn('exact: "1.0.0"', package)
         self.assertIn('exact: "2.3.2"', package)
+        self.assertIn('.product(name: "Surge", package: "Surge")', package)
         self.assertNotIn("branch:", package)
         self.assertNotIn('.branch(', package)
 
@@ -65,6 +66,20 @@ class PeakSwiftBenchmarkConfigurationTests(unittest.TestCase):
             },
         )
 
+    def test_prediction_configuration_records_debug_or_release_build(self) -> None:
+        package = (PACKAGE_ROOT / "Package.swift").read_text(encoding="utf-8")
+        source = (
+            PACKAGE_ROOT
+            / "Sources"
+            / "PeakSwiftBenchmarkSupport"
+            / "PeakSwiftPredictionRunner.swift"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("PEAKSWIFT_BENCHMARK_DEBUG", package)
+        self.assertIn("PEAKSWIFT_BENCHMARK_RELEASE", package)
+        self.assertIn("adapterSchemaVersion: 1", source)
+        self.assertIn("buildConfiguration: buildConfiguration", source)
+
     def test_adapter_cannot_decode_reference_labels(self) -> None:
         source = "\n".join(
             path.read_text(encoding="utf-8")
@@ -83,6 +98,30 @@ class PeakSwiftBenchmarkConfigurationTests(unittest.TestCase):
         self.assertIn("GIT_CONFIG_KEY_0='url.https://github.com/.insteadOf'", script)
         self.assertIn("GIT_CONFIG_VALUE_0='git@github.com:'", script)
         self.assertNotIn("git config --global", script)
+
+    def test_development_script_cannot_run_validation_or_held_out_splits(self) -> None:
+        script = (
+            REPOSITORY_ROOT / "Tools" / "run-peakswift-development-benchmark.sh"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("--split development", script)
+        self.assertNotIn("--allow-held-out-test", script)
+        self.assertNotIn("--split validation", script)
+        self.assertNotIn("--split held-out-test", script)
+        self.assertIn("swift run -c release", script)
+        self.assertIn("compare_r_peak_reports.py", script)
+        for algorithm in (
+            "christov",
+            "nabian2018",
+            "hamilton",
+            "two-average",
+            "neurokit",
+            "pan-tompkins",
+            "unsw",
+            "engzee",
+            "kalidas",
+        ):
+            self.assertIn(algorithm, script)
 
 
 if __name__ == "__main__":

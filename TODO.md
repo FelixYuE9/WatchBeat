@@ -87,7 +87,9 @@ end to end; those claims remain governed by the later milestones and recorded ru
 - [ ] Cross-check evaluator output against the official WFDB `bxb` implementation.
 - [ ] Freeze any required WFDB/NeuroKit/BioSPPy Python versions and hashes before adding them.
 - [x] Audit and pin PeakSwift v1.0.0 plus Surge/IIR/wavelib full revisions in an isolated,
-  development-only prediction adapter; macOS build/runtime validation remains pending.
+  development-only prediction adapter; its macOS dependency build and four adapter tests passed.
+- [x] Add a development-only nine-algorithm runner and compatible-report comparison that cannot
+  access validation or held-out-test splits.
 - [ ] Add a production `RPeakDetecting` adapter only after benchmark selection and a new ADR.
 - [ ] Compare at least two suitable PeakSwift detectors and Python references without Apple labels.
 - [ ] Publish per-record R-peak metrics, timing errors, failures and detector-selection ADR.

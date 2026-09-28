@@ -11,12 +11,13 @@ results are used to select a production detector.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import statistics
 import sys
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -529,6 +530,14 @@ def evaluate(
     manifest: BenchmarkManifest,
     predictions: DetectorPredictions,
 ) -> dict[str, Any]:
+    benchmark_definition = json.dumps(
+        asdict(manifest),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    benchmark_definition_sha256 = hashlib.sha256(benchmark_definition).hexdigest()
     window_reports: list[dict[str, Any]] = []
     grouped_counts: dict[str, list[tuple[int, int, int, list[float]]]] = defaultdict(list)
 
@@ -578,6 +587,7 @@ def evaluate(
     return {
         "reportSchemaVersion": REPORT_SCHEMA_VERSION,
         "claimStatus": "research-only-unvalidated",
+        "benchmarkDefinitionSHA256": benchmark_definition_sha256,
         "dataset": dict(manifest.dataset),
         "detector": dict(predictions.detector),
         "matching": {

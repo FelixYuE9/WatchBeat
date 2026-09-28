@@ -6,6 +6,15 @@ public enum PeakSwiftPredictionRunner {
     private static let peakSwiftVersion = "1.0.0"
     private static let peakSwiftRevision = "18fe5e7c674f915c3666e0414c7f2ac39b241bb9"
     private static let surgeRevision = "6e4a47e63da8801afe6188cf039e9f04eb577721"
+    private static let buildConfiguration: String = {
+        #if PEAKSWIFT_BENCHMARK_RELEASE
+        return "release"
+        #elseif PEAKSWIFT_BENCHMARK_DEBUG
+        return "debug"
+        #else
+        return "unknown"
+        #endif
+    }()
 
     public static func run(options: BenchmarkOptions) throws {
         let manifestData = try Data(contentsOf: options.manifestURL)
@@ -25,7 +34,9 @@ public enum PeakSwiftPredictionRunner {
 
         let manifestHash = sha256Hex(manifestData)
         let configuration = DetectorConfiguration(
+            adapterSchemaVersion: 1,
             algorithm: options.algorithm,
+            buildConfiguration: buildConfiguration,
             inputUnit: "physical-millivolts-from-wfdb-gain-and-baseline-v1",
             manifestSHA256: manifestHash,
             peakIndexPolicy: "strict-upstream-window-local-indices-no-refinement-v1",
