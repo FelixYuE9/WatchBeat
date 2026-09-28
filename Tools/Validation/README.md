@@ -117,14 +117,18 @@ so the aggregate gain is not a detector decision or
 Apple Watch result; see `../../Docs/VALIDATION.md` for the parameter sweep and outlier records.
 
 The next independent check uses official WFDB command-line tools on macOS. Once `wrann`, `rdann`,
-and `bxb` are available, and the prediction file is present in the Mac checkout, run:
+and `bxb` are available in the Mac checkout, run this from the repository root:
 
 ```bash
-bash Tools/run-bxb-development-crosscheck.sh \
-  Tools/Validation/output/peakswift-vote-2of3-100ms-development-predictions.json
+bash Tools/run-peakswift-vote-bxb-development.sh
 ```
 
-The script rechecks the frozen manifest and public-data hashes, prepares only development records,
+The command finds the unique complete `peakswift-development-*` run directory, creates the 2/3 vote
+at 100 ms from the three original prediction files, evaluates it, compares all four reports, and
+then invokes the WFDB cross-check. If more than one complete run exists, pass the chosen directory
+as the single argument rather than silently selecting one.
+
+The WFDB script rechecks the frozen manifest and public-data hashes, prepares only development records,
 round-trips every prediction sample through `wrann` and `rdann`, then saves one `bxb` report per
 record under a unique ignored output directory. It includes the first five minutes with `-f 0`
 and stops at the last complete 30-second window. Since `bxb` compares continuous records using
