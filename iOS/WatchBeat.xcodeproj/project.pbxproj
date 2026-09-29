@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -144,11 +144,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		A00000000000000000003001 /* ECGCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ECGCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000003002 /* WatchBeatModels.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatModels.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000003003 /* WatchBeatHealthKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatHealthKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000003004 /* WatchBeatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchBeatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A00000000000000000003005 /* WatchBeatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchBeatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000002002 /* AlgorithmVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlgorithmVersion.swift; sourceTree = "<group>"; };
 		A00000000000000000002003 /* ECGAlgorithmConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAlgorithmConfig.swift; sourceTree = "<group>"; };
 		A00000000000000000002005 /* ECGSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignal.swift; sourceTree = "<group>"; };
@@ -191,6 +186,11 @@
 		A00000000000000000002083 /* FakeECGReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeECGReader.swift; sourceTree = "<group>"; };
 		A00000000000000000002084 /* Gate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gate.swift; sourceTree = "<group>"; };
 		A00000000000000000002085 /* ECGPresentationAndExportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGPresentationAndExportTests.swift; sourceTree = "<group>"; };
+		A00000000000000000003001 /* ECGCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ECGCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003002 /* WatchBeatModels.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatModels.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003003 /* WatchBeatHealthKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatHealthKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003004 /* WatchBeatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchBeatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000003005 /* WatchBeatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchBeatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -280,48 +280,6 @@
 			path = ../ECGCore/Sources/ECGCore;
 			sourceTree = "<group>";
 		};
-		A00000000000000000000011 /* Classification */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002009 /* ECGAnalysisReport.swift */,
-				A00000000000000000002008 /* PrematureBeatAnalyzer.swift */,
-			);
-			path = Classification;
-			sourceTree = "<group>";
-		};
-		A00000000000000000000012 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002002 /* AlgorithmVersion.swift */,
-				A00000000000000000002003 /* ECGAlgorithmConfig.swift */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
-		A00000000000000000000013 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002005 /* ECGSignal.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		A00000000000000000000014 /* Peaks */ = {
-			isa = PBXGroup;
-			children = (
-				A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */,
-			);
-			path = Peaks;
-			sourceTree = "<group>";
-		};
-		A00000000000000000000015 /* Signal */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002007 /* ECGSignalInspector.swift */,
-			);
-			path = Signal;
-			sourceTree = "<group>";
-		};
 		A00000000000000000000006 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -402,22 +360,6 @@
 			path = ECGDetail;
 			sourceTree = "<group>";
 		};
-		A00000000000000000000016 /* Overview */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002065 /* OverviewView.swift */,
-			);
-			path = Overview;
-			sourceTree = "<group>";
-		};
-		A00000000000000000000017 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				A00000000000000000002066 /* SettingsView.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
 		A0000000000000000000000D /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -445,6 +387,64 @@
 				A00000000000000000002084 /* Gate.swift */,
 			);
 			path = Fakes;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000011 /* Classification */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002009 /* ECGAnalysisReport.swift */,
+				A00000000000000000002008 /* PrematureBeatAnalyzer.swift */,
+			);
+			path = Classification;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000012 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002002 /* AlgorithmVersion.swift */,
+				A00000000000000000002003 /* ECGAlgorithmConfig.swift */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000013 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002005 /* ECGSignal.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000014 /* Peaks */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */,
+			);
+			path = Peaks;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000015 /* Signal */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002007 /* ECGSignalInspector.swift */,
+			);
+			path = Signal;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000016 /* Overview */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002065 /* OverviewView.swift */,
+			);
+			path = Overview;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000017 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000002066 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -763,8 +763,8 @@
 		A00000000000000000008101 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -780,8 +780,8 @@
 		A00000000000000000008102 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -797,8 +797,8 @@
 		A00000000000000000008201 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -814,8 +814,8 @@
 		A00000000000000000008202 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -831,8 +831,8 @@
 		A00000000000000000008301 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -848,8 +848,8 @@
 		A00000000000000000008302 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -865,8 +865,9 @@
 		A00000000000000000008401 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y7SNLG29LD;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -881,8 +882,9 @@
 		A00000000000000000008402 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_ENTITLEMENTS = Resources/WatchBeatApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Y7SNLG29LD;
 				INFOPLIST_FILE = Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
