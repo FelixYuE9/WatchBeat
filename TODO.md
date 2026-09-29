@@ -73,6 +73,9 @@ end to end; those claims remain governed by the later milestones and recorded ru
   HealthKit records now use the same report-to-marker path; generator-known peaks remain test-only.
 - [x] Present the built-in synthetic ECG as a persistent, explicitly labelled `Example ECG Data`
   record in the Data list instead of a separate "view example" action.
+- [x] Increase Data-row contrast and show per-record on-device screening progress/results without
+  retaining raw voltage in the list cache.
+- [x] Add a scroll-synchronized seconds axis and exact red candidate-time labels below the waveform.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
 
 ## Milestone 2.5 — single-format premature-beat vertical slice

@@ -68,6 +68,20 @@ import WatchBeatModels
         )
     }
 
+    @Test func timelineBuildsReadableSecondTicksForScrollableWaveform() {
+        let ticks = ECGTimeline.majorTickTimes(
+            startTimeSeconds: 0,
+            endTimeSeconds: 30,
+            chartWidthPoints: 2_520
+        )
+
+        #expect(ticks.first == 0)
+        #expect(ticks.contains(12))
+        #expect(ticks.last == 30)
+        #expect(ticks.count <= 100)
+        #expect(zip(ticks, ticks.dropFirst()).allSatisfy { pair in pair.0 < pair.1 })
+    }
+
     @Test func rawCSVPreservesOrderTimestampsAndMissingVoltage() throws {
         let measurement = try makeMeasurement(
             times: [0.004, 0.000, 0.002],
@@ -148,6 +162,7 @@ import WatchBeatModels
         #expect(report.status == .analyzed)
         #expect(report.summary.rPeakCount == 35)
         #expect(report.summary.prematureCandidateCount == 2)
+        #expect(measurement.screeningSummary == .prematureCandidates(count: 2))
         #expect(measurement.analysisDurationSeconds >= 0)
 
         let intervals = ECGPeakIntervalBuilder.intervals(

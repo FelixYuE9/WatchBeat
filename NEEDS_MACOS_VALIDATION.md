@@ -1,6 +1,6 @@
 # Mac 打包与测试清单 — v0.5.0 (6) MVP
 
-本版在 Windows 上整理完成：Python 工具与工程配置测试 46/46 通过，App 算法的 NumPy 镜像已在
+本版在 Windows 上整理完成：Python 工具与工程配置测试 47/47 通过，App 算法的 NumPy 镜像已在
 MIT-BIH 上复测；**Swift 源码尚未在本版本编译**，请按下列顺序在 Mac 上跑一遍并记录结果。
 
 历史记录（供对照）：macOS 26.7 / Xcode 26.6 (17F113，位于 `~/Downloads/Xcode.app`) 曾通过
@@ -23,8 +23,8 @@ bash Tools/run-app-tests.sh --parallel    # iOS 包：WatchBeatAppTests 全部�
 
 预期 ECGCore 13 项 = ECGSignalInspectorTests 5 项 + PublicContractTests 8 项：结果词汇、默认配置/版本 `1.0.1-rr-research`、输入契约、早搏检出、规则心律
 0 候选、缺测拒判、不规则采样拒判、**直流偏移不改变检测结果（新增）**。
-iOS 包中新增 `builtInExampleShowsModelDetectedPrematureCandidates`：内置示例应检出 35 个 R 峰、
-2 个疑似早搏候选。
+iOS 包覆盖内置示例的 35 个 R 峰 / 2 个疑似早搏候选，并新增列表摘要缓存、列表/详情请求
+互不干扰及滚动秒数刻度测试。
 
 ## 2. Xcode 构建与模拟器测试
 
@@ -72,14 +72,17 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
 1. 首次安装先出现研究用途声明。
 2. 申请权限时，健康权限页只出现心电**读取**，没有写入项。
 3. 拒绝/不授权时，界面显示“没有可访问的心电”，不断言“已拒绝”。
-4. 授权后列表加载正常；打开一条记录，核对开始时间、时长、采样率、测量数、平均心率、
-   Apple 分类、症状与“健康”App 一致。
-5. 详情页显示模型 R 峰（橙线）、R–R 间期与疑似早搏候选（红线），或给出具体的拒判原因。
-6. 快速切换记录，旧记录结果不会覆盖当前页面。
-7. 分享原始 CSV / metadata JSON / analysis JSON：CSV 行数、顺序、时间戳与 HealthKit 测量一致；
+4. 授权后列表加载正常；数据卡与背景有清晰对比，逐条显示筛查进度，并最终显示候选数、
+   未标记候选或无法分析；异常候选行有醒目的红色标识。
+5. 打开一条记录，核对开始时间、时长、采样率、测量数、平均心率、Apple 分类、症状与
+   “健康”App 一致。
+6. 详情页显示模型 R 峰（橙线）、R–R 间期与疑似早搏候选（红线），或给出具体的拒判原因；
+   横向滚动时下方秒数坐标轴同步移动，红色候选线旁显示精确秒数。
+7. 快速切换记录，旧记录结果不会覆盖当前页面；列表后台筛查也不会让已打开的详情失效。
+8. 分享原始 CSV / metadata JSON / analysis JSON：CSV 行数、顺序、时间戳与 HealthKit 测量一致；
    JSON 的 `dataSource` 为 `healthKit`；文件名和内容中没有 HealthKit UUID。
-8. 设置页“版本”显示 `0.5.0 (6)`。
-9. 抽查签名产物包含 `com.apple.developer.healthkit`，且没有网络上传行为。
+9. 设置页“版本”显示 `0.5.0 (6)`。
+10. 抽查签名产物包含 `com.apple.developer.healthkit`，且没有网络上传行为。
 
 内置合成示例只用于教程和测速，不能替代任何真机 HealthKit 验收项。
 

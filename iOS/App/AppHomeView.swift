@@ -53,6 +53,10 @@ public struct AppHomeView: View {
             .tag(AppTab.settings)
         }
         .tint(.pink)
+        .onChange(of: selectedTab) { _, newTab in
+            guard newTab == .records else { return }
+            container.listViewModel.startScreeningIfNeeded()
+        }
         .task {
             guard hasRequestedReadAccess else { return }
             await container.listViewModel.load()

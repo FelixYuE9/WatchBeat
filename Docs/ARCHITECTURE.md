@@ -10,7 +10,7 @@
 ```text
 ┌──────────────────────── iOS-only boundary ────────────────────────┐
 │ HealthKit read-only repository                                    │
-│   metadata list → selected ECG voltage measurements → mapper      │
+│   metadata list → list-screen/detail voltage reads → mapper       │
 └──────────────────────────────┬─────────────────────────────────────┘
                                │ ECGSignal / watchbeat.ecg.signal.v1
 ┌──────────────────────────────▼─────────────────────────────────────┐
@@ -22,7 +22,7 @@
                                │ ECGAnalysisReport v1
 ┌──────────────────────────────▼─────────────────────────────────────┐
 │ SwiftUI presentation / local export                               │
-│ waveform, model markers, result card, raw CSV + analysis JSON      │
+│ list badges, waveform/time axis, result card, CSV + analysis JSON  │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,12 +89,14 @@ iPhone；当前 revision 的签名产物和真机 HealthKit 行为仍须按
 ## iOS 组件（Milestone 1 已建立源码）
 
 - `ECGHealthKitReading` / `LiveHealthKitECGReader`：可注入的最小授权/查询边界；`toShare` 为空。
-- `ECGRepository`：列表只加载 metadata；详情按需读取 voltage；generation + 取消保护。
+- `ECGRepository`：先加载 metadata；用户进入数据页后逐条读取 voltage 生成仅含候选数/拒判的
+  进程内列表摘要，原始信号不进入列表缓存；详情仍按需重读完整 voltage。详情请求使用
+  generation + 取消保护，列表筛查使用独立通道，二者不会互相判为过期。
 - `ECGHealthKitMapper`：单位换算和完整性信息，不静默清洗。
 - feature modules：Disclaimer、ECG list、ECG detail、可滚动/缩放 Canvas 波形、模型结果卡、
   内置合成教程与 settings（beat detail、research mode 待后续里程碑）。
 - `ECGDisplayDownsampler`：只生成绘图 envelope，不修改分析/导出的完整 `ECGSignal`；可选 marker
-  从真实时间戳映射到横轴。
+  从真实时间戳映射到横轴；滚动时间轴使用有上限的 1/2/5 秒刻度，候选红线显示精确秒数。
 - `ECGExportEncoder` / `ECGTemporaryExportWriter`：原始 CSV、metadata JSON、analysis JSON、敏感信息确认、系统
   share sheet 与分享结束后的临时目录清理。合成示例在 UI、JSON `dataSource` 和文件名中均有标记。
 

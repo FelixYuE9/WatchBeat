@@ -5,6 +5,12 @@
 > history `c3c3e0e`). Current App-algorithm numbers come from
 > `Tools/Validation/evaluate_swift_analyzer_mirror.py`; the Mac checklist for this build is
 > [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).
+>
+> **2026-09-29 Data/waveform UI follow-up:** high-contrast list cards, deferred per-record local
+> screening badges, a scrolling seconds axis and exact candidate-time labels are implemented in
+> source. `python -m unittest discover -s Tools/Validation/tests -p 'test_*.py'` passed 47/47 and
+> `git diff --check` passed on Windows. Swift/Xcode is unavailable on this host, so the added
+> summary-cache, request-isolation and time-tick Swift tests still require the Mac checklist.
 
 ## 验证状态摘要
 

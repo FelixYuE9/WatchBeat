@@ -40,7 +40,7 @@ public struct ECGListView: View {
                         ECGDetailView(viewModel: ECGDetailViewModel(example: exampleMeasurement))
                     } label: {
                         ECGExampleRecordRow(measurement: exampleMeasurement)
-                            .watchBeatCard()
+                            .watchBeatDataCard()
                     }
                     .buttonStyle(.plain)
                 }
@@ -107,10 +107,25 @@ public struct ECGListView: View {
                 .buttonStyle(.bordered)
             }
         case .loaded(let records):
+            Label(
+                language.text(
+                    "Records are screened one by one on this device; badges are research flags, not diagnoses.",
+                    "记录会在本机逐条筛查；列表标识仅供研究参考，不是诊断。"
+                ),
+                systemImage: "iphone"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
             ForEach(records) { record in
                 NavigationLink(value: record) {
-                    ECGRecordRow(record: record)
-                        .watchBeatCard()
+                    ECGRecordRow(
+                        record: record,
+                        screeningState: viewModel.screeningState(for: record)
+                    )
+                    .watchBeatDataCard(
+                        isFlagged: viewModel.screeningState(for: record)?.isFlagged == true
+                    )
                 }
                 .buttonStyle(.plain)
             }
@@ -196,6 +211,18 @@ public struct ECGExampleRecordRow: View {
                         "\(measurement.integrity.sampleCount) 点"
                     ))
                 }
+
+                if case .prematureCandidates(let count) = measurement.screeningSummary {
+                    Label(
+                        language.text(
+                            "Demo: \(count) premature candidate(s)",
+                            "演示波形：\(count) 个疑似早搏候选"
+                        ),
+                        systemImage: "exclamationmark.circle.fill"
+                    )
+                    .font(.caption.bold())
+                    .foregroundStyle(.orange)
+                }
             }
 
             Spacer(minLength: 0)
@@ -229,26 +256,100 @@ public struct ECGExampleRecordRow: View {
 
 public struct ECGRecordRow: View {
     let record: ECGRecord
+    let screeningState: ECGListScreeningState?
     @Environment(\.appLanguage) private var language
 
-    public init(record: ECGRecord) {
+    public init(record: ECGRecord, screeningState: ECGListScreeningState? = nil) {
         self.record = record
+        self.screeningState = screeningState
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(record.startDate, format: .dateTime.year().month().day().hour().minute())
-                .font(.headline)
-            Text(classificationText)
-                .font(.subheadline)
-            Text(language.text(
-                "\(String(format: "%.1f", record.durationSeconds)) s · \(record.declaredMeasurementCount) measurements",
-                "\(String(format: "%.1f", record.durationSeconds)) 秒 · \(record.declaredMeasurementCount) 个测量值"
-            ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "waveform.path.ecg")
+                .font(.title3)
+                .foregroundStyle(screeningState?.isFlagged == true ? .red : .pink)
+                .frame(width: 42, height: 42)
+                .background(
+                    (screeningState?.isFlagged == true ? Color.red : Color.pink).opacity(0.11),
+                    in: RoundedRectangle(cornerRadius: 12)
+                )
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(record.startDate, format: .dateTime.year().month().day().hour().minute())
+                    .font(.headline)
+                Text(language.text("Apple: \(classificationText)", "Apple 分类：\(classificationText)"))
+                    .font(.subheadline)
+                Text(language.text(
+                    "\(String(format: "%.1f", record.durationSeconds)) s · \(record.declaredMeasurementCount) measurements",
+                    "\(String(format: "%.1f", record.durationSeconds)) 秒 · \(record.declaredMeasurementCount) 个测量值"
+                ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                screeningBadge
+            }
+
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.tertiary)
+                .padding(.top, 4)
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(language.text("Opens this ECG waveform", "打开这条 ECG 波形"))
+    }
+
+    @ViewBuilder
+    private var screeningBadge: some View {
+        if let screeningState {
+            switch screeningState {
+            case .checking:
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .controlSize(.mini)
+                    Text(language.text("Screening on device…", "正在本机筛查…"))
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            case .result(.noPrematureCandidates):
+                badge(
+                    language.text("No premature candidate flagged", "未标记疑似早搏候选"),
+                    symbol: "checkmark.circle.fill",
+                    tint: .green
+                )
+            case .result(.prematureCandidates(let count)):
+                badge(
+                    language.text(
+                        "\(count) premature candidate(s)",
+                        "疑似早搏候选 ×\(count)"
+                    ),
+                    symbol: "exclamationmark.triangle.fill",
+                    tint: .red
+                )
+            case .result(.notAnalyzed):
+                badge(
+                    language.text("Unable to analyze this recording", "这条记录无法分析"),
+                    symbol: "questionmark.circle.fill",
+                    tint: .orange
+                )
+            case .failed:
+                badge(
+                    language.text("Screening failed — open for details", "筛查失败—可点开查看"),
+                    symbol: "exclamationmark.circle.fill",
+                    tint: .orange
+                )
+            }
+        }
+    }
+
+    private func badge(_ text: String, symbol: String, tint: Color) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.caption.bold())
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(tint.opacity(0.1), in: Capsule())
     }
 
     private var classificationText: String {

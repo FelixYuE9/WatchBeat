@@ -24,6 +24,20 @@ public enum ECGMeasurementOutcome: Equatable, Sendable {
     case failed(message: String)
 }
 
+/// Compact, non-diagnostic result used to annotate the metadata list after an on-device screen.
+/// The full voltage signal is deliberately not retained by this value.
+public enum ECGScreeningSummary: Equatable, Sendable {
+    case noPrematureCandidates
+    case prematureCandidates(count: Int)
+    case notAnalyzed
+}
+
+public enum ECGScreeningOutcome: Equatable, Sendable {
+    case loaded(ECGScreeningSummary)
+    case cancelled
+    case failed(message: String)
+}
+
 public enum ECGListState: Equatable, Sendable {
     case idle
     case loading

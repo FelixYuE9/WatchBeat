@@ -13,8 +13,9 @@ Actual commands and results are recorded in [Docs/VALIDATION.md](../Docs/VALIDAT
 ## Still required before the current revision can be called device-validated
 
 1. Build and test the current v0.5.0 (6) source through the shared scheme on the installed simulator.
-2. Check the default Overview, all three tabs, immediate language switching, and the synthetic
-   waveform's model-derived millisecond labels; recheck zoom/scroll and all three share-sheet exports.
+2. Check the default Overview, all three tabs, immediate language switching, high-contrast Data
+   cards and screening badges, plus the synthetic waveform's millisecond labels, scrolling seconds
+   axis and exact red candidate times; recheck zoom/scroll and all three share-sheet exports.
 3. Select a Team/unique Bundle ID, package and install on a real iPhone, inspect the signed entitlement,
    then record the HealthKit → waveform → analysis result outcome.
 4. Complete the real-iPhone checklist in [NEEDS_MACOS_VALIDATION.md](../NEEDS_MACOS_VALIDATION.md).

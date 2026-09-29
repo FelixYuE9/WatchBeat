@@ -72,4 +72,8 @@ public actor FakeECGReader: ECGHealthKitReading {
         if let voltageFailure { throw voltageFailure }
         return voltageSamples
     }
+
+    public func voltageFetchCount() -> Int {
+        voltageCallCount
+    }
 }

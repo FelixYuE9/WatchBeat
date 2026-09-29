@@ -96,6 +96,50 @@ import WatchBeatModels
         #expect(measurement.issues.contains(.missingLeadVoltage))
     }
 
+    @Test func listScreeningCachesOnlyTheCompactSummary() async {
+        let record = makeRecord(declaredMeasurementCount: 1)
+        let reader = FakeECGReader(
+            voltageSamples: [ECGVoltageSample(timeSinceSampleStart: 0, quantity: nil)]
+        )
+        let repository = ECGRepository(reader: reader)
+
+        let first = await repository.loadScreeningSummary(for: record)
+        let second = await repository.loadScreeningSummary(for: record)
+        let fetchCount = await reader.voltageFetchCount()
+
+        #expect(first == .loaded(.notAnalyzed))
+        #expect(second == first)
+        #expect(fetchCount == 1)
+    }
+
+    @Test func listScreeningDoesNotSupersedeAnOpenedDetail() async {
+        let entry = Gate()
+        let hold = Gate()
+        let repository = ECGRepository(
+            reader: FakeECGReader(
+                voltageSamples: [ECGVoltageSample(timeSinceSampleStart: 0, quantity: nil)],
+                entryGate: entry,
+                holdGate: hold
+            )
+        )
+
+        async let screening = repository.loadScreeningSummary(
+            for: makeRecord(declaredMeasurementCount: 1)
+        )
+        await entry.wait()
+        let detail = await repository.loadMeasurements(
+            for: makeRecord(declaredMeasurementCount: 1)
+        )
+        hold.open()
+        let screeningResult = await screening
+
+        #expect(screeningResult == .loaded(.notAnalyzed))
+        guard case .loaded = detail else {
+            Issue.record("Expected an opened detail to load, got \(detail)")
+            return
+        }
+    }
+
     private func makeRecord(
         declaredMeasurementCount: Int = 3,
         samplingFrequencyHz: Double? = 500

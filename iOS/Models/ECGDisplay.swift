@@ -97,6 +97,67 @@ public enum ECGTimeline {
         let position = (timeSeconds - startTimeSeconds) / (endTimeSeconds - startTimeSeconds)
         return min(max(position, 0), 1)
     }
+
+    /// Produces stable 1/2/5-based labels for a horizontally scrollable time axis. The number of
+    /// ticks is capped so long recordings cannot overload Canvas even at high zoom.
+    public static func majorTickTimes(
+        startTimeSeconds: Double,
+        endTimeSeconds: Double,
+        chartWidthPoints: Double,
+        minimumSpacingPoints: Double = 64,
+        maximumTickCount: Int = 100
+    ) -> [Double] {
+        guard startTimeSeconds.isFinite,
+              endTimeSeconds.isFinite,
+              endTimeSeconds > startTimeSeconds,
+              chartWidthPoints.isFinite,
+              chartWidthPoints > 0,
+              minimumSpacingPoints.isFinite,
+              minimumSpacingPoints > 0,
+              maximumTickCount > 0 else {
+            return []
+        }
+
+        let duration = endTimeSeconds - startTimeSeconds
+        let maximumIntervalCount = max(1, maximumTickCount - 1)
+        let visibleIntervalCount = min(
+            Double(maximumIntervalCount),
+            floor(chartWidthPoints / minimumSpacingPoints)
+        )
+        let intervalCapacity = max(1, Int(visibleIntervalCount))
+        let interval = niceInterval(atLeast: duration / Double(intervalCapacity))
+        guard interval.isFinite, interval > 0 else { return [] }
+
+        let tolerance = interval * 1e-9
+        let firstMultiple = ceil((startTimeSeconds - tolerance) / interval)
+        let firstTick = firstMultiple * interval
+        var ticks: [Double] = []
+        ticks.reserveCapacity(min(maximumTickCount, intervalCapacity + 1))
+
+        for index in 0..<maximumTickCount {
+            var tick = firstTick + Double(index) * interval
+            guard tick <= endTimeSeconds + tolerance else { break }
+            if abs(tick) < tolerance { tick = 0 }
+            ticks.append(tick)
+        }
+        return ticks
+    }
+
+    private static func niceInterval(atLeast rawInterval: Double) -> Double {
+        let magnitude = pow(10, floor(log10(rawInterval)))
+        let normalized = rawInterval / magnitude
+        let multiplier: Double
+        if normalized <= 1 {
+            multiplier = 1
+        } else if normalized <= 2 {
+            multiplier = 2
+        } else if normalized <= 5 {
+            multiplier = 5
+        } else {
+            multiplier = 10
+        }
+        return multiplier * magnitude
+    }
 }
 
 /// Reduces only the copy used for drawing. The `ECGSignal` retained by `ECGMeasurement` remains

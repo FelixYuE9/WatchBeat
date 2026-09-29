@@ -52,4 +52,15 @@ public struct ECGMeasurement: Equatable, Sendable {
     public var isComplete: Bool {
         issues.isEmpty
     }
+
+    /// A list-safe projection of the immutable analysis report. It intentionally avoids calling a
+    /// zero-candidate recording "normal": this research model only reports whether it flagged a
+    /// premature candidate.
+    public var screeningSummary: ECGScreeningSummary {
+        guard analysis.status == .analyzed else { return .notAnalyzed }
+        let count = analysis.summary.prematureCandidateCount
+        return count > 0
+            ? .prematureCandidates(count: count)
+            : .noPrematureCandidates
+    }
 }
