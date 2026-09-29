@@ -57,6 +57,40 @@ public struct ECGAnalysisSummary: Codable, Equatable, Sendable {
     }
 }
 
+/// Additive schema-v1 timing metrics derived only from this report's detected R peaks.
+///
+/// These values are descriptive research measurements. In particular,
+/// `rrInterquartileRangeMilliseconds` is not a clinical HRV result.
+public struct ECGRhythmMetrics: Codable, Equatable, Sendable {
+    public static let currentVersion = "watchbeat.rr-summary.v1"
+
+    public let metricsVersion: String
+    public let recordingDurationSeconds: Double
+    public let plausibleRRIntervalCount: Int
+    public let medianRRMilliseconds: Double
+    public let medianDetectedHeartRateBPM: Double
+    public let rrInterquartileRangeMilliseconds: Double
+    public let prematureCandidateFraction: Double
+
+    public init(
+        metricsVersion: String = ECGRhythmMetrics.currentVersion,
+        recordingDurationSeconds: Double,
+        plausibleRRIntervalCount: Int,
+        medianRRMilliseconds: Double,
+        medianDetectedHeartRateBPM: Double,
+        rrInterquartileRangeMilliseconds: Double,
+        prematureCandidateFraction: Double
+    ) {
+        self.metricsVersion = metricsVersion
+        self.recordingDurationSeconds = recordingDurationSeconds
+        self.plausibleRRIntervalCount = plausibleRRIntervalCount
+        self.medianRRMilliseconds = medianRRMilliseconds
+        self.medianDetectedHeartRateBPM = medianDetectedHeartRateBPM
+        self.rrInterquartileRangeMilliseconds = rrInterquartileRangeMilliseconds
+        self.prematureCandidateFraction = prematureCandidateFraction
+    }
+}
+
 /// Result-affecting values copied into every report for auditability.
 public struct ECGAnalysisParameters: Codable, Equatable, Sendable {
     public let detectionLowCutoffHz: Double
@@ -126,6 +160,8 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
     public let reason: ECGAnalysisReason?
     public let samplingFrequencyHz: Double?
     public let summary: ECGAnalysisSummary
+    /// Optional so older schema-v1 JSON without this additive field remains decodable.
+    public let rhythmMetrics: ECGRhythmMetrics?
     public let beats: [ECGAnalyzedBeat]
 
     public init(
@@ -140,6 +176,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         reason: ECGAnalysisReason?,
         samplingFrequencyHz: Double?,
         summary: ECGAnalysisSummary,
+        rhythmMetrics: ECGRhythmMetrics? = nil,
         beats: [ECGAnalyzedBeat]
     ) {
         self.schemaVersion = schemaVersion
@@ -153,6 +190,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         self.reason = reason
         self.samplingFrequencyHz = samplingFrequencyHz
         self.summary = summary
+        self.rhythmMetrics = rhythmMetrics
         self.beats = beats
     }
 }

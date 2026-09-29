@@ -63,6 +63,12 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
         guard result.classifiedBeatCount > 0 else {
             return refusal(.insufficientReliableRRContext, samplingFrequencyHz: frequencyHz)
         }
+        let rhythmMetrics = makeRhythmMetrics(
+            rrMilliseconds: rrMilliseconds,
+            recordingDurationSeconds: duration,
+            classifiedBeatCount: result.classifiedBeatCount,
+            prematureCandidateCount: result.prematureCandidateCount
+        )
 
         return ECGAnalysisReport(
             algorithmVersion: AlgorithmVersion.semanticVersion,
@@ -77,6 +83,7 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
                 classifiedBeatCount: result.classifiedBeatCount,
                 prematureCandidateCount: result.prematureCandidateCount
             ),
+            rhythmMetrics: rhythmMetrics,
             beats: result.beats
         )
     }
@@ -188,6 +195,32 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
         return (beats, classifiedBeatCount, prematureCandidateCount)
     }
 
+    private func makeRhythmMetrics(
+        rrMilliseconds: [Double],
+        recordingDurationSeconds: Double,
+        classifiedBeatCount: Int,
+        prematureCandidateCount: Int
+    ) -> ECGRhythmMetrics? {
+        let plausibleRR = rrMilliseconds.filter { 300...2_000 ~= $0 }
+        guard let medianRR = Self.median(plausibleRR),
+              medianRR > 0,
+              let lowerQuartile = Self.quantile(plausibleRR, probability: 0.25),
+              let upperQuartile = Self.quantile(plausibleRR, probability: 0.75),
+              classifiedBeatCount > 0 else {
+            return nil
+        }
+
+        return ECGRhythmMetrics(
+            recordingDurationSeconds: recordingDurationSeconds,
+            plausibleRRIntervalCount: plausibleRR.count,
+            medianRRMilliseconds: medianRR,
+            medianDetectedHeartRateBPM: 60_000 / medianRR,
+            rrInterquartileRangeMilliseconds: upperQuartile - lowerQuartile,
+            prematureCandidateFraction: Double(prematureCandidateCount)
+                / Double(classifiedBeatCount)
+        )
+    }
+
     private func refusal(
         _ reason: ECGAnalysisReason,
         samplingFrequencyHz: Double? = nil
@@ -216,5 +249,17 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
         return sorted.count.isMultiple(of: 2)
             ? (sorted[middle - 1] + sorted[middle]) / 2
             : sorted[middle]
+    }
+
+    /// Linear interpolation between adjacent ranks (the common type-7 sample quantile).
+    private static func quantile(_ values: [Double], probability: Double) -> Double? {
+        guard !values.isEmpty, 0...1 ~= probability else { return nil }
+        let sorted = values.sorted()
+        let position = Double(sorted.count - 1) * probability
+        let lowerIndex = Int(floor(position))
+        let upperIndex = Int(ceil(position))
+        guard lowerIndex != upperIndex else { return sorted[lowerIndex] }
+        let fraction = position - Double(lowerIndex)
+        return sorted[lowerIndex] + fraction * (sorted[upperIndex] - sorted[lowerIndex])
     }
 }

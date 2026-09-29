@@ -24,6 +24,8 @@ Apple 健康的单导联心电，在手机上检测 R 峰与 RR 间期，并保�
 - 可缩放、横向滚动的全分辨率波形，标出模型 R 峰（橙）、R–R 间期（ms）、随波形滚动的
   秒数坐标轴，以及疑似早搏红线旁的精确时间。
 - 本机研究分析卡片：R 峰数、疑似早搏候选及其时间/RR 比值、拒判原因、**分析耗时**。
+- 自动节律摘要：从模型检测 R 峰计算中位心率、中位 R–R、R–R 四分位距和候选占比；明确不把
+  30 秒离散程度冒充临床 HRV。
 - 内置确定性合成示例（含 1 个房早样、1 个室早样心搏），无授权/无数据时也可体验与测速；
   它与真实数据走完全相同的分析入口，不注入答案。
 - 用户确认后通过系统分享导出原始 CSV、元数据 JSON、分析结果 JSON。
@@ -114,6 +116,7 @@ HealthKit 标识或日期，不向 HealthKit 写入任何内容。只有用户�
 ## 文档
 
 [架构](Docs/ARCHITECTURE.md) · [契约](Docs/CONTRACTS.md) · [算法](Docs/ALGORITHM.md) ·
+[ECG 可扩展指标](Docs/ECG_METRICS.md) ·
 [验证记录](Docs/VALIDATION.md) · [真机安装](Docs/IPHONE_INSTALL.md) · [数据集](Docs/DATASETS.md) ·
 [隐私](Docs/PRIVACY.md) · [监管表述](Docs/REGULATORY.md) · [发行](Docs/DISTRIBUTION.md) ·
 [依赖](Docs/DEPENDENCIES.md) · [ADR](Docs/ADR/) · [TODO](TODO.md) ·

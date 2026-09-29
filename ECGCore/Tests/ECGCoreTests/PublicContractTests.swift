@@ -39,6 +39,19 @@ import Testing
         )
         #expect(abs(candidate.timeSeconds - 6.2) < 0.04)
         #expect(abs((candidate.prematurityRatio ?? 0) - 0.7) < 0.06)
+        let metrics = try #require(report.rhythmMetrics)
+        #expect(metrics.metricsVersion == ECGRhythmMetrics.currentVersion)
+        #expect(metrics.plausibleRRIntervalCount == report.beats.count - 1)
+        #expect(abs(metrics.medianRRMilliseconds - 1_000) < 5)
+        #expect(abs(metrics.medianDetectedHeartRateBPM - 60) < 0.5)
+        #expect(metrics.rrInterquartileRangeMilliseconds >= 0)
+        #expect(
+            abs(
+                metrics.prematureCandidateFraction
+                    - Double(report.summary.prematureCandidateCount)
+                    / Double(report.summary.classifiedBeatCount)
+            ) < 0.000_001
+        )
     }
 
     @Test func analyzerRunsTheSamePathForARegularWaveform() {
@@ -46,6 +59,8 @@ import Testing
 
         #expect(report.status == .analyzed)
         #expect(report.summary.prematureCandidateCount == 0)
+        #expect(abs((report.rhythmMetrics?.medianDetectedHeartRateBPM ?? 0) - 60) < 0.5)
+        #expect(report.rhythmMetrics?.prematureCandidateFraction == 0)
     }
 
     @Test func analyzerRefusesMissingVoltageWithoutMovingSamples() {
@@ -62,6 +77,7 @@ import Testing
 
         #expect(report.status == .notAnalyzed)
         #expect(report.reason == .missingOrNonFiniteSamples)
+        #expect(report.rhythmMetrics == nil)
         #expect(report.beats.isEmpty)
     }
 

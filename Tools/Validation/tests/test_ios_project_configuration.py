@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import plistlib
+import struct
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -43,6 +45,31 @@ class IOSProjectConfigurationTests(unittest.TestCase):
 
         self.assertEqual(project.count("TARGETED_DEVICE_FAMILY = 1;"), 2)
         self.assertNotIn('TARGETED_DEVICE_FAMILY = "1,2";', project)
+
+    def test_app_icon_is_opaque_1024_asset_and_wired_to_target(self) -> None:
+        project = PROJECT_FILE.read_text(encoding="utf-8")
+        asset_root = IOS_ROOT / "Resources" / "Assets.xcassets"
+        app_icon_set = asset_root / "AppIcon.appiconset"
+
+        contents = json.loads((app_icon_set / "Contents.json").read_text(encoding="utf-8"))
+        image_entry = contents["images"][0]
+        self.assertEqual(image_entry["idiom"], "universal")
+        self.assertEqual(image_entry["platform"], "ios")
+        self.assertEqual(image_entry["size"], "1024x1024")
+
+        png = (app_icon_set / image_entry["filename"]).read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(png[12:16], b"IHDR")
+        width, height, bit_depth, color_type = struct.unpack(">IIBB", png[16:26])
+        self.assertEqual((width, height, bit_depth), (1024, 1024, 8))
+        self.assertEqual(color_type, 2, "App Store icon must not contain an alpha channel")
+
+        self.assertIn("/* Assets.xcassets in Resources */", project)
+        self.assertIn("/* Resources */ = {", project)
+        self.assertEqual(
+            project.count("ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;"),
+            2,
+        )
 
     def test_embedded_frameworks_have_unique_bundle_identifiers(self) -> None:
         project = PROJECT_FILE.read_text(encoding="utf-8")

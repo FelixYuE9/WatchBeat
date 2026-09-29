@@ -93,6 +93,8 @@ This takes priority over further detector voting, parameter sweeps and PAC/PVC s
   on the detail page.
 - [x] Export model output as `ECGAnalysisReport` v1 JSON and freeze model input as
   `watchbeat.ecg.signal.v1` for HealthKit, synthetic and offline adapter paths.
+- [x] Add an opaque production AppIcon asset and additive `watchbeat.rr-summary.v1` metrics
+  (median detected rate/RR, RR IQR and candidate fraction) without changing beat classification.
 - [x] Configure v0.4.0 (5) as an automatically signed, archiveable iPhone App and document the
   Team/Bundle-ID steps needed to package and install it on a real iPhone.
 - [ ] Rebuild the v0.5.0 (6) MVP and run the ECGCore + iOS Swift tests on macOS/Xcode; follow

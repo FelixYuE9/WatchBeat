@@ -7,6 +7,10 @@ runtime 的最小垂直闭环：结构拒判 → 5–25 Hz 零相位二阶高通
 移动积分 → 分块自适应阈值 → 原波形局部 R 峰细化 → 最近 8 个 RR 的中位数基线 →
 `prematureUncertain`。它不会使用 Apple classification，也不会凭 RR 猜 PAC/PVC。
 
+在不改变上述分类逻辑的前提下，分析报告还会从 300–2,000 ms 的可信检测 R–R 间期生成
+`watchbeat.rr-summary.v1` 描述性摘要：记录时长、可信间期数、中位 R–R、检测中位心率、
+R–R 四分位距和候选占比。R–R 四分位距只描述这段短记录，不命名为 HRV，也不参与候选判定。
+
 这是一条可运行的研究默认值，不是医学阈值或经过 Apple Watch 域验证的诊断模型。
 `normal` 在当前 report 中仅表示“有足够 RR 上下文且未通过提前门槛”，不能解释为整段
 心电正常。缺测、非有限值、时间轴不合法、采样不受支持或峰数不足会返回 `notAnalyzed`。
@@ -52,6 +56,8 @@ HealthKit 与内置示例都直接构造同一 `ECGSignal`；CSV 只是这个对
 - `inputFormat = watchbeat.ecg.signal.v1`；
 - `status = analyzed | notAnalyzed` 及机器可读 `reason`；
 - 推算采样率和 `rPeakCount/classifiedBeatCount/prematureCandidateCount`；
+- 可选 `rhythmMetrics`：版本化的记录时长、可信 R–R 数、中位 R–R/心率、R–R 四分位距和
+  候选占比；拒判报告为 `nil`；
 - 每个峰在原始信号中的 `sampleIndex/timeSeconds`、RR、局部 RR、提前比值、保守标签与 reason code。
 
 详情页 marker、摘要和用户主动分享的 analysis JSON 都来自同一个 report，不重复计算。

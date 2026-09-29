@@ -77,6 +77,24 @@ Classifications used by this RR-only model are `normal`, `prematureUncertain` an
 Here, `normal` means only “not early relative to the available local RR baseline”; it is not a
 whole-record or medical diagnosis.
 
+分析成功时还可包含 additive schema-v1 字段 `rhythmMetrics`：
+
+```json
+{
+  "metricsVersion": "watchbeat.rr-summary.v1",
+  "recordingDurationSeconds": 29.998,
+  "plausibleRRIntervalCount": 29,
+  "medianRRMilliseconds": 1000.0,
+  "medianDetectedHeartRateBPM": 60.0,
+  "rrInterquartileRangeMilliseconds": 18.0,
+  "prematureCandidateFraction": 0.04
+}
+```
+
+它只从模型已检测的、300–2,000 ms 的 R–R 间期生成，不改变分类。四分位距不是临床 HRV；
+候选占比的分母是 `classifiedBeatCount`，不表示长期早搏负荷。字段保持 optional，使旧的 schema-v1
+JSON 仍可解码；拒判报告不生成该摘要。
+
 A refused report has `status: notAnalyzed`, a machine-readable `reason`, zero summary counts and an
 empty `beats` array. Optional unavailable fields may be omitted by JSON encoders. Schema changes are
 additive only within v1; a breaking field/meaning change requires schema v2.

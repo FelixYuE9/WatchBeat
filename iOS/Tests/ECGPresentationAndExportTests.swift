@@ -152,6 +152,10 @@ import WatchBeatModels
         #expect(text.contains("\"researchOnly\" : true"))
         #expect(text.contains("\"detectorIdentifier\" : \"watchbeat-gradient-energy-rr-v1\""))
         #expect(text.contains("\"prematurityThreshold\" : 0.8"))
+        #expect(text.contains("\"rhythmMetrics\" : {"))
+        #expect(text.contains("\"metricsVersion\" : \"watchbeat.rr-summary.v1\""))
+        #expect(text.contains("\"medianDetectedHeartRateBPM\""))
+        #expect(text.contains("\"rrInterquartileRangeMilliseconds\""))
         #expect(!text.contains(measurement.record.id.uuidString))
     }
 

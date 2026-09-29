@@ -50,6 +50,45 @@ struct ECGAnalysisResultView: View {
             "\(report.summary.prematureCandidateCount)"
         )
 
+        if let metrics = report.rhythmMetrics {
+            Divider()
+            Text(language.text("Rate and timing summary", "心率与节律摘要"))
+                .font(.subheadline.bold())
+            row(
+                language.text("Median detected rate", "检测中位心率"),
+                String(format: "%.0f BPM", metrics.medianDetectedHeartRateBPM)
+            )
+            row(
+                language.text("Median R–R interval", "R–R 间期中位数"),
+                String(format: "%.0f ms", metrics.medianRRMilliseconds)
+            )
+            row(
+                language.text("R–R interquartile range", "R–R 四分位距"),
+                String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds)
+            )
+            row(
+                language.text("Usable R–R intervals", "可用 R–R 间期"),
+                "\(metrics.plausibleRRIntervalCount)"
+            )
+            row(
+                language.text("Candidate share", "候选占比"),
+                String(
+                    format: "%.1f%% (%d/%d)",
+                    metrics.prematureCandidateFraction * 100,
+                    report.summary.prematureCandidateCount,
+                    report.summary.classifiedBeatCount
+                )
+            )
+            Text(language.text(
+                "Calculated from plausible intervals between model-detected R peaks. " +
+                    "R–R spread is not a clinical HRV measurement.",
+                "仅根据模型检测到的 R 峰之间可信间期计算；R–R 离散程度不属于临床 HRV 指标。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            Divider()
+        }
+
         if report.summary.prematureCandidateCount == 0 {
             Label(
                 language.text(

@@ -11,6 +11,13 @@
 > source. `python -m unittest discover -s Tools/Validation/tests -p 'test_*.py'` passed 47/47 and
 > `git diff --check` passed on Windows. Swift/Xcode is unavailable on this host, so the added
 > summary-cache, request-isolation and time-tick Swift tests still require the Mac checklist.
+>
+> **2026-09-29 AppIcon / rhythm-metrics follow-up:** generated an opaque 1024×1024 RGB AppIcon,
+> wired its asset catalog into the App target, and added an additive `watchbeat.rr-summary.v1`
+> timing summary without changing the detector or premature-beat rule. The Windows Python suite
+> passed 48/48, including PNG header/alpha and Xcode-project wiring checks; `git diff --check`
+> passed. Swift/Xcode remains unavailable on this host, so asset compilation and the updated Swift
+> assertions remain on the Mac checklist.
 
 ## 验证状态摘要
 
