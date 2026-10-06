@@ -128,6 +128,7 @@ public struct ECGWaveformView: View {
     @State private var overviewCache = ECGDisplaySampleCache()
     @State private var viewport: ECGWaveformViewport?
     @State private var scrollTarget: ECGWaveformScrollTarget?
+    @State private var showsReadingGuide = false
     @AppStorage("waveform.showsRRIntervals") private var showsRRIntervals = true
     @AppStorage("waveform.showsQRSAmplitude") private var showsQRSAmplitude = true
     @AppStorage(ECGWaveformDebugSettings.showsModelRPeakLinesKey) private var showsModelRPeakLines = false
@@ -138,6 +139,7 @@ public struct ECGWaveformView: View {
     private let axisGutterWidth: CGFloat = 40
     private let waveformBottomInset: CGFloat = 30
     private let candidateBandHalfWidthSeconds = 0.16
+    private let overviewDrawableHeight: CGFloat = 56
     private let viewportCoordinateSpace = "watchbeat.waveform.viewport"
 
     public init(
@@ -159,25 +161,28 @@ public struct ECGWaveformView: View {
 
     public var body: some View {
         ScrollViewReader { proxy in
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 14) {
                 header
 
                 if let timeRange, let voltageRange {
-                    zoomControls
-                    overlayToggles
-
                     if !candidates.isEmpty {
                         candidateNavigator
                     }
 
                     chart(timeRange: timeRange, voltageRange: voltageRange, proxy: proxy)
-                    overview(timeRange: timeRange, voltageRange: voltageRange)
-
-                    legend
+                    zoomControls
 
                     if isMeasuring {
                         ECGCaliperReadout(caliper: caliper, signal: signal)
+                            .padding(12)
+                            .background(
+                                Color.purple.opacity(0.06),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            )
                     }
+
+                    overview(timeRange: timeRange, voltageRange: voltageRange)
+                    legend
                 } else {
                     ContentUnavailableView(
                         language.text("Waveform unavailable", "波形不可用"),
@@ -199,58 +204,63 @@ public struct ECGWaveformView: View {
                 focusTime(request.timeSeconds, animated: true)
             }
         }
+        .sheet(isPresented: $showsReadingGuide) { readingGuide }
         .accessibilityElement(children: .contain)
     }
 
     // MARK: - Controls
 
+    /// Title on the left; overlay switches and the reading guide on the right, so the controls take
+    /// one line instead of a block above the chart.
     private var header: some View {
-        HStack {
-            Text(language.text("Waveform", "波形"))
-                .font(.headline)
-            Spacer()
-            Text(language.text(
-                "\(signal.timeSeconds.count) full-resolution samples",
-                "\(signal.timeSeconds.count) 个全分辨率采样点"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+        HStack(spacing: 6) {
+            WatchBeatSectionTitle(language.text("Waveform", "波形"), systemImage: "waveform.path.ecg")
+            Spacer(minLength: 8)
+            if timeRange != nil, voltageRange != nil {
+                overlayToggles
+                Button {
+                    showsReadingGuide = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.body)
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(language.text("How to read the waveform", "如何阅读波形"))
+            }
         }
     }
 
+    /// One compact row under the chart: time and voltage steppers plus reset.
     private var zoomControls: some View {
-        HStack(spacing: 8) {
-            VStack(spacing: 6) {
-                zoomRow(
-                    symbol: "arrow.left.and.right",
-                    value: timeZoomBinding,
-                    range: 1...8,
-                    step: 0.5,
-                    accessibilityLabel: language.text("Time zoom", "时间轴缩放")
-                )
-                zoomRow(
-                    symbol: "arrow.up.and.down",
-                    value: $verticalZoom,
-                    range: 1...4,
-                    step: 0.25,
-                    accessibilityLabel: language.text("Voltage zoom", "电压轴缩放")
-                )
-            }
+        HStack(spacing: 10) {
+            zoomStepper(
+                symbol: "arrow.left.and.right",
+                value: zoom,
+                levels: Self.timeZoomLevels,
+                accessibilityLabel: language.text("Time zoom", "时间轴缩放"),
+                set: { setTimeZoom($0) }
+            )
+            zoomStepper(
+                symbol: "arrow.up.and.down",
+                value: verticalZoom,
+                levels: Self.voltageZoomLevels,
+                accessibilityLabel: language.text("Voltage zoom", "电压轴缩放"),
+                set: { verticalZoom = $0 }
+            )
+            Spacer(minLength: 0)
             Button {
                 setTimeZoom(1)
                 verticalZoom = 1
             } label: {
                 Image(systemName: "arrow.counterclockwise")
-                    .frame(width: 30, height: 30)
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 32, height: 32)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderless)
             .disabled(zoom == 1 && verticalZoom == 1)
             .accessibilityLabel(language.text("Reset zoom", "复位缩放"))
         }
-    }
-
-    private var timeZoomBinding: Binding<Double> {
-        Binding(get: { zoom }, set: { setTimeZoom($0) })
     }
 
     private func setTimeZoom(_ value: Double) {
@@ -266,28 +276,60 @@ public struct ECGWaveformView: View {
         if let center { focusTime(center, animated: false) }
     }
 
-    private func zoomRow(
+    private func zoomStepper(
         symbol: String,
-        value: Binding<Double>,
-        range: ClosedRange<Double>,
-        step: Double,
-        accessibilityLabel: String
+        value: Double,
+        levels: [Double],
+        accessibilityLabel: String,
+        set: @escaping (Double) -> Void
     ) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol)
-                .foregroundStyle(.secondary)
-                .frame(width: 22)
-            Slider(value: value, in: range, step: step)
-                .accessibilityLabel(accessibilityLabel)
-            Text(Self.zoomText(value.wrappedValue))
-                .font(.caption.monospacedDigit())
-                .frame(width: 42, alignment: .trailing)
+        let lower = levels.last { $0 < value - 1e-9 }
+        let higher = levels.first { $0 > value + 1e-9 }
+        return HStack(spacing: 0) {
+            Button {
+                if let lower { set(lower) }
+            } label: {
+                Image(systemName: "minus")
+                    .frame(width: 34, height: 32)
+            }
+            .disabled(lower == nil)
+
+            HStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(Self.zoomText(value))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.primary)
+            }
+            .frame(minWidth: 50)
+
+            Button {
+                if let higher { set(higher) }
+            } label: {
+                Image(systemName: "plus")
+                    .frame(width: 34, height: 32)
+            }
+            .disabled(higher == nil)
+        }
+        .buttonStyle(.borderless)
+        .font(.subheadline.weight(.semibold))
+        .background(Color.primary.opacity(0.05), in: Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(Self.zoomText(value))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: if let higher { set(higher) }
+            case .decrement: if let lower { set(lower) }
+            @unknown default: break
+            }
         }
     }
 
-    /// Icon-only switches; the legend below the chart repeats each icon with its meaning.
+    /// Icon-only switches; the reading guide repeats each icon with its meaning.
     private var overlayToggles: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 6) {
             overlayToggle(
                 isOn: $isMeasuring,
                 title: language.text("Measure", "测量"),
@@ -299,7 +341,7 @@ public struct ECGWaveformView: View {
                     isOn: $showsRRIntervals,
                     title: language.text("R–R intervals", "R–R 间期"),
                     symbol: "arrow.left.and.right.square",
-                    tint: .pink
+                    tint: .blue
                 )
             }
             if !qrsAmplitudes.isEmpty {
@@ -311,7 +353,6 @@ public struct ECGWaveformView: View {
                 )
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func overlayToggle(
@@ -322,11 +363,12 @@ public struct ECGWaveformView: View {
     ) -> some View {
         Toggle(isOn: isOn) {
             Image(systemName: symbol)
-                .font(.title3)
-                .frame(width: 44, height: 30)
+                .font(.body)
+                .frame(width: 24, height: 24)
         }
         .toggleStyle(.button)
         .buttonStyle(.bordered)
+        .controlSize(.small)
         .tint(tint)
         .accessibilityLabel(title)
     }
@@ -340,7 +382,7 @@ public struct ECGWaveformView: View {
                     "\(candidates.count) premature candidate(s)",
                     "\(candidates.count) 处疑似早搏候选"
                 ))
-                .font(.subheadline.bold())
+                .font(.subheadline.weight(.semibold))
                 Text(navigatorSubtitle)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -362,8 +404,13 @@ public struct ECGWaveformView: View {
             .accessibilityLabel(language.text("Next candidate", "下一个候选"))
         }
         .buttonStyle(.bordered)
-        .padding(10)
-        .background(Color.watchBeatAttention.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
+        .buttonBorderShape(.circle)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            Color.watchBeatAttention.opacity(0.14),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
     }
 
     private var navigatorSubtitle: String {
@@ -495,7 +542,7 @@ public struct ECGWaveformView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(language.text("Full recording overview", "全段预览"))
-                    .font(.subheadline.bold())
+                    .font(.subheadline.weight(.semibold))
                 Spacer(minLength: 4)
                 if let viewport {
                     Text(visibleRangeText(viewport.visibleTimeRange))
@@ -510,7 +557,7 @@ public struct ECGWaveformView: View {
                     voltageRange: voltageRange,
                     width: max(container.size.width, 1),
                     topInset: 8,
-                    drawableHeight: 76
+                    drawableHeight: overviewDrawableHeight
                 )
                 let initialViewport = ECGWaveformViewport(
                     timeRange: timeRange,
@@ -577,14 +624,7 @@ public struct ECGWaveformView: View {
                     }
                 }
             }
-            .frame(height: 108)
-
-            Text(language.text(
-                "Tap or drag anywhere to view details above. The blue window shows the visible section.",
-                "点击或拖动任意位置，查看上方细节；蓝色选框表示当前可见范围。"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .frame(height: overviewDrawableHeight + 32)
         }
     }
 
@@ -621,61 +661,148 @@ public struct ECGWaveformView: View {
         .accessibilityHidden(true)
     }
 
+    /// One line of colour keys; the full explanations live in the reading guide.
+    @ViewBuilder
     private var legend: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(
-                language.text(
-                    "Scroll horizontally; the axes are in seconds and millivolts (mV).",
-                    "左右滑动查看；横轴单位为秒，纵轴单位为毫伏（mV）。"
-                ),
-                systemImage: "arrow.left.and.right"
-            )
-            if markers.count > 1 {
-                if showsRRIntervals {
-                    Label(
-                        language.text(
-                            "Numbers above the trace are R–R intervals between adjacent R peaks, in ms.",
-                            "波形上方数字是相邻 R 峰之间的间期（毫秒）。"
-                        ),
-                        systemImage: "arrow.left.and.right.square"
+        if markers.count > 1 {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) { legendItems }
+                VStack(alignment: .leading, spacing: 6) { legendItems }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        } else {
+            Text(language.text(
+                "No model-derived R–R intervals are available for this signal.",
+                "这段信号没有可用的模型 R–R 间期。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var legendItems: some View {
+        if showsRRIntervals {
+            legendItem(Color.secondary.opacity(0.6), language.text("R–R interval (ms)", "R–R 间期（ms）"))
+        }
+        if !candidates.isEmpty {
+            legendItem(Color.watchBeatAttention, language.text("Premature candidate", "疑似早搏候选"))
+        }
+        if showsQRSAmplitude, !qrsAmplitudes.isEmpty {
+            legendItem(.teal, language.text("Peak-to-trough (mV)", "峰谷电压差（mV）"))
+        }
+        if showsModelRPeakLines || showsCandidateLines {
+            legendItem(.orange, language.text("Debug lines", "调试竖线"))
+        }
+    }
+
+    private func legendItem(_ swatch: Color, _ text: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(swatch)
+                .frame(width: 10, height: 10)
+            Text(text)
+                .lineLimit(1)
+        }
+    }
+
+    private var readingGuide: some View {
+        NavigationStack {
+            List {
+                guideRow(
+                    "arrow.left.and.right",
+                    language.text(
+                        "Scroll horizontally; the axes are in seconds and millivolts (mV).",
+                        "左右滑动查看；横轴单位为秒，纵轴单位为毫伏（mV）。"
                     )
-                }
-                if !candidates.isEmpty {
-                    Label(
-                        language.text(
-                            "Yellow shading and #numbers mark premature candidates, and the short R–R before each one is highlighted. Use ‹ › to jump between them.",
-                            "黄色底色和 # 序号标出疑似早搏候选，其前方偏短的 R–R 间期以黄色突出；可用 ‹ › 逐个跳转。"
-                        ),
-                        systemImage: "flag"
+                )
+                guideRow(
+                    "plus.magnifyingglass",
+                    language.text(
+                        "Use − and + under the chart to zoom time and voltage; ↺ resets both.",
+                        "用波形下方的 − 和 + 缩放时间轴与电压轴，↺ 一键复位。"
                     )
-                }
-                if showsQRSAmplitude, !qrsAmplitudes.isEmpty {
-                    Label(
-                        language.text(
-                            "Teal values are the peak-to-trough voltage within ±80 ms of each R peak (mV).",
-                            "青色数值是每个 R 峰前后 80 毫秒内的峰谷电压差（mV）。"
-                        ),
-                        systemImage: "arrow.up.and.down.square"
+                )
+                guideRow(
+                    "rectangle.dashed",
+                    language.text(
+                        "Tap or drag anywhere on the full recording overview to view details above. " +
+                            "The blue window shows the visible section.",
+                        "点击或拖动“全段预览”的任意位置，即可查看上方细节；蓝色选框表示当前可见范围。"
                     )
-                }
+                )
+                guideRow(
+                    "arrow.left.and.right.square",
+                    language.text(
+                        "Numbers above the trace are R–R intervals between adjacent R peaks, in ms.",
+                        "波形上方数字是相邻 R 峰之间的间期（毫秒）。"
+                    )
+                )
+                guideRow(
+                    "flag",
+                    language.text(
+                        "Yellow shading and #numbers mark premature candidates, and the short R–R before " +
+                            "each one is highlighted. Use ‹ › to jump between them.",
+                        "黄色底色和 # 序号标出疑似早搏候选，其前方偏短的 R–R 间期以黄色突出；可用 ‹ › 逐个跳转。"
+                    )
+                )
+                guideRow(
+                    "arrow.up.and.down.square",
+                    language.text(
+                        "Teal values are the peak-to-trough voltage within ±80 ms of each R peak (mV).",
+                        "青色数值是每个 R 峰前后 80 毫秒内的峰谷电压差（mV）。"
+                    )
+                )
+                guideRow(
+                    "ruler",
+                    language.text(
+                        "Turn on Measure, then tap the trace to place points A and B.",
+                        "打开“测量”后，在波形上依次点击放置 A、B 两点。"
+                    )
+                )
                 if showsModelRPeakLines || showsCandidateLines {
-                    Label(
+                    guideRow(
+                        "ladybug",
                         language.text(
                             "Debug overlay: orange lines are model R peaks; thick yellow lines are candidates.",
                             "调试标注：橙色细线为模型 R 峰，黄色粗线为疑似早搏候选。"
-                        ),
-                        systemImage: "ladybug"
+                        )
                     )
                 }
-            } else {
-                Text(language.text(
-                    "No model-derived R–R intervals are available for this signal.",
-                    "这段信号没有可用的模型 R–R 间期。"
-                ))
+                guideRow(
+                    "info.circle",
+                    language.text(
+                        "\(signal.timeSeconds.count) full-resolution samples. Drawing is downsampled for " +
+                            "display only; the model always receives every sample.",
+                        "共 \(signal.timeSeconds.count) 个全分辨率采样点。绘图仅为显示而降采样，模型始终使用全部采样。"
+                    )
+                )
+            }
+            .navigationTitle(language.text("Reading the waveform", "如何阅读波形"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(language.text("Done", "完成")) {
+                        showsReadingGuide = false
+                    }
+                }
             }
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func guideRow(_ symbol: String, _ text: String) -> some View {
+        Label {
+            Text(text)
+                .font(.subheadline)
+        } icon: {
+            Image(systemName: symbol)
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - Drawing
@@ -1067,6 +1194,9 @@ public struct ECGWaveformView: View {
             )
         }
     }
+
+    private static let timeZoomLevels: [Double] = [1, 1.5, 2, 3, 4, 6, 8]
+    private static let voltageZoomLevels: [Double] = [1, 1.5, 2, 3, 4]
 
     private static func zoomText(_ value: Double) -> String {
         if value == value.rounded() { return String(format: "%.0f×", value) }

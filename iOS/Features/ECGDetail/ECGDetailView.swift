@@ -21,17 +21,22 @@ public struct ECGDetailView: View {
             WatchBeatBackground()
             ScrollViewReader { pageProxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        summarySection
+                    VStack(alignment: .leading, spacing: 20) {
+                        headerSection
                         stateSection(pageProxy: pageProxy)
-                        disclaimerSection
                         technicalSection
+                        disclaimerSection
                     }
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 32)
                 }
             }
         }
         .navigationTitle(language.text("ECG Record", "心电图详情"))
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task { await viewModel.load() }
         .confirmationDialog(
             exportConfirmationTitle,
@@ -63,85 +68,94 @@ public struct ECGDetailView: View {
         }
     }
 
-    /// Only what a person reading their own recording cares about; acquisition details are in
-    /// the technical section at the bottom.
-    private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(language.text("Recording", "记录概览")).font(.headline)
-            if viewModel.source == .healthKit {
-                row(language.text("Start", "开始时间"), startDateText)
-            } else {
-                row(language.text("Source", "来源"), sourceText)
+    // MARK: - Header
+
+    /// What a person reading their own recording looks for first: when, how long, the rate and
+    /// whether anything was flagged. Acquisition details are in the technical section at the bottom.
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                headerTitle
+                    .font(.title2.bold())
+                Text(sourceText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            row(language.text("Duration", "时长"), language.text(
-                String(format: "%.1f s", viewModel.record.durationSeconds),
-                String(format: "%.1f 秒", viewModel.record.durationSeconds)
-            ))
-            row(language.text("Average heart rate", "平均心率"), heartRateText)
+
+            HStack(spacing: 10) {
+                WatchBeatMetricTile(
+                    value: heartRateTileText,
+                    label: language.text("Average heart rate", "平均心率")
+                )
+                WatchBeatMetricTile(
+                    value: language.text(
+                        String(format: "%.1f s", viewModel.record.durationSeconds),
+                        String(format: "%.1f 秒", viewModel.record.durationSeconds)
+                    ),
+                    label: language.text("Duration", "时长")
+                )
+                WatchBeatMetricTile(
+                    value: candidateCount.map { "\($0)" } ?? "—",
+                    label: language.text("Premature candidates", "疑似早搏候选"),
+                    isHighlighted: (candidateCount ?? 0) > 0
+                )
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
             if viewModel.source == .healthKit {
-                row(language.text("Apple classification", "Apple 分类"), appleClassificationText)
-                row(language.text("Symptoms", "症状"), symptomsText)
+                Divider()
+                VStack(spacing: 8) {
+                    ECGInfoRow(language.text("Apple classification", "Apple 分类"), appleClassificationText)
+                    ECGInfoRow(language.text("Symptoms", "症状"), symptomsText)
+                }
             }
         }
-        .watchBeatCard()
+        .watchBeatPanel()
     }
 
-    /// Analysis provenance, acquisition metadata and integrity facts for professionals. Collapsed
-    /// by default and kept at the very bottom of the page.
-    private var technicalSection: some View {
-        DisclosureGroup(isExpanded: $showsTechnicalDetails) {
-            VStack(alignment: .leading, spacing: 14) {
-                if let measurement = viewModel.measurement {
-                    ECGAnalysisTechnicalDetails(
-                        report: measurement.analysis,
-                        analysisDurationSeconds: measurement.analysisDurationSeconds
-                    )
-                    Divider()
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(language.text("Recording metadata", "记录元数据"))
-                        .font(.subheadline.bold())
-                    row(language.text("Source", "来源"), sourceText)
-                    row(language.text("Sampling frequency", "采样频率"), samplingText)
-                    row(
-                        language.text("Declared measurements", "声明测量数"),
-                        "\(viewModel.record.declaredMeasurementCount)"
-                    )
-                }
-                if let measurement = viewModel.measurement {
-                    Divider()
-                    integrityContent(measurement: measurement)
-                }
-            }
-            .padding(.top, 10)
-        } label: {
-            Label(
-                language.text("Technical details (for professionals)", "技术详情（供专业人员参考）"),
-                systemImage: "wrench.and.screwdriver"
-            )
-            .font(.subheadline.bold())
-            .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var headerTitle: some View {
+        if viewModel.source == .healthKit {
+            Text(viewModel.record.startDate, format: .dateTime.year().month().day().hour().minute())
+        } else {
+            Text(language.text("Example ECG Data", "示例 ECG 数据"))
         }
-        .watchBeatCard()
     }
+
+    /// `nil` until the report is loaded, or when the recording could not be analyzed.
+    private var candidateCount: Int? {
+        guard let measurement = viewModel.measurement, measurement.analysis.status == .analyzed else {
+            return nil
+        }
+        return measurement.analysis.summary.prematureCandidateCount
+    }
+
+    // MARK: - Loaded content
 
     @ViewBuilder
     private func stateSection(pageProxy: ScrollViewProxy) -> some View {
         switch viewModel.state {
         case .idle, .loading:
             ProgressView(language.text("Loading voltage measurements…", "正在载入电压测量值…"))
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .watchBeatPanel()
         case .loaded(let measurement):
             loadedSections(measurement: measurement, incomplete: false, pageProxy: pageProxy)
         case .loadedWithIncompleteMeasurements(let measurement):
             loadedSections(measurement: measurement, incomplete: true, pageProxy: pageProxy)
         case .failed(let message):
-            VStack(alignment: .leading, spacing: 8) {
-                Text(language.text("Measurement query failed", "测量值查询失败")).font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                WatchBeatSectionTitle(
+                    language.text("Measurement query failed", "测量值查询失败"),
+                    systemImage: "exclamationmark.triangle"
+                )
                 Text(language.text("Error: \(message)", "错误：\(message)"))
-                    .font(.caption)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                 Button(language.text("Try again", "重试")) { Task { await viewModel.load() } }
+                    .buttonStyle(.bordered)
             }
+            .watchBeatPanel()
         }
     }
 
@@ -150,36 +164,37 @@ public struct ECGDetailView: View {
         incomplete: Bool,
         pageProxy: ScrollViewProxy
     ) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if measurement.source == .builtInSyntheticExample {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label(language.text("Built-in synthetic example", "内置合成示例"), systemImage: "testtube.2")
-                        .font(.headline)
-                    Text(language.text(
-                        "Generated for learning the app. This is not a person's ECG and cannot validate medical accuracy.",
-                        "该波形仅用于学习应用操作，不属于任何人的心电数据，也不能验证医疗准确性。"
-                    ))
-                        .font(.caption)
+        VStack(alignment: .leading, spacing: 20) {
+            if measurement.source == .builtInSyntheticExample || incomplete {
+                VStack(alignment: .leading, spacing: 8) {
+                    if measurement.source == .builtInSyntheticExample {
+                        notice(
+                            language.text("Built-in synthetic example", "内置合成示例"),
+                            detail: language.text(
+                                "Generated for learning the app. This is not a person's ECG and cannot validate medical accuracy.",
+                                "该波形仅用于学习应用操作，不属于任何人的心电数据，也不能验证医疗准确性。"
+                            ),
+                            systemImage: "testtube.2"
+                        )
+                    }
+                    if incomplete {
+                        notice(
+                            language.text("Some measurement data is incomplete", "部分测量数据不完整"),
+                            detail: language.text(
+                                "See Technical details at the bottom.",
+                                "详见页面底部的“技术详情”。"
+                            ),
+                            systemImage: "exclamationmark.circle"
+                        )
+                    }
                 }
-                .foregroundStyle(.orange)
-            }
-            if incomplete {
-                Label(
-                    language.text(
-                        "Some measurement data is incomplete. See Technical details at the bottom.",
-                        "部分测量数据不完整，详见页面底部的“技术详情”。"
-                    ),
-                    systemImage: "exclamationmark.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
             }
             ECGWaveformView(
                 signal: measurement.signal,
                 markers: viewModel.waveformMarkers,
                 focusRequest: $waveformFocusRequest
             )
-            .watchBeatCard()
+            .watchBeatPanel()
             .id(waveformCardID)
             ECGAnalysisResultView(
                 report: measurement.analysis,
@@ -194,14 +209,144 @@ public struct ECGDetailView: View {
         }
     }
 
+    private func notice(_ title: String, detail: String, systemImage: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: systemImage)
+                .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    // MARK: - Export
+
+    private var exportSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            WatchBeatSectionTitle(language.text("Export", "导出"), systemImage: "square.and.arrow.up")
+            VStack(spacing: 0) {
+                exportRow(
+                    .analysisJSON,
+                    title: language.text("Analysis results", "分析结果"),
+                    detail: language.text("JSON · candidates, rate and parameters", "JSON · 候选、心率与参数"),
+                    symbol: "doc.text"
+                )
+                Divider().padding(.leading, 44)
+                exportRow(
+                    .rawCSV,
+                    title: language.text("Raw waveform", "原始波形"),
+                    detail: language.text("CSV · full-resolution voltage samples", "CSV · 全分辨率电压采样"),
+                    symbol: "tablecells"
+                )
+                Divider().padding(.leading, 44)
+                exportRow(
+                    .metadataJSON,
+                    title: language.text("Recording metadata", "记录元数据"),
+                    detail: language.text("JSON · acquisition details", "JSON · 采集信息"),
+                    symbol: "list.bullet.rectangle"
+                )
+            }
+            Label(
+                exportNoticeText,
+                systemImage: viewModel.source == .healthKit ? "lock.shield" : "testtube.2"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .watchBeatPanel()
+    }
+
+    private func exportRow(_ kind: ECGExportKind, title: String, detail: String, symbol: String) -> some View {
+        Button {
+            pendingExportKind = kind
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: symbol)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "square.and.arrow.up")
+                    .font(.subheadline)
+                    .foregroundStyle(.tint)
+            }
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(language.text("Share \(title)", "分享\(title)"))
+    }
+
+    // MARK: - Technical details and disclaimer
+
+    /// Analysis provenance, acquisition metadata and integrity facts for professionals. Collapsed
+    /// by default and kept near the bottom of the page.
+    private var technicalSection: some View {
+        DisclosureGroup(isExpanded: $showsTechnicalDetails) {
+            VStack(alignment: .leading, spacing: 14) {
+                if let measurement = viewModel.measurement {
+                    ECGAnalysisTechnicalDetails(
+                        report: measurement.analysis,
+                        analysisDurationSeconds: measurement.analysisDurationSeconds
+                    )
+                    Divider()
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(language.text("Recording metadata", "记录元数据"))
+                        .font(.subheadline.bold())
+                    ECGInfoRow(language.text("Source", "来源"), sourceText)
+                    if viewModel.source == .healthKit {
+                        ECGInfoRow(language.text("Start", "开始时间"), startDateText)
+                    }
+                    ECGInfoRow(language.text("Sampling frequency", "采样频率"), samplingText)
+                    ECGInfoRow(
+                        language.text("Declared measurements", "声明测量数"),
+                        "\(viewModel.record.declaredMeasurementCount)"
+                    )
+                }
+                if let measurement = viewModel.measurement {
+                    Divider()
+                    integrityContent(measurement: measurement)
+                }
+            }
+            .padding(.top, 12)
+        } label: {
+            Label(
+                language.text("Technical details (for professionals)", "技术详情（供专业人员参考）"),
+                systemImage: "wrench.and.screwdriver"
+            )
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.secondary)
+        }
+        .watchBeatPanel()
+    }
+
     private func integrityContent(measurement: ECGMeasurement) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(language.text("Measurement integrity", "测量完整性")).font(.subheadline.bold())
-            row(language.text("Loaded samples", "已载入采样点"), "\(measurement.integrity.sampleCount)")
-            row(language.text("Missing voltages", "缺失电压"), "\(measurement.integrity.missingVoltageIndices.count)")
-            row(language.text("Nominal rate", "标称采样率"), rateText(measurement.signal.nominalSamplingRateHz))
-            row(language.text("Inferred rate", "推算采样率"), rateText(measurement.integrity.inferredSamplingRateHz))
-            row(
+            ECGInfoRow(language.text("Loaded samples", "已载入采样点"), "\(measurement.integrity.sampleCount)")
+            ECGInfoRow(
+                language.text("Missing voltages", "缺失电压"),
+                "\(measurement.integrity.missingVoltageIndices.count)"
+            )
+            ECGInfoRow(language.text("Nominal rate", "标称采样率"), rateText(measurement.signal.nominalSamplingRateHz))
+            ECGInfoRow(language.text("Inferred rate", "推算采样率"), rateText(measurement.integrity.inferredSamplingRateHz))
+            ECGInfoRow(
                 language.text("Timestamps strictly increasing", "时间戳严格递增"),
                 measurement.integrity.hasStrictlyIncreasingFiniteTimestamps
                     ? language.text("yes", "是")
@@ -229,46 +374,23 @@ public struct ECGDetailView: View {
         }
     }
 
+    /// Required on every result page; kept as a quiet footer rather than another card.
     private var disclaimerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider()
-            Text(language.text("Research use only — not a diagnosis", "仅供研究使用—不构成诊断")).font(.headline)
-            Text(language.text(MedicalDisclaimer.english, MedicalDisclaimer.chinese)).font(.caption)
-        }
-        .watchBeatCard()
-    }
-
-    private var exportSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(language.text("Export", "导出")).font(.headline)
+        VStack(alignment: .leading, spacing: 6) {
             Label(
-                exportNoticeText,
-                systemImage: viewModel.source == .healthKit ? "lock.shield" : "testtube.2"
+                language.text("Research use only — not a diagnosis", "仅供研究使用，不构成诊断"),
+                systemImage: "info.circle"
             )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-
-            VStack(spacing: 8) {
-                Button(language.text("Share analysis JSON", "分享分析结果 JSON")) {
-                    pendingExportKind = .analysisJSON
-                }
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
-
-                Button(language.text("Share raw CSV", "分享原始 CSV")) {
-                    pendingExportKind = .rawCSV
-                }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
-
-                Button(language.text("Share metadata JSON", "分享元数据 JSON")) {
-                    pendingExportKind = .metadataJSON
-                }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
-            }
+            .font(.footnote.weight(.semibold))
+            Text(language.text(
+                "Screening results cannot diagnose or rule out an arrhythmia.",
+                "筛查结果不能用于诊断或排除心律失常。"
+            ))
+            Text(language.text(MedicalDisclaimer.english, MedicalDisclaimer.chinese))
         }
-        .watchBeatCard()
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 4)
     }
 
     private var showsExportConfirmation: Binding<Bool> {
@@ -351,19 +473,8 @@ public struct ECGDetailView: View {
         pendingExportKind = nil
     }
 
-    private func row(_ title: String, _ value: String) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Text(value)
-                .multilineTextAlignment(.trailing)
-        }
-        .font(.subheadline)
-    }
-
-    private var heartRateText: String {
-        guard let heartRate = viewModel.record.averageHeartRateBPM else { return language.text("not available", "不可用") }
+    private var heartRateTileText: String {
+        guard let heartRate = viewModel.record.averageHeartRateBPM else { return "—" }
         return String(format: "%.0f BPM", heartRate)
     }
 

@@ -40,7 +40,10 @@ public struct WatchBeatBackground: View {
     }
 }
 
-private struct WatchBeatDataCardModifier: ViewModifier {
+/// Opaque card surface shared by the ECG data list and the detail page, so both read as one app.
+private struct WatchBeatSurfaceModifier: ViewModifier {
+    /// Left accent stripe; `nil` draws none.
+    let stripe: Color?
     let isFlagged: Bool
     @Environment(\.colorScheme) private var colorScheme
 
@@ -54,13 +57,15 @@ private struct WatchBeatDataCardModifier: ViewModifier {
                     .stroke(borderColor, lineWidth: isFlagged ? 1.5 : 1)
             }
             .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(isFlagged ? Color.watchBeatAttention : Color.pink)
-                    .frame(width: 4)
-                    .padding(.leading, 6)
-                    .padding(.vertical, 15)
+                if let stripe {
+                    Capsule()
+                        .fill(stripe)
+                        .frame(width: 4)
+                        .padding(.leading, 6)
+                        .padding(.vertical, 15)
+                }
             }
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.12), radius: 8, y: 3)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, y: 3)
     }
 
     private var cardColor: Color {
@@ -72,7 +77,7 @@ private struct WatchBeatDataCardModifier: ViewModifier {
     private var borderColor: Color {
         isFlagged
             ? Color.watchBeatAttention.opacity(colorScheme == .dark ? 0.75 : 0.95)
-            : Color.primary.opacity(colorScheme == .dark ? 0.34 : 0.16)
+            : Color.primary.opacity(colorScheme == .dark ? 0.22 : 0.1)
     }
 }
 
@@ -86,8 +91,70 @@ public extension View {
             }
     }
 
-    /// Higher-contrast treatment for tappable rows on the ECG data page.
+    /// Tappable rows on the ECG data page. Unflagged rows get a quiet grey stripe so that only a
+    /// research flag draws the eye.
     func watchBeatDataCard(isFlagged: Bool = false) -> some View {
-        modifier(WatchBeatDataCardModifier(isFlagged: isFlagged))
+        modifier(WatchBeatSurfaceModifier(
+            stripe: isFlagged ? Color.watchBeatAttention : Color.secondary.opacity(0.28),
+            isFlagged: isFlagged
+        ))
+    }
+
+    /// Section cards on the ECG detail page: the data-card surface without a stripe.
+    func watchBeatPanel() -> some View {
+        modifier(WatchBeatSurfaceModifier(stripe: nil, isFlagged: false))
+    }
+}
+
+/// Large value with a short caption, used for key numbers on the detail page. Highlighting uses the
+/// research-flag yellow; everything else stays neutral.
+struct WatchBeatMetricTile: View {
+    let value: String
+    let label: String
+    var isHighlighted = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(value)
+                .font(.title3.bold().monospacedDigit())
+                .foregroundStyle(isHighlighted ? Color.watchBeatAttentionText : Color.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        // Fills the row height so tiles in an HStack with `.fixedSize(vertical:)` line up.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            isHighlighted ? Color.watchBeatAttention.opacity(0.16) : Color.primary.opacity(0.045),
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Card title with a muted icon, shared by the detail page sections.
+struct WatchBeatSectionTitle: View {
+    let title: String
+    let systemImage: String
+
+    init(_ title: String, systemImage: String) {
+        self.title = title
+        self.systemImage = systemImage
+    }
+
+    var body: some View {
+        Label {
+            Text(title)
+                .font(.headline)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(.secondary)
+        }
     }
 }
