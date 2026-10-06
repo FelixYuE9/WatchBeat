@@ -2,200 +2,248 @@ import ECGCore
 import Foundation
 import SwiftUI
 
-/// User-facing results of one immutable `ECGAnalysisReport`: candidates, rate summary and
-/// descriptive values. How the analysis ran lives in `ECGAnalysisTechnicalDetails`, shown at the
+/// User-facing results of one immutable `ECGAnalysisReport`, as separate cards: candidates first,
+/// then rate and rhythm. How the analysis ran lives in `ECGAnalysisTechnicalDetails`, shown at the
 /// bottom of the page for professionals. No algorithm rule is reimplemented in the UI.
 struct ECGAnalysisResultView: View {
     let report: ECGAnalysisReport
     /// Called with a candidate's time so the detail page can bring it into view on the waveform.
     var onSelectCandidate: ((Double) -> Void)?
+    @State private var showsDescriptors = false
     @Environment(\.appLanguage) private var language
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(language.text("Results", "分析结果"), systemImage: "waveform.path.ecg")
-                .font(.headline)
+    private let visibleCandidateLimit = 8
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
             switch report.status {
             case .analyzed:
-                analyzedContent
+                if !prematureCandidates.isEmpty {
+                    candidatesCard
+                }
+                if report.rhythmMetrics != nil || report.recordingDescriptors != nil {
+                    rhythmCard
+                }
             case .notAnalyzed:
-                refusedContent
+                refusedCard
             }
-
-            Text(language.text(
-                "Screening results are for research only and cannot diagnose or rule out an arrhythmia.",
-                "筛查结果仅供研究使用，不能用于诊断或排除心律失常。"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .watchBeatCard()
     }
 
-    @ViewBuilder
-    private var analyzedContent: some View {
-        if !prematureCandidates.isEmpty {
-            Label(
-                language.text(
-                    "\(prematureCandidates.count) premature candidate(s) — tap one to show it on the waveform",
-                    "\(prematureCandidates.count) 处疑似早搏候选，点击可在波形上定位"
-                ),
-                systemImage: "flag.fill"
-            )
-            .font(.subheadline.bold())
-            .foregroundStyle(Color.watchBeatAttentionText)
+    // MARK: - Candidates
 
-            ForEach(prematureCandidates.prefix(8), id: \.sampleIndex) { beat in
-                candidateRow(beat)
+    private var candidatesCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Label {
+                    Text(language.text("Premature candidates", "疑似早搏候选"))
+                        .font(.headline)
+                } icon: {
+                    Image(systemName: "flag.fill")
+                        .foregroundStyle(Color.watchBeatAttentionText)
+                }
+                Spacer(minLength: 8)
+                Text("\(prematureCandidates.count)")
+                    .font(.subheadline.bold().monospacedDigit())
+                    .foregroundStyle(Color.watchBeatAttentionText)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 3)
+                    .background(Color.watchBeatAttention.opacity(0.2), in: Capsule())
             }
-            if prematureCandidates.count > 8 {
+            if onSelectCandidate != nil {
                 Text(language.text(
-                    "+ \(prematureCandidates.count - 8) more — use ‹ › above the waveform",
-                    "另有 \(prematureCandidates.count - 8) 个，可用波形上方的 ‹ › 逐个查看"
+                    "Numbers match the # labels on the waveform. Tap one to show it there.",
+                    "序号与波形上的 # 标记一致，点击即可在波形上定位。"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 0) {
+                ForEach(
+                    Array(prematureCandidates.prefix(visibleCandidateLimit).enumerated()),
+                    id: \.element.sampleIndex
+                ) { index, beat in
+                    if index > 0 {
+                        Divider().padding(.leading, 38)
+                    }
+                    candidateRow(beat, number: index + 1)
+                }
+            }
+
+            if prematureCandidates.count > visibleCandidateLimit {
+                let remaining = prematureCandidates.count - visibleCandidateLimit
+                Text(language.text(
+                    "+ \(remaining) more — use ‹ › above the waveform",
+                    "另有 \(remaining) 个，可用波形上方的 ‹ › 逐个查看"
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
         }
-
-        if let metrics = report.rhythmMetrics {
-            if !prematureCandidates.isEmpty { Divider() }
-            Text(language.text("Rate and rhythm", "心率与节律"))
-                .font(.subheadline.bold())
-            ECGInfoRow(
-                language.text("Median heart rate", "中位心率"),
-                String(format: "%.0f BPM", metrics.medianDetectedHeartRateBPM)
-            )
-            ECGInfoRow(
-                language.text("Median R–R interval", "R–R 间期中位数"),
-                String(format: "%.0f ms", metrics.medianRRMilliseconds)
-            )
-            ECGInfoRow(
-                language.text("R–R interquartile range", "R–R 四分位距"),
-                String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds)
-            )
-            if !prematureCandidates.isEmpty {
-                ECGInfoRow(
-                    language.text("Candidate share", "候选占比"),
-                    String(
-                        format: "%.1f%% (%ld/%ld)",
-                        metrics.prematureCandidateFraction * 100,
-                        report.summary.prematureCandidateCount,
-                        report.summary.classifiedBeatCount
-                    )
-                )
-            }
-            Text(language.text(
-                "R–R spread describes this recording only; it is not a clinical HRV measurement.",
-                "R–R 离散程度只描述这一段记录，不属于临床 HRV 指标。"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-
-        if let descriptors = report.recordingDescriptors {
-            Divider()
-            descriptorContent(descriptors)
-        }
+        .watchBeatPanel()
     }
 
     @ViewBuilder
-    private var refusedContent: some View {
-        Label(
-            language.text("This recording could not be analyzed", "这段记录无法分析"),
-            systemImage: "nosign"
-        )
-        .foregroundStyle(.orange)
-        if let reason = report.reason {
-            Text(ECGAnalysisReasonText.text(for: reason, language: language))
-                .font(.caption)
-        }
-    }
-
-    @ViewBuilder
-    private func candidateRow(_ beat: ECGAnalyzedBeat) -> some View {
+    private func candidateRow(_ beat: ECGAnalyzedBeat, number: Int) -> some View {
         let ratio = beat.prematurityRatio.map { String(format: "%.2f", $0) } ?? "—"
-        let text = Text(language.text(
-            String(format: "%.3f s · RR ratio %@", beat.timeSeconds, ratio),
-            String(format: "%.3f 秒 · RR 比值 %@", beat.timeSeconds, ratio)
-        ))
-        .font(.caption.monospacedDigit())
+        let content = HStack(spacing: 12) {
+            Text("\(number)")
+                .font(.caption.bold().monospacedDigit())
+                .foregroundStyle(Color.watchBeatAttentionText)
+                .frame(width: 26, height: 26)
+                .background(Color.watchBeatAttention.opacity(0.22), in: Circle())
+            Text(language.text(
+                String(format: "%.3f s", beat.timeSeconds),
+                String(format: "%.3f 秒", beat.timeSeconds)
+            ))
+            .font(.subheadline.monospacedDigit())
+            Spacer(minLength: 8)
+            Text(language.text("RR ratio \(ratio)", "RR 比值 \(ratio)"))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+            if onSelectCandidate != nil {
+                Image(systemName: "scope")
+                    .foregroundStyle(Color.watchBeatAttentionText)
+            }
+        }
+        .padding(.vertical, 9)
+        .contentShape(Rectangle())
 
         if let onSelectCandidate {
             Button {
                 onSelectCandidate(beat.timeSeconds)
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "flag.fill")
-                        .font(.caption2)
-                        .foregroundStyle(Color.watchBeatAttentionText)
-                    text
-                    Spacer(minLength: 8)
-                    Image(systemName: "scope")
-                        .font(.body)
-                        .foregroundStyle(Color.watchBeatAttentionText)
-                }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.watchBeatAttention.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                .contentShape(Rectangle())
+                content
             }
             .buttonStyle(.plain)
             .accessibilityHint(language.text("Shows this candidate on the waveform", "在波形上定位这个候选"))
         } else {
-            text
+            content
         }
     }
 
-    @ViewBuilder
+    // MARK: - Rate and rhythm
+
+    private var rhythmCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WatchBeatSectionTitle(language.text("Rate and rhythm", "心率与节律"), systemImage: "heart.text.square")
+
+            if let metrics = report.rhythmMetrics {
+                HStack(spacing: 10) {
+                    WatchBeatMetricTile(
+                        value: String(format: "%.0f BPM", metrics.medianDetectedHeartRateBPM),
+                        label: language.text("Median rate", "中位心率")
+                    )
+                    WatchBeatMetricTile(
+                        value: String(format: "%.0f ms", metrics.medianRRMilliseconds),
+                        label: language.text("Median R–R", "R–R 中位数")
+                    )
+                    WatchBeatMetricTile(
+                        value: String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds),
+                        label: language.text("R–R IQR", "R–R 四分位距")
+                    )
+                }
+                .fixedSize(horizontal: false, vertical: true)
+
+                if !prematureCandidates.isEmpty {
+                    ECGInfoRow(
+                        language.text("Candidate share", "候选占比"),
+                        String(
+                            format: "%.1f%% (%ld/%ld)",
+                            metrics.prematureCandidateFraction * 100,
+                            report.summary.prematureCandidateCount,
+                            report.summary.classifiedBeatCount
+                        )
+                    )
+                }
+                Text(language.text(
+                    "R–R spread describes this recording only; it is not a clinical HRV measurement.",
+                    "R–R 离散程度只描述这一段记录，不属于临床 HRV 指标。"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            if let descriptors = report.recordingDescriptors {
+                Divider()
+                DisclosureGroup(isExpanded: $showsDescriptors) {
+                    descriptorContent(descriptors)
+                        .padding(.top, 10)
+                } label: {
+                    Text(language.text("More rhythm and waveform descriptors", "更多节律与波形描述"))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
+        .watchBeatPanel()
+    }
+
     private func descriptorContent(_ descriptors: ECGRecordingDescriptors) -> some View {
-        Text(language.text("More rhythm and waveform descriptors", "更多节律与波形描述"))
-            .font(.subheadline.bold())
-        ECGInfoRow(
-            language.text("Shortest / longest R–R", "最短 / 最长 R–R"),
-            String(
-                format: "%.0f / %.0f ms",
-                descriptors.shortestRRMilliseconds,
-                descriptors.longestRRMilliseconds
-            )
-        )
-        if let lowest = descriptors.minimumInstantaneousHeartRateBPM,
-           let highest = descriptors.maximumInstantaneousHeartRateBPM {
+        VStack(alignment: .leading, spacing: 10) {
             ECGInfoRow(
-                language.text("Beat-to-beat rate range", "逐搏心率范围"),
-                String(format: "%.0f–%.0f BPM", lowest, highest)
+                language.text("Shortest / longest R–R", "最短 / 最长 R–R"),
+                String(
+                    format: "%.0f / %.0f ms",
+                    descriptors.shortestRRMilliseconds,
+                    descriptors.longestRRMilliseconds
+                )
             )
+            if let lowest = descriptors.minimumInstantaneousHeartRateBPM,
+               let highest = descriptors.maximumInstantaneousHeartRateBPM {
+                ECGInfoRow(
+                    language.text("Beat-to-beat rate range", "逐搏心率范围"),
+                    String(format: "%.0f–%.0f BPM", lowest, highest)
+                )
+            }
+            ECGInfoRow(
+                language.text("R–R intervals over 2 s", "超过 2 秒的 R–R 间期"),
+                "\(descriptors.longRRIntervalCount)"
+            )
+            ECGInfoRow(
+                language.text("Back-to-back candidate pairs", "相邻出现的候选（成对）"),
+                "\(descriptors.consecutiveCandidatePairCount)"
+            )
+            if let median = descriptors.medianQRSPeakToTroughMillivolts,
+               let lowest = descriptors.minimumQRSPeakToTroughMillivolts,
+               let highest = descriptors.maximumQRSPeakToTroughMillivolts {
+                ECGInfoRow(
+                    language.text("QRS peak-to-trough (median)", "QRS 峰谷电压差（中位）"),
+                    String(format: "%.2f mV", median)
+                )
+                ECGInfoRow(
+                    language.text("QRS peak-to-trough range", "QRS 峰谷电压差范围"),
+                    String(format: "%.2f–%.2f mV", lowest, highest)
+                )
+            }
+            Text(language.text(
+                "Descriptive values for this single-lead recording only. A long R–R interval can also " +
+                    "come from a missed R peak. Peak-to-trough voltage changes with wrist contact and " +
+                    "arm position and is not a clinical voltage criterion.",
+                "仅描述这一段单导联记录。超过 2 秒的间期也可能来自漏检的 R 峰；峰谷电压差会随手腕接触和" +
+                    "手臂姿势变化，不能作为临床电压诊断标准。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
-        ECGInfoRow(
-            language.text("R–R intervals over 2 s", "超过 2 秒的 R–R 间期"),
-            "\(descriptors.longRRIntervalCount)"
-        )
-        ECGInfoRow(
-            language.text("Back-to-back candidate pairs", "相邻出现的候选（成对）"),
-            "\(descriptors.consecutiveCandidatePairCount)"
-        )
-        if let median = descriptors.medianQRSPeakToTroughMillivolts,
-           let lowest = descriptors.minimumQRSPeakToTroughMillivolts,
-           let highest = descriptors.maximumQRSPeakToTroughMillivolts {
-            ECGInfoRow(
-                language.text("QRS peak-to-trough (median)", "QRS 峰谷电压差（中位）"),
-                String(format: "%.2f mV", median)
+    }
+
+    // MARK: - Not analyzed
+
+    private var refusedCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            WatchBeatSectionTitle(
+                language.text("This recording could not be analyzed", "这段记录无法分析"),
+                systemImage: "nosign"
             )
-            ECGInfoRow(
-                language.text("QRS peak-to-trough range", "QRS 峰谷电压差范围"),
-                String(format: "%.2f–%.2f mV", lowest, highest)
-            )
+            if let reason = report.reason {
+                Text(ECGAnalysisReasonText.text(for: reason, language: language))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
-        Text(language.text(
-            "Descriptive values for this single-lead recording only. A long R–R interval can also " +
-                "come from a missed R peak. Peak-to-trough voltage changes with wrist contact and " +
-                "arm position and is not a clinical voltage criterion.",
-            "仅描述这一段单导联记录。超过 2 秒的间期也可能来自漏检的 R 峰；峰谷电压差会随手腕接触和" +
-                "手臂姿势变化，不能作为临床电压诊断标准。"
-        ))
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .watchBeatPanel()
     }
 
     private var prematureCandidates: [ECGAnalyzedBeat] {

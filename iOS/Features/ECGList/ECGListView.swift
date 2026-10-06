@@ -268,10 +268,10 @@ public struct ECGRecordRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "waveform.path.ecg")
                 .font(.title3)
-                .foregroundStyle(isFlagged ? Color.watchBeatAttentionText : Color.pink)
+                .foregroundStyle(isFlagged ? Color.watchBeatAttentionText : Color.secondary)
                 .frame(width: 42, height: 42)
                 .background(
-                    isFlagged ? Color.watchBeatAttention.opacity(0.2) : Color.pink.opacity(0.11),
+                    isFlagged ? Color.watchBeatAttention.opacity(0.2) : Color.secondary.opacity(0.1),
                     in: RoundedRectangle(cornerRadius: 12)
                 )
 
@@ -333,7 +333,7 @@ public struct ECGRecordRow: View {
                 badge(
                     language.text("Unable to analyze this recording", "这条记录无法分析"),
                     symbol: "questionmark.circle.fill",
-                    tint: .orange
+                    tint: .secondary
                 )
             case .failed:
                 badge(
