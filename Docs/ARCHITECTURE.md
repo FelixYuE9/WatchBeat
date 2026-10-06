@@ -96,7 +96,11 @@ iPhone；当前 revision 的签名产物和真机 HealthKit 行为仍须按
 - feature modules：Disclaimer、ECG list、ECG detail、可滚动/缩放 Canvas 波形、模型结果卡、
   内置合成教程与 settings（beat detail、research mode 待后续里程碑）。
 - `ECGDisplayDownsampler`：只生成绘图 envelope，不修改分析/导出的完整 `ECGSignal`；可选 marker
-  从真实时间戳映射到横轴；滚动时间轴使用有上限的 1/2/5 秒刻度，候选红线显示精确秒数。
+  从真实时间戳映射到横轴；滚动时间轴使用有上限的 1/2/5 秒刻度，纵轴为固定的 mV 刻度并可独立
+  缩放。疑似早搏候选用黄色底色、`#序号` 精确秒数和高亮的前一 R–R 标出，并可上一个/下一个跳转；
+  模型 R 峰竖线与候选竖线属于研究调试标注，默认关闭（设置 › 研究调试）。
+- `ECGCaliper`（波形测量工具）：两点 A/B 存于信号单位（秒、mV），点击放置、拖动或逐采样点微调，
+  可吸附 ±40 ms 内的波峰/波谷；读数恒为 B − A。只有测量 overlay 观察它，拖动时不重绘主波形。
 - `ECGExportEncoder` / `ECGTemporaryExportWriter`：原始 CSV、metadata JSON、analysis JSON、敏感信息确认、系统
   share sheet 与分享结束后的临时目录清理。合成示例在 UI、JSON `dataSource` 和文件名中均有标记。
 

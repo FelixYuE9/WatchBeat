@@ -6,7 +6,10 @@ public struct ECGDetailView: View {
     @State private var pendingExportKind: ECGExportKind?
     @State private var sharedExport: ECGTemporaryExportFile?
     @State private var showsExportError = false
+    @State private var waveformFocusRequest: ECGWaveformFocusRequest?
     @Environment(\.appLanguage) private var language
+
+    private let waveformCardID = "watchbeat.detail.waveform"
 
     public init(viewModel: ECGDetailViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -15,13 +18,15 @@ public struct ECGDetailView: View {
     public var body: some View {
         ZStack {
             WatchBeatBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    metadataSection
-                    stateSection
-                    disclaimerSection
+            ScrollViewReader { pageProxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        metadataSection
+                        stateSection(pageProxy: pageProxy)
+                        disclaimerSection
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
         .navigationTitle(language.text("ECG Record", "心电图详情"))
@@ -75,14 +80,14 @@ public struct ECGDetailView: View {
     }
 
     @ViewBuilder
-    private var stateSection: some View {
+    private func stateSection(pageProxy: ScrollViewProxy) -> some View {
         switch viewModel.state {
         case .idle, .loading:
             ProgressView(language.text("Loading voltage measurements…", "正在载入电压测量值…"))
         case .loaded(let measurement):
-            loadedSections(measurement: measurement, incomplete: false)
+            loadedSections(measurement: measurement, incomplete: false, pageProxy: pageProxy)
         case .loadedWithIncompleteMeasurements(let measurement):
-            loadedSections(measurement: measurement, incomplete: true)
+            loadedSections(measurement: measurement, incomplete: true, pageProxy: pageProxy)
         case .failed(let message):
             VStack(alignment: .leading, spacing: 8) {
                 Text(language.text("Measurement query failed", "测量值查询失败")).font(.headline)
@@ -94,7 +99,11 @@ public struct ECGDetailView: View {
         }
     }
 
-    private func loadedSections(measurement: ECGMeasurement, incomplete: Bool) -> some View {
+    private func loadedSections(
+        measurement: ECGMeasurement,
+        incomplete: Bool,
+        pageProxy: ScrollViewProxy
+    ) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             if measurement.source == .builtInSyntheticExample {
                 VStack(alignment: .leading, spacing: 4) {
@@ -108,11 +117,22 @@ public struct ECGDetailView: View {
                 }
                 .foregroundStyle(.orange)
             }
-            ECGWaveformView(signal: measurement.signal, markers: viewModel.waveformMarkers)
-                .watchBeatCard()
+            ECGWaveformView(
+                signal: measurement.signal,
+                markers: viewModel.waveformMarkers,
+                focusRequest: $waveformFocusRequest
+            )
+            .watchBeatCard()
+            .id(waveformCardID)
             ECGAnalysisResultView(
                 report: measurement.analysis,
-                analysisDurationSeconds: measurement.analysisDurationSeconds
+                analysisDurationSeconds: measurement.analysisDurationSeconds,
+                onSelectCandidate: { timeSeconds in
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        pageProxy.scrollTo(waveformCardID, anchor: .top)
+                    }
+                    waveformFocusRequest = ECGWaveformFocusRequest(timeSeconds: timeSeconds)
+                }
             )
             integritySection(measurement: measurement, incomplete: incomplete)
             exportSection

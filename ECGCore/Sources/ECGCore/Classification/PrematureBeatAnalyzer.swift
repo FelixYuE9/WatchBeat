@@ -59,7 +59,20 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
         let rrMilliseconds = (1..<peaks.count).map { index in
             (times[peaks[index]] - times[peaks[index - 1]]) * 1_000
         }
-        let result = classify(peaks: peaks, rrMilliseconds: rrMilliseconds, times: times)
+        // Descriptive only: measured after detection and never read by the RR rule below.
+        let qrsAmplitudes = peaks.map { peak in
+            ECGQRSAmplitude.measure(
+                voltageMillivolts: signal.voltageMillivolts,
+                around: peak,
+                samplingFrequencyHz: frequencyHz
+            )?.peakToTroughMillivolts
+        }
+        let result = classify(
+            peaks: peaks,
+            rrMilliseconds: rrMilliseconds,
+            times: times,
+            qrsAmplitudes: qrsAmplitudes
+        )
         guard result.classifiedBeatCount > 0 else {
             return refusal(.insufficientReliableRRContext, samplingFrequencyHz: frequencyHz)
         }
@@ -68,6 +81,11 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
             recordingDurationSeconds: duration,
             classifiedBeatCount: result.classifiedBeatCount,
             prematureCandidateCount: result.prematureCandidateCount
+        )
+        let recordingDescriptors = makeRecordingDescriptors(
+            rrMilliseconds: rrMilliseconds,
+            beats: result.beats,
+            qrsAmplitudes: qrsAmplitudes.compactMap { $0 }
         )
 
         return ECGAnalysisReport(
@@ -84,6 +102,7 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
                 prematureCandidateCount: result.prematureCandidateCount
             ),
             rhythmMetrics: rhythmMetrics,
+            recordingDescriptors: recordingDescriptors,
             beats: result.beats
         )
     }
@@ -136,7 +155,8 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
     private func classify(
         peaks: [Int],
         rrMilliseconds: [Double],
-        times: [Double]
+        times: [Double],
+        qrsAmplitudes: [Double?]
     ) -> (beats: [ECGAnalyzedBeat], classifiedBeatCount: Int, prematureCandidateCount: Int) {
         var beats: [ECGAnalyzedBeat] = []
         beats.reserveCapacity(peaks.count)
@@ -188,7 +208,8 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
                     prematurityRatio: ratio,
                     classification: classification,
                     confidence: confidence,
-                    reasonCodes: reasons
+                    reasonCodes: reasons,
+                    qrsPeakToTroughMillivolts: qrsAmplitudes[peakPosition]
                 )
             )
         }
@@ -218,6 +239,36 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
             rrInterquartileRangeMilliseconds: upperQuartile - lowerQuartile,
             prematureCandidateFraction: Double(prematureCandidateCount)
                 / Double(classifiedBeatCount)
+        )
+    }
+
+    private func makeRecordingDescriptors(
+        rrMilliseconds: [Double],
+        beats: [ECGAnalyzedBeat],
+        qrsAmplitudes: [Double]
+    ) -> ECGRecordingDescriptors? {
+        guard let shortestRR = rrMilliseconds.min(),
+              let longestRR = rrMilliseconds.max() else {
+            return nil
+        }
+        let plausibleRR = rrMilliseconds.filter { 300...2_000 ~= $0 }
+        let consecutivePairs = zip(beats, beats.dropFirst()).filter { pair in
+            pair.0.classification == .prematureUncertain
+                && pair.1.classification == .prematureUncertain
+        }.count
+
+        return ECGRecordingDescriptors(
+            shortestRRMilliseconds: shortestRR,
+            longestRRMilliseconds: longestRR,
+            minimumInstantaneousHeartRateBPM: plausibleRR.max().map { 60_000 / $0 },
+            maximumInstantaneousHeartRateBPM: plausibleRR.min().map { 60_000 / $0 },
+            longRRIntervalCount: rrMilliseconds.filter {
+                $0 > ECGRecordingDescriptors.longRRThresholdMilliseconds
+            }.count,
+            consecutiveCandidatePairCount: consecutivePairs,
+            medianQRSPeakToTroughMillivolts: Self.median(qrsAmplitudes),
+            minimumQRSPeakToTroughMillivolts: qrsAmplitudes.min(),
+            maximumQRSPeakToTroughMillivolts: qrsAmplitudes.max()
         )
     }
 

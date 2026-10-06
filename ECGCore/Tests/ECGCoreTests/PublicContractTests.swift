@@ -115,6 +115,58 @@ import Testing
         #expect(offset.summary == original.summary)
     }
 
+    @Test func analyzerAddsDescriptiveRRAndQRSAmplitudeValues() throws {
+        let report = PrematureBeatAnalyzer().analyze(makeSyntheticSignal(hasEarlyBeat: true))
+
+        let descriptors = try #require(report.recordingDescriptors)
+        #expect(descriptors.descriptorsVersion == ECGRecordingDescriptors.currentVersion)
+        #expect(abs(descriptors.shortestRRMilliseconds - 700) < 20)
+        #expect(abs(descriptors.longestRRMilliseconds - 1_300) < 20)
+        #expect(abs((descriptors.maximumInstantaneousHeartRateBPM ?? 0) - 60_000 / 700) < 3)
+        #expect(abs((descriptors.minimumInstantaneousHeartRateBPM ?? 0) - 60_000 / 1_300) < 3)
+        #expect(descriptors.longRRIntervalCount == 0)
+        #expect(descriptors.consecutiveCandidatePairCount == 0)
+        // Every synthetic beat is a 1 mV triangle on a 0 mV baseline.
+        #expect(abs((descriptors.medianQRSPeakToTroughMillivolts ?? 0) - 1) < 0.000_001)
+        #expect(abs((descriptors.minimumQRSPeakToTroughMillivolts ?? 0) - 1) < 0.000_001)
+        #expect(abs((descriptors.maximumQRSPeakToTroughMillivolts ?? 0) - 1) < 0.000_001)
+        #expect(report.beats.allSatisfy { abs(($0.qrsPeakToTroughMillivolts ?? 0) - 1) < 0.000_001 })
+
+        // Descriptive values never change detection or classification.
+        let refusal = PrematureBeatAnalyzer().analyze(
+            ECGSignal(timeSeconds: [0, 1], voltageMillivolts: [0, 0], nominalSamplingRateHz: 1)
+        )
+        #expect(refusal.recordingDescriptors == nil)
+    }
+
+    @Test func qrsAmplitudeSkipsMissingSamplesAndClampsAtEdges() throws {
+        let voltages: [Double?] = [0.2, nil, 1.5, -0.4, nil, 0.1]
+
+        let amplitude = try #require(
+            ECGQRSAmplitude.measure(
+                voltageMillivolts: voltages,
+                around: 1,
+                samplingFrequencyHz: 1_000,
+                halfWindowMilliseconds: 3
+            )
+        )
+
+        #expect(amplitude.maximumSampleIndex == 2)
+        #expect(amplitude.minimumSampleIndex == 3)
+        #expect(abs(amplitude.peakToTroughMillivolts - 1.9) < 0.000_001)
+        #expect(
+            ECGQRSAmplitude.measure(
+                voltageMillivolts: [nil, nil],
+                around: 0,
+                samplingFrequencyHz: 500
+            ) == nil
+        )
+        #expect(
+            ECGQRSAmplitude.measure(voltageMillivolts: voltages, around: 9, samplingFrequencyHz: 500)
+                == nil
+        )
+    }
+
     private func makeSyntheticSignal(hasEarlyBeat: Bool) -> ECGSignal {
         let samplingFrequencyHz = 250.0
         let sampleCount = Int(15 * samplingFrequencyHz)

@@ -91,6 +91,56 @@ public struct ECGRhythmMetrics: Codable, Equatable, Sendable {
     }
 }
 
+/// Additive schema-v1 descriptive values for one recording, derived from this report's R peaks and
+/// the original samples.
+///
+/// None of these is a diagnosis. A long R–R interval can come from a pause or from an R peak the
+/// detector missed, and QRS peak-to-trough voltage depends on wrist contact and posture.
+public struct ECGRecordingDescriptors: Codable, Equatable, Sendable {
+    public static let currentVersion = "watchbeat.descriptors.v1"
+    /// R–R intervals longer than this are counted, not used for rate statistics.
+    public static let longRRThresholdMilliseconds = 2_000.0
+
+    public let descriptorsVersion: String
+    /// Over every interval between consecutive detected R peaks.
+    public let shortestRRMilliseconds: Double
+    public let longestRRMilliseconds: Double
+    /// Beat-to-beat rate range from plausible (300–2,000 ms) intervals only.
+    public let minimumInstantaneousHeartRateBPM: Double?
+    public let maximumInstantaneousHeartRateBPM: Double?
+    public let longRRIntervalCount: Int
+    /// Adjacent beat pairs that are both `prematureUncertain`.
+    public let consecutiveCandidatePairCount: Int
+    /// Raw-signal max − min within ±`ECGQRSAmplitude.halfWindowMilliseconds` of each R peak.
+    public let medianQRSPeakToTroughMillivolts: Double?
+    public let minimumQRSPeakToTroughMillivolts: Double?
+    public let maximumQRSPeakToTroughMillivolts: Double?
+
+    public init(
+        descriptorsVersion: String = ECGRecordingDescriptors.currentVersion,
+        shortestRRMilliseconds: Double,
+        longestRRMilliseconds: Double,
+        minimumInstantaneousHeartRateBPM: Double?,
+        maximumInstantaneousHeartRateBPM: Double?,
+        longRRIntervalCount: Int,
+        consecutiveCandidatePairCount: Int,
+        medianQRSPeakToTroughMillivolts: Double?,
+        minimumQRSPeakToTroughMillivolts: Double?,
+        maximumQRSPeakToTroughMillivolts: Double?
+    ) {
+        self.descriptorsVersion = descriptorsVersion
+        self.shortestRRMilliseconds = shortestRRMilliseconds
+        self.longestRRMilliseconds = longestRRMilliseconds
+        self.minimumInstantaneousHeartRateBPM = minimumInstantaneousHeartRateBPM
+        self.maximumInstantaneousHeartRateBPM = maximumInstantaneousHeartRateBPM
+        self.longRRIntervalCount = longRRIntervalCount
+        self.consecutiveCandidatePairCount = consecutiveCandidatePairCount
+        self.medianQRSPeakToTroughMillivolts = medianQRSPeakToTroughMillivolts
+        self.minimumQRSPeakToTroughMillivolts = minimumQRSPeakToTroughMillivolts
+        self.maximumQRSPeakToTroughMillivolts = maximumQRSPeakToTroughMillivolts
+    }
+}
+
 /// Result-affecting values copied into every report for auditability.
 public struct ECGAnalysisParameters: Codable, Equatable, Sendable {
     public let detectionLowCutoffHz: Double
@@ -125,6 +175,9 @@ public struct ECGAnalyzedBeat: Codable, Equatable, Sendable {
     public let classification: BeatClassification
     public let confidence: ConfidenceLevel
     public let reasonCodes: [ReasonCode]
+    /// Additive and optional so older schema-v1 JSON remains decodable. Descriptive only; it
+    /// never influences `classification`.
+    public let qrsPeakToTroughMillivolts: Double?
 
     public init(
         sampleIndex: Int,
@@ -134,7 +187,8 @@ public struct ECGAnalyzedBeat: Codable, Equatable, Sendable {
         prematurityRatio: Double?,
         classification: BeatClassification,
         confidence: ConfidenceLevel,
-        reasonCodes: [ReasonCode]
+        reasonCodes: [ReasonCode],
+        qrsPeakToTroughMillivolts: Double? = nil
     ) {
         self.sampleIndex = sampleIndex
         self.timeSeconds = timeSeconds
@@ -144,6 +198,7 @@ public struct ECGAnalyzedBeat: Codable, Equatable, Sendable {
         self.classification = classification
         self.confidence = confidence
         self.reasonCodes = reasonCodes
+        self.qrsPeakToTroughMillivolts = qrsPeakToTroughMillivolts
     }
 }
 
@@ -162,6 +217,8 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
     public let summary: ECGAnalysisSummary
     /// Optional so older schema-v1 JSON without this additive field remains decodable.
     public let rhythmMetrics: ECGRhythmMetrics?
+    /// Additive like `rhythmMetrics`; absent from refusals and older JSON.
+    public let recordingDescriptors: ECGRecordingDescriptors?
     public let beats: [ECGAnalyzedBeat]
 
     public init(
@@ -177,6 +234,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         samplingFrequencyHz: Double?,
         summary: ECGAnalysisSummary,
         rhythmMetrics: ECGRhythmMetrics? = nil,
+        recordingDescriptors: ECGRecordingDescriptors? = nil,
         beats: [ECGAnalyzedBeat]
     ) {
         self.schemaVersion = schemaVersion
@@ -191,6 +249,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         self.samplingFrequencyHz = samplingFrequencyHz
         self.summary = summary
         self.rhythmMetrics = rhythmMetrics
+        self.recordingDescriptors = recordingDescriptors
         self.beats = beats
     }
 }

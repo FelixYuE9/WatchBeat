@@ -177,6 +177,105 @@ import WatchBeatModels
         #expect(intervals.count == report.beats.count - 1)
     }
 
+    @Test func builtInExampleReportsDescriptiveRRAndAmplitudeValues() throws {
+        let report = try ECGExampleFactory.makeMeasurement().analysis
+        let descriptors = try #require(report.recordingDescriptors)
+        let beatPeriod = ECGExampleFactory.beatPeriodSeconds * 1_000
+
+        // Generator: coupling 0.62 × period; the PVC-like beat has a fully compensatory pause.
+        #expect(abs(descriptors.shortestRRMilliseconds - 0.62 * beatPeriod) < 10)
+        #expect(abs(descriptors.longestRRMilliseconds - 1.38 * beatPeriod) < 10)
+        #expect(descriptors.longRRIntervalCount == 0)
+        #expect(descriptors.consecutiveCandidatePairCount == 0)
+        let median = try #require(descriptors.medianQRSPeakToTroughMillivolts)
+        let maximum = try #require(descriptors.maximumQRSPeakToTroughMillivolts)
+        #expect((1.1...1.6).contains(median))
+        // The wide PVC-like complex has the deepest trough in the example.
+        #expect(maximum > median + 0.2)
+        #expect(report.beats.allSatisfy { $0.qrsPeakToTroughMillivolts != nil })
+    }
+
+    @Test func waveformMarkersCarryCandidateFlagAndSampleIndex() {
+        let candidate = ECGWaveformMarker(
+            id: "c",
+            timeSeconds: 1,
+            label: ECGWaveformMarker.prematureCandidateLabel,
+            sampleIndex: 500
+        )
+        let regular = ECGWaveformMarker(id: "r", timeSeconds: 2, label: "R")
+
+        #expect(candidate.isPrematureCandidate)
+        #expect(candidate.sampleIndex == 500)
+        #expect(!regular.isPrematureCandidate)
+        #expect(regular.sampleIndex == nil)
+    }
+
+    @Test func signalLookupFindsNearestSampleAndLocalExtrema() throws {
+        let times = (0..<6).map { Double($0) * 0.002 }
+        #expect(ECGSignalLookup.nearestSampleIndex(to: 0.0031, in: times) == 2)
+        #expect(ECGSignalLookup.nearestSampleIndex(to: 0.0029, in: times) == 1)
+        #expect(ECGSignalLookup.nearestSampleIndex(to: -1, in: times) == 0)
+        #expect(ECGSignalLookup.nearestSampleIndex(to: 9, in: times) == 5)
+        #expect(ECGSignalLookup.nearestSampleIndex(to: .nan, in: times) == nil)
+        #expect(ECGSignalLookup.nearestSampleIndex(to: 0, in: []) == nil)
+
+        let signal = ECGSignal(
+            timeSeconds: times,
+            voltageMillivolts: [0, 0.5, nil, 2.0, -1.0, 0.3],
+            nominalSamplingRateHz: 500
+        )
+        #expect(
+            ECGSignalLookup.localExtremumIndex(
+                in: signal, around: 1, radiusSeconds: 0.0065, kind: .maximum
+            ) == 3
+        )
+        #expect(
+            ECGSignalLookup.localExtremumIndex(
+                in: signal, around: 1, radiusSeconds: 0.0065, kind: .minimum
+            ) == 4
+        )
+        // The window never reaches index 5 from index 1.
+        #expect(
+            ECGSignalLookup.localExtremumIndex(
+                in: signal, around: 0, radiusSeconds: 0.001, kind: .maximum
+            ) == 0
+        )
+    }
+
+    @Test func caliperReadingIsBMinusAAndOnlyConvertsCycleLengthsToRate() throws {
+        let cycle = ECGCaliperReading(
+            timeASeconds: 1.0,
+            voltageAMillivolts: 0.2,
+            timeBSeconds: 1.8,
+            voltageBMillivolts: -0.3
+        )
+        #expect(abs(cycle.deltaTimeMilliseconds - 800) < 0.000_1)
+        #expect(abs(cycle.deltaVoltageMillivolts + 0.5) < 0.000_1)
+        #expect(abs(try #require(cycle.equivalentRateBPM) - 75) < 0.001)
+
+        let qrs = ECGCaliperReading(
+            timeASeconds: 2.0,
+            voltageAMillivolts: 1.1,
+            timeBSeconds: 1.92,
+            voltageBMillivolts: -0.2
+        )
+        #expect(abs(qrs.deltaTimeMilliseconds + 80) < 0.000_1)
+        #expect(qrs.equivalentRateBPM == nil)
+    }
+
+    @Test func voltageAxisUsesReadableMillivoltSteps() {
+        let ticks = ECGVoltageAxis.majorTicks(
+            lowerMillivolts: -0.5,
+            upperMillivolts: 1.5,
+            chartHeightPoints: 180
+        )
+
+        #expect(ticks.contains(0))
+        #expect(ticks.first == -0.5)
+        #expect(ticks.last == 1.5)
+        #expect(zip(ticks, ticks.dropFirst()).allSatisfy { abs(($0.1 - $0.0) - 0.5) < 1e-9 })
+    }
+
     @Test func peakIntervalsSkipInvalidOrNonIncreasingMarkerPairs() {
         let markers = [
             ECGWaveformMarker(id: "a", timeSeconds: 1.0, label: "R"),

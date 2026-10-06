@@ -18,14 +18,24 @@ public struct ECGDisplaySample: Equatable, Sendable {
 /// A future detector can pass markers to the waveform without converting them to screen pixels.
 /// Marker placement is always derived from its real signal timestamp.
 public struct ECGWaveformMarker: Identifiable, Equatable, Sendable {
+    /// Label the detail page gives to beats the model reports as `prematureUncertain`.
+    public static let prematureCandidateLabel = "Early"
+
     public let id: String
     public let timeSeconds: Double
     public let label: String
+    /// Original signal index of the model R peak, when the marker comes from a report beat.
+    public let sampleIndex: Int?
 
-    public init(id: String, timeSeconds: Double, label: String) {
+    public init(id: String, timeSeconds: Double, label: String, sampleIndex: Int? = nil) {
         self.id = id
         self.timeSeconds = timeSeconds
         self.label = label
+        self.sampleIndex = sampleIndex
+    }
+
+    public var isPrematureCandidate: Bool {
+        label == Self.prematureCandidateLabel
     }
 }
 
@@ -157,6 +167,121 @@ public enum ECGTimeline {
             multiplier = 10
         }
         return multiplier * magnitude
+    }
+}
+
+/// Millivolt gridlines for the waveform's vertical axis, using the same 1/2/5 steps as time.
+public enum ECGVoltageAxis {
+    public static func majorTicks(
+        lowerMillivolts: Double,
+        upperMillivolts: Double,
+        chartHeightPoints: Double,
+        minimumSpacingPoints: Double = 30
+    ) -> [Double] {
+        ECGTimeline.majorTickTimes(
+            startTimeSeconds: lowerMillivolts,
+            endTimeSeconds: upperMillivolts,
+            chartWidthPoints: chartHeightPoints,
+            minimumSpacingPoints: minimumSpacingPoints,
+            maximumTickCount: 60
+        )
+    }
+}
+
+public enum ECGExtremumKind: Sendable {
+    case maximum
+    case minimum
+}
+
+/// Read-only lookups used by the on-screen measurement tool. They address original samples and
+/// never interpolate a voltage that the source did not provide.
+public enum ECGSignalLookup {
+    /// Index of the timestamp closest to `timeSeconds`, assuming increasing timestamps.
+    public static func nearestSampleIndex(to timeSeconds: Double, in times: [Double]) -> Int? {
+        guard timeSeconds.isFinite, !times.isEmpty else { return nil }
+        var lower = times.startIndex
+        var upper = times.endIndex - 1
+        while lower < upper {
+            let middle = (lower + upper) / 2
+            if times[middle] < timeSeconds {
+                lower = middle + 1
+            } else {
+                upper = middle
+            }
+        }
+        if lower > times.startIndex,
+           abs(times[lower - 1] - timeSeconds) <= abs(times[lower] - timeSeconds) {
+            return lower - 1
+        }
+        return lower
+    }
+
+    /// Index of the largest or smallest finite voltage within ±`radiusSeconds` of `index`.
+    public static func localExtremumIndex(
+        in signal: ECGSignal,
+        around index: Int,
+        radiusSeconds: Double,
+        kind: ECGExtremumKind
+    ) -> Int? {
+        let times = signal.timeSeconds
+        let voltages = signal.voltageMillivolts
+        guard times.count == voltages.count,
+              times.indices.contains(index),
+              times[index].isFinite,
+              radiusSeconds.isFinite,
+              radiusSeconds >= 0 else {
+            return nil
+        }
+
+        let centerTime = times[index]
+        var best: (index: Int, value: Double)?
+        func consider(_ candidate: Int) {
+            guard let value = voltages[candidate], value.isFinite else { return }
+            let isBetter: Bool
+            switch kind {
+            case .maximum: isBetter = best.map { value > $0.value } ?? true
+            case .minimum: isBetter = best.map { value < $0.value } ?? true
+            }
+            if isBetter { best = (candidate, value) }
+        }
+
+        var cursor = index
+        while cursor >= times.startIndex, abs(times[cursor] - centerTime) <= radiusSeconds {
+            consider(cursor)
+            cursor -= 1
+        }
+        cursor = index + 1
+        while cursor < times.endIndex, abs(times[cursor] - centerTime) <= radiusSeconds {
+            consider(cursor)
+            cursor += 1
+        }
+        return best?.index
+    }
+}
+
+/// The difference between two caliper points, always expressed as B − A.
+public struct ECGCaliperReading: Equatable, Sendable {
+    /// Δt range for which "one cardiac cycle" rate conversion is shown (20–240 BPM).
+    public static let cycleRateRangeMilliseconds = 250.0...3_000.0
+
+    public let deltaTimeMilliseconds: Double
+    public let deltaVoltageMillivolts: Double
+
+    public init(
+        timeASeconds: Double,
+        voltageAMillivolts: Double,
+        timeBSeconds: Double,
+        voltageBMillivolts: Double
+    ) {
+        self.deltaTimeMilliseconds = (timeBSeconds - timeASeconds) * 1_000
+        self.deltaVoltageMillivolts = voltageBMillivolts - voltageAMillivolts
+    }
+
+    /// 60,000 / |Δt|, only when Δt could plausibly be one beat-to-beat cycle.
+    public var equivalentRateBPM: Double? {
+        let magnitude = abs(deltaTimeMilliseconds)
+        guard Self.cycleRateRangeMilliseconds.contains(magnitude) else { return nil }
+        return 60_000 / magnitude
     }
 }
 

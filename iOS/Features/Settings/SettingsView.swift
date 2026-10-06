@@ -2,6 +2,8 @@ import SwiftUI
 
 public struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var storedLanguage = AppLanguage.system.rawValue
+    @AppStorage(ECGWaveformDebugSettings.showsModelRPeakLinesKey) private var showsModelRPeakLines = false
+    @AppStorage(ECGWaveformDebugSettings.showsCandidateLinesKey) private var showsCandidateLines = false
     @Environment(\.appLanguage) private var language
 
     public init() {}
@@ -29,6 +31,27 @@ public struct SettingsView: View {
                     Text(language.text(
                         "The interface updates immediately. ECG values and exported data are unchanged.",
                         "界面会立即更新；心电数值和导出数据不会改变。"
+                    ))
+                }
+
+                Section {
+                    Toggle(
+                        language.text("Model R-peak lines", "模型 R 峰竖线"),
+                        isOn: $showsModelRPeakLines
+                    )
+                    Toggle(
+                        language.text("Premature-candidate lines", "疑似早搏候选竖线"),
+                        isOn: $showsCandidateLines
+                    )
+                } header: {
+                    Text(language.text("Research debugging", "研究调试"))
+                } footer: {
+                    Text(language.text(
+                        "Draws full-height model lines on the waveform for checking detector behavior. " +
+                            "Not needed for everyday reading: the R–R strip and yellow shading already " +
+                            "show the timing and the candidates.",
+                        "在波形上绘制模型的整列竖线，用于检查检测效果。日常查看无需开启：" +
+                            "波形上方的 R–R 间期和黄色底色已包含时序与候选信息。"
                     ))
                 }
 

@@ -95,6 +95,32 @@ whole-record or medical diagnosis.
 候选占比的分母是 `classifiedBeatCount`，不表示长期早搏负荷。字段保持 optional，使旧的 schema-v1
 JSON 仍可解码；拒判报告不生成该摘要。
 
+同样 additive 的还有 `recordingDescriptors`（`watchbeat.descriptors.v1`）和每个 beat 上的
+`qrsPeakToTroughMillivolts`：
+
+```json
+{
+  "descriptorsVersion": "watchbeat.descriptors.v1",
+  "shortestRRMilliseconds": 532.0,
+  "longestRRMilliseconds": 1182.0,
+  "minimumInstantaneousHeartRateBPM": 50.8,
+  "maximumInstantaneousHeartRateBPM": 112.8,
+  "longRRIntervalCount": 0,
+  "consecutiveCandidatePairCount": 0,
+  "medianQRSPeakToTroughMillivolts": 1.27,
+  "minimumQRSPeakToTroughMillivolts": 1.27,
+  "maximumQRSPeakToTroughMillivolts": 1.72
+}
+```
+
+- 最短/最长 R–R 覆盖所有相邻检测峰；逐搏心率范围只用 300–2,000 ms 的可信间期。
+- `longRRIntervalCount` 统计 > 2,000 ms 的间期；它可能来自停搏样间歇，也可能来自漏检 R 峰。
+- `consecutiveCandidatePairCount` 统计相邻两个都为 `prematureUncertain` 的 beat 对。
+- QRS 峰谷电压差 = 原始（未滤波）采样在 R 峰 ±80 ms 内的最大值 − 最小值，缺测点跳过、不插值。
+  由 `ECGQRSAmplitude.measure` 计算，App 波形上的青色标注调用同一函数，保证与导出一致。
+
+这些数值在分类之后计算，不参与 RR 规则，因此不改变 `algorithmVersion`。拒判报告不生成。
+
 A refused report has `status: notAnalyzed`, a machine-readable `reason`, zero summary counts and an
 empty `beats` array. Optional unavailable fields may be omitted by JSON encoders. Schema changes are
 additive only within v1; a breaking field/meaning change requires schema v2.

@@ -17,14 +17,20 @@ export DEVELOPER_DIR="$HOME/Downloads/Xcode.app/Contents/Developer"
 在仓库根目录：
 
 ```bash
-bash Tools/run-core-tests.sh --parallel   # ECGCore：应为 13 项全部通过
+bash Tools/run-core-tests.sh --parallel   # ECGCore：应为 15 项全部通过
 bash Tools/run-app-tests.sh --parallel    # iOS 包：WatchBeatAppTests 全部通过
 ```
 
-预期 ECGCore 13 项 = ECGSignalInspectorTests 5 项 + PublicContractTests 8 项：结果词汇、默认配置/版本 `1.0.1-rr-research`、输入契约、早搏检出与节律摘要、规则心律
-0 候选、缺测拒判、不规则采样拒判、**直流偏移不改变检测结果（新增）**。
+预期 ECGCore 15 项 = ECGSignalInspectorTests 5 项 + PublicContractTests 10 项：结果词汇、默认配置/版本 `1.0.1-rr-research`、输入契约、早搏检出与节律摘要、规则心律
+0 候选、缺测拒判、不规则采样拒判、直流偏移不改变检测结果、**描述性 R–R/QRS 峰谷值（新增）**、
+**QRS 峰谷测量缺测与边界（新增）**。
 iOS 包覆盖内置示例的 35 个 R 峰 / 2 个疑似早搏候选，并新增列表摘要缓存、列表/详情请求
-互不干扰及滚动秒数刻度测试。
+互不干扰及滚动秒数刻度测试；本轮新增示例描述性数值、marker 候选标记、最近采样点/局部峰谷查找、
+测量读数（B − A 与心动周期换算）和 mV 刻度测试。
+
+**本轮未在 Mac 上编译过的新代码（请重点看编译报错）：** `ECGWaveformView.swift`（重写）、
+新文件 `ECGCaliperView.swift` 与 `ECGCore/.../Signal/ECGQRSAmplitude.swift`（均已写入
+`project.pbxproj`）、`SettingsView` 研究调试开关、`ECGAnalysisResultView` 可点击候选。
 
 ## 2. Xcode 构建与模拟器测试
 
@@ -74,13 +80,26 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
 3. 申请权限时，健康权限页只出现心电**读取**，没有写入项。
 4. 拒绝/不授权时，界面显示“没有可访问的心电”，不断言“已拒绝”。
 5. 授权后列表加载正常；数据卡与背景有清晰对比，逐条显示筛查进度，并最终显示候选数、
-   未标记候选或无法分析；异常候选行有醒目的红色标识。
+   未标记候选或无法分析；有候选的行使用**黄色**旗标与描边（不再使用红色）。
 6. 打开一条记录，核对开始时间、时长、采样率、测量数、平均心率、Apple 分类、症状与
    “健康”App 一致。
-7. 详情页显示模型 R 峰（橙线）、R–R 间期与疑似早搏候选（红线），或给出具体的拒判原因；
-   横向滚动时下方秒数坐标轴同步移动，红色候选线旁显示精确秒数。
+7. 详情页默认**不**显示模型 R 峰竖线和候选竖线；上方 R–R 间期正常显示，候选处有黄色底色、
+   `#序号 精确秒数`，其前方偏短的 R–R 数字为黄色胶囊；或给出具体的拒判原因。横向滚动时下方秒数
+   坐标轴同步移动，左侧 mV 刻度保持固定。设置 › 研究调试 打开两个开关后，橙色 R 峰线与黄色候选
+   粗线出现，关闭后消失。
+   - 候选导航条的 ‹ › 能逐个把候选滚动到屏幕中央并加深底色；在“本机研究分析”卡片里点某个候选
+     的“定位”，页面回到波形并跳到该候选；定位后拖动时间缩放滑块，候选仍保持在中央。
+   - 电压缩放 1×–4×：图表变高、R 峰之间的幅度差被放大，mV 刻度同步变密；“复位缩放”恢复 1×。
+   - “峰谷电压差”开关：每个 R 峰旁出现青色竖括号和数值（mV），与分析 JSON 中
+     `qrsPeakToTroughMillivolts` 一致；示例 ECG 正常搏约 1.27 mV，PVC 样搏约 1.72 mV。
+   - “测量”开关：依次点击波形放置 A、B；拖动圆点时页面不滚动、其他位置仍可左右滑动；
+     ‹ › 逐采样点移动、“吸附峰/谷”跳到 ±40 ms 内极值；读数为 B − A 的 Δt（ms）与 ΔV（mV），
+     Δt 在 250–3000 ms 时显示换算次/分；关闭“贴合波形”后可把点放在任意高度。
+   - 深色模式下黄色文字（候选秒数、旗标）清晰可读。
 8. “心率与节律摘要”显示检测中位心率、中位 R–R、R–R 四分位距、可信间期数和候选占比；
    它与 Apple 元数据平均心率接近但不必完全相同，界面明确声明它不是临床 HRV。
+   “更多节律与波形描述”显示最短/最长 R–R、逐搏心率范围、>2 秒间期数、相邻候选对数与
+   QRS 峰谷电压差（中位、范围），并附非诊断说明。
 9. 快速切换记录，旧记录结果不会覆盖当前页面；列表后台筛查也不会让已打开的详情失效。
 10. 分享原始 CSV / metadata JSON / analysis JSON：CSV 行数、顺序、时间戳与 HealthKit 测量一致；
     JSON 的 `dataSource` 为 `healthKit`，analysis 含 `watchbeat.rr-summary.v1`；文件名和内容中没有
