@@ -24,9 +24,8 @@ struct ECGAnalysisResultView: View {
             }
 
             Text(language.text(
-                "Research screening only. A candidate is not a diagnosis, and zero candidates " +
-                    "does not rule out an arrhythmia.",
-                "仅供研究筛查。候选结果不等于诊断；候选数为零也不能排除心律失常。"
+                "Screening results are for research only and cannot diagnose or rule out an arrhythmia.",
+                "筛查结果仅供研究使用，不能用于诊断或排除心律失常。"
             ))
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -36,16 +35,7 @@ struct ECGAnalysisResultView: View {
 
     @ViewBuilder
     private var analyzedContent: some View {
-        if prematureCandidates.isEmpty {
-            Label(
-                language.text(
-                    "No premature candidate was flagged in this recording.",
-                    "这段记录中未标记出疑似早搏候选。"
-                ),
-                systemImage: "info.circle"
-            )
-            .foregroundStyle(.secondary)
-        } else {
+        if !prematureCandidates.isEmpty {
             Label(
                 language.text(
                     "\(prematureCandidates.count) premature candidate(s) — tap one to show it on the waveform",
@@ -70,7 +60,7 @@ struct ECGAnalysisResultView: View {
         }
 
         if let metrics = report.rhythmMetrics {
-            Divider()
+            if !prematureCandidates.isEmpty { Divider() }
             Text(language.text("Rate and rhythm", "心率与节律"))
                 .font(.subheadline.bold())
             ECGInfoRow(
@@ -85,15 +75,17 @@ struct ECGAnalysisResultView: View {
                 language.text("R–R interquartile range", "R–R 四分位距"),
                 String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds)
             )
-            ECGInfoRow(
-                language.text("Candidate share", "候选占比"),
-                String(
-                    format: "%.1f%% (%ld/%ld)",
-                    metrics.prematureCandidateFraction * 100,
-                    report.summary.prematureCandidateCount,
-                    report.summary.classifiedBeatCount
+            if !prematureCandidates.isEmpty {
+                ECGInfoRow(
+                    language.text("Candidate share", "候选占比"),
+                    String(
+                        format: "%.1f%% (%ld/%ld)",
+                        metrics.prematureCandidateFraction * 100,
+                        report.summary.prematureCandidateCount,
+                        report.summary.classifiedBeatCount
+                    )
                 )
-            )
+            }
             Text(language.text(
                 "R–R spread describes this recording only; it is not a clinical HRV measurement.",
                 "R–R 离散程度只描述这一段记录，不属于临床 HRV 指标。"

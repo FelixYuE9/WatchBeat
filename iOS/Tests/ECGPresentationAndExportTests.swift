@@ -82,6 +82,101 @@ import WatchBeatModels
         #expect(zip(ticks, ticks.dropFirst()).allSatisfy { pair in pair.0 < pair.1 })
     }
 
+    @Test func overviewViewportMapsScrollingAndArbitraryTimestamps() throws {
+        let initial = try #require(ECGWaveformViewport(
+            timeRange: 10...40,
+            contentWidthPoints: 3_000,
+            viewportWidthPoints: 300,
+            offsetPoints: 0
+        ))
+        #expect(initial.visibleTimeRange == 10...13)
+
+        // A timestamp need not coincide with a detected beat or an integer second.
+        let targetTime = 29.125
+        let navigated = try #require(ECGWaveformViewport(
+            timeRange: initial.timeRange,
+            contentWidthPoints: initial.contentWidthPoints,
+            viewportWidthPoints: initial.viewportWidthPoints,
+            offsetPoints: initial.offsetPoints(centering: targetTime)
+        ))
+        #expect(abs(navigated.centerTimeSeconds - targetTime) < 1e-9)
+        #expect(abs(navigated.visibleTimeRange.lowerBound - 27.625) < 1e-9)
+        #expect(abs(navigated.visibleTimeRange.upperBound - 30.625) < 1e-9)
+
+        let manuallyScrolled = try #require(ECGWaveformViewport(
+            timeRange: initial.timeRange,
+            contentWidthPoints: 3_000,
+            viewportWidthPoints: 300,
+            offsetPoints: 1_200
+        ))
+        #expect(manuallyScrolled.visibleTimeRange == 22...25)
+    }
+
+    @Test func overviewViewportKeepsFirstAndLastWindowsInsideRecording() throws {
+        let viewport = try #require(ECGWaveformViewport(
+            timeRange: 0...30,
+            contentWidthPoints: 3_000,
+            viewportWidthPoints: 300,
+            offsetPoints: -50
+        ))
+        #expect(viewport.visibleTimeRange == 0...3)
+        #expect(viewport.offsetPoints(centering: -1) == 0)
+        #expect(viewport.offsetPoints(centering: 0) == 0)
+        #expect(viewport.offsetPoints(centering: 30) == 2_700)
+        #expect(viewport.offsetPoints(centering: 99) == 2_700)
+
+        let last = try #require(ECGWaveformViewport(
+            timeRange: 0...30,
+            contentWidthPoints: 3_000,
+            viewportWidthPoints: 300,
+            offsetPoints: 4_000
+        ))
+        #expect(last.visibleTimeRange == 27...30)
+        #expect(last.offsetPoints(centering: .nan) == last.offsetPoints)
+    }
+
+    @Test func overviewViewportShrinksWindowWithoutLosingTimeWhenZooming() throws {
+        let zoomed = try #require(ECGWaveformViewport(
+            timeRange: 0...30,
+            contentWidthPoints: 24_000,
+            viewportWidthPoints: 300,
+            offsetPoints: 0
+        ))
+        let located = try #require(ECGWaveformViewport(
+            timeRange: zoomed.timeRange,
+            contentWidthPoints: zoomed.contentWidthPoints,
+            viewportWidthPoints: zoomed.viewportWidthPoints,
+            offsetPoints: zoomed.offsetPoints(centering: 19)
+        ))
+        #expect(abs(located.centerTimeSeconds - 19) < 1e-9)
+        #expect(abs(located.visibleTimeRange.lowerBound - 18.8125) < 1e-9)
+        #expect(abs(located.visibleTimeRange.upperBound - 19.1875) < 1e-9)
+    }
+
+    @Test func overviewViewportHandlesShortRecordingsAndRejectsInvalidGeometry() throws {
+        let short = try #require(ECGWaveformViewport(
+            timeRange: 0...1,
+            contentWidthPoints: 100,
+            viewportWidthPoints: 300,
+            offsetPoints: 50
+        ))
+        #expect(short.visibleTimeRange == 0...1)
+        #expect(short.offsetPoints(centering: 0.8) == 0)
+
+        #expect(ECGWaveformViewport(
+            timeRange: 0...0, contentWidthPoints: 100, viewportWidthPoints: 50, offsetPoints: 0
+        ) == nil)
+        #expect(ECGWaveformViewport(
+            timeRange: 0...30, contentWidthPoints: 0, viewportWidthPoints: 50, offsetPoints: 0
+        ) == nil)
+        #expect(ECGWaveformViewport(
+            timeRange: 0...30, contentWidthPoints: 100, viewportWidthPoints: .infinity, offsetPoints: 0
+        ) == nil)
+        #expect(ECGWaveformViewport(
+            timeRange: 0...30, contentWidthPoints: 100, viewportWidthPoints: 50, offsetPoints: .nan
+        ) == nil)
+    }
+
     @Test func rawCSVPreservesOrderTimestampsAndMissingVoltage() throws {
         let measurement = try makeMeasurement(
             times: [0.004, 0.000, 0.002],

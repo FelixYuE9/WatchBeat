@@ -90,6 +90,60 @@ public enum ECGPeakIntervalBuilder {
     }
 }
 
+/// The visible portion of a full-recording chart. All navigation uses the same conversion,
+/// including overview taps, manual scrolling and zooming. It never addresses signal samples.
+public struct ECGWaveformViewport: Equatable, Sendable {
+    public let timeRange: ClosedRange<Double>
+    public let contentWidthPoints: Double
+    public let viewportWidthPoints: Double
+    public let offsetPoints: Double
+
+    public init?(
+        timeRange: ClosedRange<Double>,
+        contentWidthPoints: Double,
+        viewportWidthPoints: Double,
+        offsetPoints: Double
+    ) {
+        guard timeRange.lowerBound.isFinite,
+              timeRange.upperBound.isFinite,
+              timeRange.upperBound > timeRange.lowerBound,
+              contentWidthPoints.isFinite, contentWidthPoints > 0,
+              viewportWidthPoints.isFinite, viewportWidthPoints > 0,
+              offsetPoints.isFinite else { return nil }
+        self.timeRange = timeRange
+        self.contentWidthPoints = contentWidthPoints
+        self.viewportWidthPoints = min(viewportWidthPoints, contentWidthPoints)
+        self.offsetPoints = min(max(offsetPoints, 0), max(0, contentWidthPoints - viewportWidthPoints))
+    }
+
+    public var visibleTimeRange: ClosedRange<Double> {
+        let duration = timeRange.upperBound - timeRange.lowerBound
+        let start = timeRange.lowerBound + duration * offsetPoints / contentWidthPoints
+        let end = min(
+            timeRange.upperBound,
+            timeRange.lowerBound + duration * (offsetPoints + viewportWidthPoints) / contentWidthPoints
+        )
+        return start...end
+    }
+
+    public var centerTimeSeconds: Double {
+        (visibleTimeRange.lowerBound + visibleTimeRange.upperBound) / 2
+    }
+
+    /// Centers any timestamp when possible; the first/last window stays inside the recording.
+    public func offsetPoints(centering timeSeconds: Double) -> Double {
+        guard let fraction = ECGTimeline.normalizedPosition(
+            for: timeSeconds,
+            startTimeSeconds: timeRange.lowerBound,
+            endTimeSeconds: timeRange.upperBound
+        ) else { return offsetPoints }
+        return min(
+            max(fraction * contentWidthPoints - viewportWidthPoints / 2, 0),
+            contentWidthPoints - viewportWidthPoints
+        )
+    }
+}
+
 public enum ECGTimeline {
     /// Maps a real timestamp to a clamped 0...1 drawing position.
     public static func normalizedPosition(

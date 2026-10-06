@@ -21,6 +21,12 @@
 
 ## 验证状态摘要
 
+2026-10-06 展示与概览调整：零候选时省略额外筛查提示，保留 Apple 原始分类；细节波形下方
+新增全段预览与可见窗口，支持任意时间定位并同步滚动/缩放。已运行
+`python -m unittest discover -s Tools/Validation/tests -p test_ios_project_configuration.py -v`：
+10/10 通过；`git diff --check` 通过。新增 4 项 Swift 窗口换算测试，但本机仍无 Swift/Xcode，
+尚未执行 Swift 编译、测试或模拟器交互验证；验收步骤见 [Mac 清单](../NEEDS_MACOS_VALIDATION.md)。
+
 截至 2026-09-28，Milestone 0 已在真实 Swift/Xcode 环境编译并通过单元测试；Milestone 1 的
 iOS 读取层源码已完成，并在 macOS 上编译与测试通过。用户截图确认修复后的 App 已在 iPhone 17 Pro /
 iOS 26.5 模拟器安装和启动，且之后的截图确认能显示 15,000 点的内置合成波形。

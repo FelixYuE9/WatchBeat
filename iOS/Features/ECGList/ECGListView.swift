@@ -317,11 +317,8 @@ public struct ECGRecordRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             case .result(.noPrematureCandidates):
-                badge(
-                    language.text("No premature candidate flagged", "未标记疑似早搏候选"),
-                    symbol: "checkmark.circle.fill",
-                    tint: .green
-                )
+                // The Apple classification above remains the source of rhythm wording.
+                EmptyView()
             case .result(.prematureCandidates(let count)):
                 badge(
                     language.text(

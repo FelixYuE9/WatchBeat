@@ -1,4 +1,5 @@
 import ECGCore
+import Foundation
 import SwiftUI
 import WatchBeatModels
 
@@ -10,12 +11,41 @@ public enum ECGWaveformDebugSettings {
     public static let showsCandidateLinesKey = "debug.waveform.showsCandidateLines"
 }
 
-/// Asks the waveform to scroll the premature candidate nearest `timeSeconds` into view.
+/// Asks the waveform to bring a timestamp into view, including times without a candidate.
 public struct ECGWaveformFocusRequest: Equatable {
     public let timeSeconds: Double
 
     public init(timeSeconds: Double) {
         self.timeSeconds = timeSeconds
+    }
+}
+
+private struct ECGWaveformScrollTarget: Equatable {
+    let id = UUID()
+    let timeSeconds: Double
+    let animated: Bool
+}
+
+/// Emitted by the laid-out anchor so scrolling waits until its new position is registered.
+private struct ECGWaveformScrollAnchor: Equatable {
+    let target: ECGWaveformScrollTarget
+    let x: CGFloat
+    let chartWidth: CGFloat
+}
+
+private struct ECGWaveformScrollAnchorKey: PreferenceKey {
+    static let defaultValue: ECGWaveformScrollAnchor? = nil
+
+    static func reduce(value: inout ECGWaveformScrollAnchor?, nextValue: () -> ECGWaveformScrollAnchor?) {
+        value = nextValue() ?? value
+    }
+}
+
+private struct ECGWaveformViewportKey: PreferenceKey {
+    static let defaultValue: ECGWaveformViewport? = nil
+
+    static func reduce(value: inout ECGWaveformViewport?, nextValue: () -> ECGWaveformViewport?) {
+        value = nextValue() ?? value
     }
 }
 
@@ -95,6 +125,9 @@ public struct ECGWaveformView: View {
     @State private var isMeasuring = false
     @State private var caliper = ECGCaliper()
     @State private var displayCache = ECGDisplaySampleCache()
+    @State private var overviewCache = ECGDisplaySampleCache()
+    @State private var viewport: ECGWaveformViewport?
+    @State private var scrollTarget: ECGWaveformScrollTarget?
     @AppStorage("waveform.showsRRIntervals") private var showsRRIntervals = true
     @AppStorage("waveform.showsQRSAmplitude") private var showsQRSAmplitude = true
     @AppStorage(ECGWaveformDebugSettings.showsModelRPeakLinesKey) private var showsModelRPeakLines = false
@@ -105,6 +138,7 @@ public struct ECGWaveformView: View {
     private let axisGutterWidth: CGFloat = 40
     private let waveformBottomInset: CGFloat = 30
     private let candidateBandHalfWidthSeconds = 0.16
+    private let viewportCoordinateSpace = "watchbeat.waveform.viewport"
 
     public init(
         signal: ECGSignal,
@@ -133,10 +167,11 @@ public struct ECGWaveformView: View {
                     overlayToggles
 
                     if !candidates.isEmpty {
-                        candidateNavigator(proxy: proxy)
+                        candidateNavigator
                     }
 
-                    chart(timeRange: timeRange, voltageRange: voltageRange)
+                    chart(timeRange: timeRange, voltageRange: voltageRange, proxy: proxy)
+                    overview(timeRange: timeRange, voltageRange: voltageRange)
 
                     legend
 
@@ -158,17 +193,10 @@ public struct ECGWaveformView: View {
             .onChange(of: focusRequest) { _, request in
                 guard let request else { return }
                 focusRequest = nil
-                if let index = nearestCandidateIndex(to: request.timeSeconds) {
-                    focusCandidate(at: index, proxy: proxy)
+                focusedCandidateIndex = candidates.firstIndex {
+                    abs($0.timeSeconds - request.timeSeconds) < 0.001
                 }
-            }
-            .onChange(of: zoom) { _, _ in
-                // Keep the focused candidate centered while the chart width changes.
-                guard let focusedCandidateIndex else { return }
-                let anchorID = candidateAnchorID(focusedCandidateIndex)
-                Task { @MainActor in
-                    proxy.scrollTo(anchorID, anchor: .center)
-                }
+                focusTime(request.timeSeconds, animated: true)
             }
         }
         .accessibilityElement(children: .contain)
@@ -195,7 +223,7 @@ public struct ECGWaveformView: View {
             VStack(spacing: 6) {
                 zoomRow(
                     symbol: "arrow.left.and.right",
-                    value: $zoom,
+                    value: timeZoomBinding,
                     range: 1...8,
                     step: 0.5,
                     accessibilityLabel: language.text("Time zoom", "时间轴缩放")
@@ -209,7 +237,7 @@ public struct ECGWaveformView: View {
                 )
             }
             Button {
-                zoom = 1
+                setTimeZoom(1)
                 verticalZoom = 1
             } label: {
                 Image(systemName: "arrow.counterclockwise")
@@ -219,6 +247,23 @@ public struct ECGWaveformView: View {
             .disabled(zoom == 1 && verticalZoom == 1)
             .accessibilityLabel(language.text("Reset zoom", "复位缩放"))
         }
+    }
+
+    private var timeZoomBinding: Binding<Double> {
+        Binding(get: { zoom }, set: { setTimeZoom($0) })
+    }
+
+    private func setTimeZoom(_ value: Double) {
+        guard value != zoom else { return }
+        // Capture the old window before the changed chart width can publish new geometry.
+        let center: Double?
+        if let focusedCandidateIndex, candidates.indices.contains(focusedCandidateIndex) {
+            center = candidates[focusedCandidateIndex].timeSeconds
+        } else {
+            center = viewport?.centerTimeSeconds
+        }
+        zoom = value
+        if let center { focusTime(center, animated: false) }
     }
 
     private func zoomRow(
@@ -286,7 +331,7 @@ public struct ECGWaveformView: View {
         .accessibilityLabel(title)
     }
 
-    private func candidateNavigator(proxy: ScrollViewProxy) -> some View {
+    private var candidateNavigator: some View {
         HStack(spacing: 10) {
             Image(systemName: "flag.fill")
                 .foregroundStyle(Color.watchBeatAttentionText)
@@ -302,14 +347,14 @@ public struct ECGWaveformView: View {
             }
             Spacer(minLength: 4)
             Button {
-                stepCandidate(by: -1, proxy: proxy)
+                stepCandidate(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
                     .frame(width: 28, height: 28)
             }
             .accessibilityLabel(language.text("Previous candidate", "上一个候选"))
             Button {
-                stepCandidate(by: 1, proxy: proxy)
+                stepCandidate(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
                     .frame(width: 28, height: 28)
@@ -337,13 +382,18 @@ public struct ECGWaveformView: View {
 
     // MARK: - Chart
 
-    private func chart(timeRange: ClosedRange<Double>, voltageRange: ClosedRange<Double>) -> some View {
+    private func chart(
+        timeRange: ClosedRange<Double>,
+        voltageRange: ClosedRange<Double>,
+        proxy: ScrollViewProxy
+    ) -> some View {
         GeometryReader { container in
+            let viewportWidth = max(container.size.width - axisGutterWidth, 1)
             let geometry = ECGChartGeometry(
                 timeRange: timeRange,
                 voltageRange: voltageRange,
                 width: chartWidth(
-                    minimumWidth: container.size.width - axisGutterWidth,
+                    minimumWidth: viewportWidth,
                     duration: timeRange.upperBound - timeRange.lowerBound
                 ),
                 topInset: waveformTopInset,
@@ -358,15 +408,49 @@ public struct ECGWaveformView: View {
             HStack(spacing: 0) {
                 voltageAxis(geometry: geometry, ticks: voltageTicks)
                 ScrollView(.horizontal) {
-                    chartContent(geometry: geometry, voltageTicks: voltageTicks)
+                    chartContent(geometry: geometry, voltageTicks: voltageTicks, viewportWidth: viewportWidth)
+                        .background {
+                            GeometryReader { content in
+                                Color.clear.preference(
+                                    key: ECGWaveformViewportKey.self,
+                                    value: ECGWaveformViewport(
+                                        timeRange: timeRange,
+                                        contentWidthPoints: Double(geometry.width),
+                                        viewportWidthPoints: Double(viewportWidth),
+                                        offsetPoints: -Double(content.frame(in: .named(viewportCoordinateSpace)).minX)
+                                    )
+                                )
+                            }
+                        }
                 }
                 .scrollIndicators(.visible)
+                .coordinateSpace(.named(viewportCoordinateSpace))
+                .onPreferenceChange(ECGWaveformViewportKey.self) { viewport = $0 }
+                .onPreferenceChange(ECGWaveformScrollAnchorKey.self) { anchor in
+                    guard let anchor else { return }
+                    Task { @MainActor in
+                        // Layout must finish before scrollTo resolves a newly moved anchor.
+                        // A newer drag event supersedes any still-pending request.
+                        guard anchor.target.id == scrollTarget?.id else { return }
+                        if anchor.target.animated {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                proxy.scrollTo(anchor.target.id, anchor: .center)
+                            }
+                        } else {
+                            proxy.scrollTo(anchor.target.id, anchor: .center)
+                        }
+                    }
+                }
             }
         }
         .frame(height: chartHeight)
     }
 
-    private func chartContent(geometry: ECGChartGeometry, voltageTicks: [Double]) -> some View {
+    private func chartContent(
+        geometry: ECGChartGeometry,
+        voltageTicks: [Double],
+        viewportWidth: CGFloat
+    ) -> some View {
         ZStack(alignment: .topLeading) {
             Canvas { context, size in
                 let timeTicks = ECGTimeline.majorTickTimes(
@@ -388,7 +472,7 @@ public struct ECGWaveformView: View {
                 drawTimeAxis(context: &context, size: size, geometry: geometry, timeTicks: timeTicks)
             }
 
-            candidateAnchorRow(geometry: geometry)
+            scrollTargetAnchor(geometry: geometry, viewportWidth: viewportWidth)
 
             if isMeasuring {
                 ECGCaliperOverlay(caliper: caliper, signal: signal, geometry: geometry, height: chartHeight)
@@ -403,6 +487,112 @@ public struct ECGWaveformView: View {
             guard isMeasuring else { return }
             caliper.placeActivePoint(at: location, geometry: geometry, signal: signal)
         }
+    }
+
+    /// Kept below the detail chart so a finger navigating here never covers the enlarged trace.
+    /// Its voltage scale and display cache are independent of detail zoom.
+    private func overview(timeRange: ClosedRange<Double>, voltageRange: ClosedRange<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(language.text("Full recording overview", "全段预览"))
+                    .font(.subheadline.bold())
+                Spacer(minLength: 4)
+                if let viewport {
+                    Text(visibleRangeText(viewport.visibleTimeRange))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            GeometryReader { container in
+                let geometry = ECGChartGeometry(
+                    timeRange: timeRange,
+                    voltageRange: voltageRange,
+                    width: max(container.size.width, 1),
+                    topInset: 8,
+                    drawableHeight: 76
+                )
+                let initialViewport = ECGWaveformViewport(
+                    timeRange: timeRange,
+                    contentWidthPoints: Double(chartWidth(
+                        minimumWidth: max(container.size.width - axisGutterWidth, 1),
+                        duration: timeRange.upperBound - timeRange.lowerBound
+                    )),
+                    viewportWidthPoints: Double(max(container.size.width - axisGutterWidth, 1)),
+                    offsetPoints: 0
+                )
+                let visibleRange = (viewport ?? initialViewport)?.visibleTimeRange ?? timeRange
+
+                Canvas { context, size in
+                    let interiorTicks = ECGTimeline.majorTickTimes(
+                        startTimeSeconds: timeRange.lowerBound,
+                        endTimeSeconds: timeRange.upperBound,
+                        chartWidthPoints: Double(size.width)
+                    )
+                    .filter { geometry.x(for: $0) > 40 && geometry.x(for: $0) < size.width - 40 }
+                    let timeTicks = [timeRange.lowerBound] + interiorTicks + [timeRange.upperBound]
+                    drawGrid(
+                        context: &context, size: size, geometry: geometry,
+                        timeTicks: timeTicks, voltageTicks: [0]
+                    )
+                    for candidate in candidates {
+                        let x = geometry.x(for: candidate.timeSeconds)
+                        let band = CGRect(x: x - 2, y: geometry.topInset, width: 4, height: geometry.drawableHeight)
+                        context.fill(Path(band), with: .color(Color.watchBeatAttention.opacity(0.5)))
+                    }
+                    drawSignal(context: &context, size: size, geometry: geometry, cache: overviewCache)
+
+                    let selection = CGRect(
+                        x: geometry.x(for: visibleRange.lowerBound),
+                        y: 2,
+                        width: max(1, geometry.x(for: visibleRange.upperBound) - geometry.x(for: visibleRange.lowerBound)),
+                        height: geometry.waveformBottom + 2
+                    )
+                    context.fill(Path(selection), with: .color(Color.blue.opacity(0.1)))
+                    context.stroke(Path(selection), with: .color(.blue), lineWidth: 1.5)
+                    drawTimeAxis(context: &context, size: size, geometry: geometry, timeTicks: timeTicks)
+                }
+                .background(Color.secondary.opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            focusedCandidateIndex = nil
+                            focusTime(geometry.time(forX: value.location.x), animated: false)
+                        }
+                )
+                .accessibilityElement()
+                .accessibilityLabel(language.text("Full ECG overview", "完整心电图概览"))
+                .accessibilityValue(visibleRangeText(visibleRange))
+                .accessibilityHint(language.text("Swipe up or down to move the detail window", "上下轻扫以移动细节窗口"))
+                .accessibilityAdjustableAction { direction in
+                    let windowDuration = visibleRange.upperBound - visibleRange.lowerBound
+                    let center = (visibleRange.lowerBound + visibleRange.upperBound) / 2
+                    focusedCandidateIndex = nil
+                    switch direction {
+                    case .increment: focusTime(center + windowDuration * 0.75, animated: false)
+                    case .decrement: focusTime(center - windowDuration * 0.75, animated: false)
+                    @unknown default: break
+                    }
+                }
+            }
+            .frame(height: 108)
+
+            Text(language.text(
+                "Tap or drag anywhere to view details above. The blue window shows the visible section.",
+                "点击或拖动任意位置，查看上方细节；蓝色选框表示当前可见范围。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func visibleRangeText(_ range: ClosedRange<Double>) -> String {
+        language.text(
+            String(format: "Viewing %.1f–%.1f s", range.lowerBound, range.upperBound),
+            String(format: "当前 %.1f–%.1f 秒", range.lowerBound, range.upperBound)
+        )
     }
 
     /// Fixed millivolt labels; they stay put while the waveform scrolls horizontally.
@@ -586,9 +776,14 @@ public struct ECGWaveformView: View {
         }
     }
 
-    private func drawSignal(context: inout GraphicsContext, size: CGSize, geometry: ECGChartGeometry) {
+    private func drawSignal(
+        context: inout GraphicsContext,
+        size: CGSize,
+        geometry: ECGChartGeometry,
+        cache: ECGDisplaySampleCache? = nil
+    ) {
         let pointLimit = max(400, Int(size.width * 2))
-        let displaySamples = displayCache.samples(for: signal, maximumPointCount: pointLimit)
+        let displaySamples = (cache ?? displayCache).samples(for: signal, maximumPointCount: pointLimit)
         var path = Path()
         var hasOpenSegment = false
         var previousSourceIndex: Int?
@@ -720,41 +915,45 @@ public struct ECGWaveformView: View {
         context.stroke(axis, with: .color(.secondary.opacity(0.45)), lineWidth: 0.7)
     }
 
-    // MARK: - Candidate navigation
+    // MARK: - Timeline navigation
 
-    /// Invisible 1-pt anchors, one per candidate, that `scrollTo` centers on screen. Each anchor is a
-    /// plain HStack child with nothing applied after `.id`: a layout modifier after `.id` (the old
-    /// `.padding(.leading:)`) made scrollTo target the padded frame, so it centered half-way to the
-    /// candidate.
-    private func candidateAnchorRow(geometry: ECGChartGeometry) -> some View {
-        let gaps = Self.anchorGaps(forPositions: candidates.map { geometry.x(for: $0.timeSeconds) })
-        return HStack(spacing: 0) {
-            ForEach(gaps.indices, id: \.self) { index in
-                Color.clear.frame(width: gaps[index], height: 1)
-                Color.clear.frame(width: 1, height: 1).id(candidateAnchorID(index))
+    /// One exact-time anchor works for overview navigation as well as candidate jumps. Emitting
+    /// its preference after layout avoids scrolling to its previous position during a drag/zoom.
+    @ViewBuilder
+    private func scrollTargetAnchor(geometry: ECGChartGeometry, viewportWidth: CGFloat) -> some View {
+        if let scrollTarget,
+           let layout = ECGWaveformViewport(
+               timeRange: geometry.timeRange,
+               contentWidthPoints: Double(geometry.width),
+               viewportWidthPoints: Double(viewportWidth),
+               offsetPoints: 0
+           ) {
+            let x = CGFloat(layout.offsetPoints(centering: scrollTarget.timeSeconds)) + viewportWidth / 2
+            HStack(spacing: 0) {
+                Color.clear.frame(width: max(0, x - 0.5), height: 1)
+                Color.clear.frame(width: 1, height: 1)
+                    .id(scrollTarget.id)
+                    .background {
+                        GeometryReader { anchor in
+                            Color.clear.preference(
+                                key: ECGWaveformScrollAnchorKey.self,
+                                value: anchor.size.width > 0 ? ECGWaveformScrollAnchor(
+                                    target: scrollTarget,
+                                    x: x,
+                                    chartWidth: geometry.width
+                                ) : nil
+                            )
+                        }
+                    }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
-        }
-        .frame(width: geometry.width, height: 1, alignment: .leading)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-
-    /// Spacer widths that center 1-pt anchor `i` on `positions[i]` (ascending x).
-    static func anchorGaps(forPositions positions: [CGFloat]) -> [CGFloat] {
-        var cursor: CGFloat = 0
-        return positions.map { x in
-            let gap = max(0, x - 0.5 - cursor)
-            cursor += gap + 1
-            return gap
+            .frame(width: geometry.width, height: 1, alignment: .leading)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
     }
 
-    private func candidateAnchorID(_ index: Int) -> String {
-        "watchbeat.candidate.\(index)"
-    }
-
-    private func stepCandidate(by delta: Int, proxy: ScrollViewProxy) {
+    private func stepCandidate(by delta: Int) {
         guard !candidates.isEmpty else { return }
         let next: Int
         if let focusedCandidateIndex {
@@ -762,21 +961,13 @@ public struct ECGWaveformView: View {
         } else {
             next = delta > 0 ? 0 : candidates.count - 1
         }
-        focusCandidate(at: next, proxy: proxy)
+        focusedCandidateIndex = next
+        focusTime(candidates[next].timeSeconds, animated: true)
     }
 
-    private func focusCandidate(at index: Int, proxy: ScrollViewProxy) {
-        guard candidates.indices.contains(index) else { return }
-        focusedCandidateIndex = index
-        withAnimation(.easeInOut(duration: 0.35)) {
-            proxy.scrollTo(candidateAnchorID(index), anchor: .center)
-        }
-    }
-
-    private func nearestCandidateIndex(to time: Double) -> Int? {
-        candidates.indices.min { lhs, rhs in
-            abs(candidates[lhs].timeSeconds - time) < abs(candidates[rhs].timeSeconds - time)
-        }
+    private func focusTime(_ time: Double, animated: Bool) {
+        guard time.isFinite else { return }
+        scrollTarget = ECGWaveformScrollTarget(timeSeconds: time, animated: animated)
     }
 
     // MARK: - Layout
