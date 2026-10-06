@@ -2,29 +2,19 @@ import ECGCore
 import Foundation
 import SwiftUI
 
-/// Presents one immutable `ECGAnalysisReport`; no algorithm rule is reimplemented in the UI.
+/// User-facing results of one immutable `ECGAnalysisReport`: candidates, rate summary and
+/// descriptive values. How the analysis ran lives in `ECGAnalysisTechnicalDetails`, shown at the
+/// bottom of the page for professionals. No algorithm rule is reimplemented in the UI.
 struct ECGAnalysisResultView: View {
     let report: ECGAnalysisReport
-    let analysisDurationSeconds: Double
     /// Called with a candidate's time so the detail page can bring it into view on the waveform.
     var onSelectCandidate: ((Double) -> Void)?
     @Environment(\.appLanguage) private var language
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(
-                language.text("On-device research analysis", "本机研究分析"),
-                systemImage: "waveform.path.ecg"
-            )
-            .font(.headline)
-
-            row(language.text("Input contract", "输入契约"), report.inputFormat)
-            row(language.text("Model", "模型"), report.detectorIdentifier)
-            row(language.text("Algorithm version", "算法版本"), report.algorithmVersion)
-            row(
-                language.text("Analysis time", "分析耗时"),
-                String(format: "%.1f ms", analysisDurationSeconds * 1_000)
-            )
+            Label(language.text("Results", "分析结果"), systemImage: "waveform.path.ecg")
+                .font(.headline)
 
             switch report.status {
             case .analyzed:
@@ -46,57 +36,7 @@ struct ECGAnalysisResultView: View {
 
     @ViewBuilder
     private var analyzedContent: some View {
-        row(language.text("Detected R peaks", "检测到的 R 峰"), "\(report.summary.rPeakCount)")
-        row(
-            language.text("Premature candidates", "疑似早搏候选"),
-            "\(report.summary.prematureCandidateCount)"
-        )
-
-        if let metrics = report.rhythmMetrics {
-            Divider()
-            Text(language.text("Rate and timing summary", "心率与节律摘要"))
-                .font(.subheadline.bold())
-            row(
-                language.text("Median detected rate", "检测中位心率"),
-                String(format: "%.0f BPM", metrics.medianDetectedHeartRateBPM)
-            )
-            row(
-                language.text("Median R–R interval", "R–R 间期中位数"),
-                String(format: "%.0f ms", metrics.medianRRMilliseconds)
-            )
-            row(
-                language.text("R–R interquartile range", "R–R 四分位距"),
-                String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds)
-            )
-            row(
-                language.text("Usable R–R intervals", "可用 R–R 间期"),
-                "\(metrics.plausibleRRIntervalCount)"
-            )
-            row(
-                language.text("Candidate share", "候选占比"),
-                String(
-                    format: "%.1f%% (%d/%d)",
-                    metrics.prematureCandidateFraction * 100,
-                    report.summary.prematureCandidateCount,
-                    report.summary.classifiedBeatCount
-                )
-            )
-            Text(language.text(
-                "Calculated from plausible intervals between model-detected R peaks. " +
-                    "R–R spread is not a clinical HRV measurement.",
-                "仅根据模型检测到的 R 峰之间可信间期计算；R–R 离散程度不属于临床 HRV 指标。"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            Divider()
-        }
-
-        if let descriptors = report.recordingDescriptors {
-            descriptorContent(descriptors)
-            Divider()
-        }
-
-        if report.summary.prematureCandidateCount == 0 {
+        if prematureCandidates.isEmpty {
             Label(
                 language.text(
                     "No premature candidate was flagged in this recording.",
@@ -108,11 +48,12 @@ struct ECGAnalysisResultView: View {
         } else {
             Label(
                 language.text(
-                    "The model flagged possible premature beats for review.",
-                    "模型标记了疑似早搏候选，供你复核。"
+                    "\(prematureCandidates.count) premature candidate(s) — tap one to show it on the waveform",
+                    "\(prematureCandidates.count) 处疑似早搏候选，点击可在波形上定位"
                 ),
                 systemImage: "flag.fill"
             )
+            .font(.subheadline.bold())
             .foregroundStyle(Color.watchBeatAttentionText)
 
             ForEach(prematureCandidates.prefix(8), id: \.sampleIndex) { beat in
@@ -120,24 +61,62 @@ struct ECGAnalysisResultView: View {
             }
             if prematureCandidates.count > 8 {
                 Text(language.text(
-                    "+ \(prematureCandidates.count - 8) more in the analysis JSON",
-                    "另有 \(prematureCandidates.count - 8) 个，见分析结果 JSON"
+                    "+ \(prematureCandidates.count - 8) more — use ‹ › above the waveform",
+                    "另有 \(prematureCandidates.count - 8) 个，可用波形上方的 ‹ › 逐个查看"
                 ))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
+        }
+
+        if let metrics = report.rhythmMetrics {
+            Divider()
+            Text(language.text("Rate and rhythm", "心率与节律"))
+                .font(.subheadline.bold())
+            ECGInfoRow(
+                language.text("Median heart rate", "中位心率"),
+                String(format: "%.0f BPM", metrics.medianDetectedHeartRateBPM)
+            )
+            ECGInfoRow(
+                language.text("Median R–R interval", "R–R 间期中位数"),
+                String(format: "%.0f ms", metrics.medianRRMilliseconds)
+            )
+            ECGInfoRow(
+                language.text("R–R interquartile range", "R–R 四分位距"),
+                String(format: "%.0f ms", metrics.rrInterquartileRangeMilliseconds)
+            )
+            ECGInfoRow(
+                language.text("Candidate share", "候选占比"),
+                String(
+                    format: "%.1f%% (%ld/%ld)",
+                    metrics.prematureCandidateFraction * 100,
+                    report.summary.prematureCandidateCount,
+                    report.summary.classifiedBeatCount
+                )
+            )
+            Text(language.text(
+                "R–R spread describes this recording only; it is not a clinical HRV measurement.",
+                "R–R 离散程度只描述这一段记录，不属于临床 HRV 指标。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+
+        if let descriptors = report.recordingDescriptors {
+            Divider()
+            descriptorContent(descriptors)
         }
     }
 
     @ViewBuilder
     private var refusedContent: some View {
         Label(
-            language.text("This recording was not analyzed", "这段记录未进行分析"),
+            language.text("This recording could not be analyzed", "这段记录无法分析"),
             systemImage: "nosign"
         )
         .foregroundStyle(.orange)
         if let reason = report.reason {
-            Text(reasonText(reason))
+            Text(ECGAnalysisReasonText.text(for: reason, language: language))
                 .font(.caption)
         }
     }
@@ -161,11 +140,12 @@ struct ECGAnalysisResultView: View {
                         .foregroundStyle(Color.watchBeatAttentionText)
                     text
                     Spacer(minLength: 8)
-                    Label(language.text("Show", "定位"), systemImage: "scope")
-                        .font(.caption.bold())
+                    Image(systemName: "scope")
+                        .font(.body)
+                        .foregroundStyle(Color.watchBeatAttentionText)
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 10)
                 .background(Color.watchBeatAttention.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
             }
@@ -180,7 +160,7 @@ struct ECGAnalysisResultView: View {
     private func descriptorContent(_ descriptors: ECGRecordingDescriptors) -> some View {
         Text(language.text("More rhythm and waveform descriptors", "更多节律与波形描述"))
             .font(.subheadline.bold())
-        row(
+        ECGInfoRow(
             language.text("Shortest / longest R–R", "最短 / 最长 R–R"),
             String(
                 format: "%.0f / %.0f ms",
@@ -190,27 +170,27 @@ struct ECGAnalysisResultView: View {
         )
         if let lowest = descriptors.minimumInstantaneousHeartRateBPM,
            let highest = descriptors.maximumInstantaneousHeartRateBPM {
-            row(
+            ECGInfoRow(
                 language.text("Beat-to-beat rate range", "逐搏心率范围"),
                 String(format: "%.0f–%.0f BPM", lowest, highest)
             )
         }
-        row(
+        ECGInfoRow(
             language.text("R–R intervals over 2 s", "超过 2 秒的 R–R 间期"),
             "\(descriptors.longRRIntervalCount)"
         )
-        row(
+        ECGInfoRow(
             language.text("Back-to-back candidate pairs", "相邻出现的候选（成对）"),
             "\(descriptors.consecutiveCandidatePairCount)"
         )
         if let median = descriptors.medianQRSPeakToTroughMillivolts,
            let lowest = descriptors.minimumQRSPeakToTroughMillivolts,
            let highest = descriptors.maximumQRSPeakToTroughMillivolts {
-            row(
+            ECGInfoRow(
                 language.text("QRS peak-to-trough (median)", "QRS 峰谷电压差（中位）"),
                 String(format: "%.2f mV", median)
             )
-            row(
+            ECGInfoRow(
                 language.text("QRS peak-to-trough range", "QRS 峰谷电压差范围"),
                 String(format: "%.2f–%.2f mV", lowest, highest)
             )
@@ -229,8 +209,63 @@ struct ECGAnalysisResultView: View {
     private var prematureCandidates: [ECGAnalyzedBeat] {
         report.beats.filter { $0.classification == .prematureUncertain }
     }
+}
 
-    private func row(_ title: String, _ value: String) -> some View {
+/// How the report was produced. Shown only inside the page's collapsed technical section.
+struct ECGAnalysisTechnicalDetails: View {
+    let report: ECGAnalysisReport
+    let analysisDurationSeconds: Double
+    @Environment(\.appLanguage) private var language
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(language.text("Analysis", "分析信息"))
+                .font(.subheadline.bold())
+            ECGInfoRow(language.text("Input contract", "输入契约"), report.inputFormat)
+            ECGInfoRow(language.text("Model", "模型"), report.detectorIdentifier)
+            ECGInfoRow(language.text("Algorithm version", "算法版本"), report.algorithmVersion)
+            ECGInfoRow(
+                language.text("Analysis time", "分析耗时"),
+                String(format: "%.1f ms", analysisDurationSeconds * 1_000)
+            )
+            if report.status == .analyzed {
+                ECGInfoRow(language.text("Detected R peaks", "检测到的 R 峰"), "\(report.summary.rPeakCount)")
+                ECGInfoRow(
+                    language.text("Classified beats", "已分类心搏"),
+                    "\(report.summary.classifiedBeatCount)"
+                )
+                if let metrics = report.rhythmMetrics {
+                    ECGInfoRow(
+                        language.text("Usable R–R intervals (300–2,000 ms)", "可用 R–R 间期（300–2000 ms）"),
+                        "\(metrics.plausibleRRIntervalCount)"
+                    )
+                }
+                ECGInfoRow(
+                    language.text("Prematurity threshold", "提前判定阈值"),
+                    language.text(
+                        String(format: "R–R < %.0f%% of local median", report.parameters.prematurityThreshold * 100),
+                        String(format: "R–R < 局部中位数的 %.0f%%", report.parameters.prematurityThreshold * 100)
+                    )
+                )
+            }
+            if let reason = report.reason {
+                ECGInfoRow(language.text("Refusal code", "拒判代码"), reason.rawValue)
+            }
+        }
+    }
+}
+
+/// One label/value line used by the result and technical cards.
+struct ECGInfoRow: View {
+    let title: String
+    let value: String
+
+    init(_ title: String, _ value: String) {
+        self.title = title
+        self.value = value
+    }
+
+    var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .foregroundStyle(.secondary)
@@ -240,8 +275,10 @@ struct ECGAnalysisResultView: View {
         }
         .font(.subheadline)
     }
+}
 
-    private func reasonText(_ reason: ECGAnalysisReason) -> String {
+enum ECGAnalysisReasonText {
+    static func text(for reason: ECGAnalysisReason, language: AppLanguage) -> String {
         switch reason {
         case .missingOrMismatchedSamples:
             return language.text(

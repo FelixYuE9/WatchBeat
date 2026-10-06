@@ -191,21 +191,33 @@ public struct ECGWaveformView: View {
     }
 
     private var zoomControls: some View {
-        VStack(spacing: 6) {
-            zoomRow(
-                symbol: "arrow.left.and.right",
-                value: $zoom,
-                range: 1...8,
-                step: 0.5,
-                accessibilityLabel: language.text("Time zoom", "时间轴缩放")
-            )
-            zoomRow(
-                symbol: "arrow.up.and.down",
-                value: $verticalZoom,
-                range: 1...4,
-                step: 0.25,
-                accessibilityLabel: language.text("Voltage zoom", "电压轴缩放")
-            )
+        HStack(spacing: 8) {
+            VStack(spacing: 6) {
+                zoomRow(
+                    symbol: "arrow.left.and.right",
+                    value: $zoom,
+                    range: 1...8,
+                    step: 0.5,
+                    accessibilityLabel: language.text("Time zoom", "时间轴缩放")
+                )
+                zoomRow(
+                    symbol: "arrow.up.and.down",
+                    value: $verticalZoom,
+                    range: 1...4,
+                    step: 0.25,
+                    accessibilityLabel: language.text("Voltage zoom", "电压轴缩放")
+                )
+            }
+            Button {
+                zoom = 1
+                verticalZoom = 1
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .frame(width: 30, height: 30)
+            }
+            .buttonStyle(.bordered)
+            .disabled(zoom == 1 && verticalZoom == 1)
+            .accessibilityLabel(language.text("Reset zoom", "复位缩放"))
         }
     }
 
@@ -228,40 +240,50 @@ public struct ECGWaveformView: View {
         }
     }
 
+    /// Icon-only switches; the legend below the chart repeats each icon with its meaning.
     private var overlayToggles: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                Toggle(isOn: $isMeasuring) {
-                    Label(language.text("Measure", "测量"), systemImage: "ruler")
-                }
-                .tint(.purple)
-
-                if markers.count > 1 {
-                    Toggle(isOn: $showsRRIntervals) {
-                        Label(language.text("R–R", "R–R 间期"), systemImage: "arrow.left.and.right")
-                    }
-                }
-                if !qrsAmplitudes.isEmpty {
-                    Toggle(isOn: $showsQRSAmplitude) {
-                        Label(language.text("Peak–trough", "峰谷电压差"), systemImage: "arrow.up.and.down")
-                    }
-                    .tint(.teal)
-                }
-                if zoom != 1 || verticalZoom != 1 {
-                    Button {
-                        zoom = 1
-                        verticalZoom = 1
-                    } label: {
-                        Label(language.text("Reset zoom", "复位缩放"), systemImage: "arrow.counterclockwise")
-                    }
-                }
+        HStack(spacing: 16) {
+            overlayToggle(
+                isOn: $isMeasuring,
+                title: language.text("Measure", "测量"),
+                symbol: "ruler",
+                tint: .purple
+            )
+            if markers.count > 1 {
+                overlayToggle(
+                    isOn: $showsRRIntervals,
+                    title: language.text("R–R intervals", "R–R 间期"),
+                    symbol: "arrow.left.and.right.square",
+                    tint: .pink
+                )
             }
-            .toggleStyle(.button)
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .font(.caption)
+            if !qrsAmplitudes.isEmpty {
+                overlayToggle(
+                    isOn: $showsQRSAmplitude,
+                    title: language.text("Peak-to-trough voltage", "峰谷电压差"),
+                    symbol: "arrow.up.and.down.square",
+                    tint: .teal
+                )
+            }
         }
-        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func overlayToggle(
+        isOn: Binding<Bool>,
+        title: String,
+        symbol: String,
+        tint: Color
+    ) -> some View {
+        Toggle(isOn: isOn) {
+            Image(systemName: symbol)
+                .font(.title3)
+                .frame(width: 44, height: 30)
+        }
+        .toggleStyle(.button)
+        .buttonStyle(.bordered)
+        .tint(tint)
+        .accessibilityLabel(title)
     }
 
     private func candidateNavigator(proxy: ScrollViewProxy) -> some View {
@@ -366,14 +388,7 @@ public struct ECGWaveformView: View {
                 drawTimeAxis(context: &context, size: size, geometry: geometry, timeTicks: timeTicks)
             }
 
-            // Invisible anchors let the navigator scroll a candidate to the center.
-            ForEach(candidates.indices, id: \.self) { index in
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .id(candidateAnchorID(index))
-                    .padding(.leading, geometry.x(for: candidates[index].timeSeconds))
-                    .allowsHitTesting(false)
-            }
+            candidateAnchorRow(geometry: geometry)
 
             if isMeasuring {
                 ECGCaliperOverlay(caliper: caliper, signal: signal, geometry: geometry, height: chartHeight)
@@ -450,7 +465,7 @@ public struct ECGWaveformView: View {
                             "Teal values are the peak-to-trough voltage within ±80 ms of each R peak (mV).",
                             "青色数值是每个 R 峰前后 80 毫秒内的峰谷电压差（mV）。"
                         ),
-                        systemImage: "arrow.up.and.down"
+                        systemImage: "arrow.up.and.down.square"
                     )
                 }
                 if showsModelRPeakLines || showsCandidateLines {
@@ -706,6 +721,34 @@ public struct ECGWaveformView: View {
     }
 
     // MARK: - Candidate navigation
+
+    /// Invisible 1-pt anchors, one per candidate, that `scrollTo` centers on screen. Each anchor is a
+    /// plain HStack child with nothing applied after `.id`: a layout modifier after `.id` (the old
+    /// `.padding(.leading:)`) made scrollTo target the padded frame, so it centered half-way to the
+    /// candidate.
+    private func candidateAnchorRow(geometry: ECGChartGeometry) -> some View {
+        let gaps = Self.anchorGaps(forPositions: candidates.map { geometry.x(for: $0.timeSeconds) })
+        return HStack(spacing: 0) {
+            ForEach(gaps.indices, id: \.self) { index in
+                Color.clear.frame(width: gaps[index], height: 1)
+                Color.clear.frame(width: 1, height: 1).id(candidateAnchorID(index))
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(width: geometry.width, height: 1, alignment: .leading)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    /// Spacer widths that center 1-pt anchor `i` on `positions[i]` (ascending x).
+    static func anchorGaps(forPositions positions: [CGFloat]) -> [CGFloat] {
+        var cursor: CGFloat = 0
+        return positions.map { x in
+            let gap = max(0, x - 0.5 - cursor)
+            cursor += gap + 1
+            return gap
+        }
+    }
 
     private func candidateAnchorID(_ index: Int) -> String {
         "watchbeat.candidate.\(index)"

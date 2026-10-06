@@ -7,6 +7,7 @@ public struct ECGDetailView: View {
     @State private var sharedExport: ECGTemporaryExportFile?
     @State private var showsExportError = false
     @State private var waveformFocusRequest: ECGWaveformFocusRequest?
+    @State private var showsTechnicalDetails = false
     @Environment(\.appLanguage) private var language
 
     private let waveformCardID = "watchbeat.detail.waveform"
@@ -21,9 +22,10 @@ public struct ECGDetailView: View {
             ScrollViewReader { pageProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        metadataSection
+                        summarySection
                         stateSection(pageProxy: pageProxy)
                         disclaimerSection
+                        technicalSection
                     }
                     .padding()
                 }
@@ -61,20 +63,64 @@ public struct ECGDetailView: View {
         }
     }
 
-    private var metadataSection: some View {
+    /// Only what a person reading their own recording cares about; acquisition details are in
+    /// the technical section at the bottom.
+    private var summarySection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(language.text("Metadata", "记录概览")).font(.headline)
-            row(language.text("Source", "来源"), sourceText)
-            row(language.text("Start", "开始时间"), startDateText)
+            Text(language.text("Recording", "记录概览")).font(.headline)
+            if viewModel.source == .healthKit {
+                row(language.text("Start", "开始时间"), startDateText)
+            } else {
+                row(language.text("Source", "来源"), sourceText)
+            }
             row(language.text("Duration", "时长"), language.text(
                 String(format: "%.1f s", viewModel.record.durationSeconds),
                 String(format: "%.1f 秒", viewModel.record.durationSeconds)
             ))
-            row(language.text("Apple classification", "Apple 分类"), appleClassificationText)
             row(language.text("Average heart rate", "平均心率"), heartRateText)
-            row(language.text("Sampling frequency", "采样频率"), samplingText)
-            row(language.text("Declared measurements", "声明测量数"), "\(viewModel.record.declaredMeasurementCount)")
-            row(language.text("Symptoms", "症状"), symptomsText)
+            if viewModel.source == .healthKit {
+                row(language.text("Apple classification", "Apple 分类"), appleClassificationText)
+                row(language.text("Symptoms", "症状"), symptomsText)
+            }
+        }
+        .watchBeatCard()
+    }
+
+    /// Analysis provenance, acquisition metadata and integrity facts for professionals. Collapsed
+    /// by default and kept at the very bottom of the page.
+    private var technicalSection: some View {
+        DisclosureGroup(isExpanded: $showsTechnicalDetails) {
+            VStack(alignment: .leading, spacing: 14) {
+                if let measurement = viewModel.measurement {
+                    ECGAnalysisTechnicalDetails(
+                        report: measurement.analysis,
+                        analysisDurationSeconds: measurement.analysisDurationSeconds
+                    )
+                    Divider()
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(language.text("Recording metadata", "记录元数据"))
+                        .font(.subheadline.bold())
+                    row(language.text("Source", "来源"), sourceText)
+                    row(language.text("Sampling frequency", "采样频率"), samplingText)
+                    row(
+                        language.text("Declared measurements", "声明测量数"),
+                        "\(viewModel.record.declaredMeasurementCount)"
+                    )
+                }
+                if let measurement = viewModel.measurement {
+                    Divider()
+                    integrityContent(measurement: measurement)
+                }
+            }
+            .padding(.top, 10)
+        } label: {
+            Label(
+                language.text("Technical details (for professionals)", "技术详情（供专业人员参考）"),
+                systemImage: "wrench.and.screwdriver"
+            )
+            .font(.subheadline.bold())
+            .foregroundStyle(.secondary)
         }
         .watchBeatCard()
     }
@@ -117,6 +163,17 @@ public struct ECGDetailView: View {
                 }
                 .foregroundStyle(.orange)
             }
+            if incomplete {
+                Label(
+                    language.text(
+                        "Some measurement data is incomplete. See Technical details at the bottom.",
+                        "部分测量数据不完整，详见页面底部的“技术详情”。"
+                    ),
+                    systemImage: "exclamationmark.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+            }
             ECGWaveformView(
                 signal: measurement.signal,
                 markers: viewModel.waveformMarkers,
@@ -126,7 +183,6 @@ public struct ECGDetailView: View {
             .id(waveformCardID)
             ECGAnalysisResultView(
                 report: measurement.analysis,
-                analysisDurationSeconds: measurement.analysisDurationSeconds,
                 onSelectCandidate: { timeSeconds in
                     withAnimation(.easeInOut(duration: 0.3)) {
                         pageProxy.scrollTo(waveformCardID, anchor: .top)
@@ -134,14 +190,13 @@ public struct ECGDetailView: View {
                     waveformFocusRequest = ECGWaveformFocusRequest(timeSeconds: timeSeconds)
                 }
             )
-            integritySection(measurement: measurement, incomplete: incomplete)
             exportSection
         }
     }
 
-    private func integritySection(measurement: ECGMeasurement, incomplete: Bool) -> some View {
+    private func integrityContent(measurement: ECGMeasurement) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(language.text("Measurements", "测量完整性")).font(.headline)
+            Text(language.text("Measurement integrity", "测量完整性")).font(.subheadline.bold())
             row(language.text("Loaded samples", "已载入采样点"), "\(measurement.integrity.sampleCount)")
             row(language.text("Missing voltages", "缺失电压"), "\(measurement.integrity.missingVoltageIndices.count)")
             row(language.text("Nominal rate", "标称采样率"), rateText(measurement.signal.nominalSamplingRateHz))
@@ -153,7 +208,7 @@ public struct ECGDetailView: View {
                     : language.text("no", "否")
             )
 
-            if incomplete {
+            if !measurement.isComplete {
                 Text(language.text("Incomplete measurement data", "测量数据不完整"))
                     .font(.subheadline)
                     .bold()
@@ -172,7 +227,6 @@ public struct ECGDetailView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .watchBeatCard()
     }
 
     private var disclaimerSection: some View {
