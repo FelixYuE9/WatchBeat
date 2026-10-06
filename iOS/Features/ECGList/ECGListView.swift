@@ -218,10 +218,10 @@ public struct ECGExampleRecordRow: View {
                             "Demo: \(count) premature candidate(s)",
                             "演示波形：\(count) 个疑似早搏候选"
                         ),
-                        systemImage: "exclamationmark.circle.fill"
+                        systemImage: "flag.fill"
                     )
                     .font(.caption.bold())
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.watchBeatAttentionText)
                 }
             }
 
@@ -268,10 +268,10 @@ public struct ECGRecordRow: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "waveform.path.ecg")
                 .font(.title3)
-                .foregroundStyle(screeningState?.isFlagged == true ? .red : .pink)
+                .foregroundStyle(isFlagged ? Color.watchBeatAttentionText : Color.pink)
                 .frame(width: 42, height: 42)
                 .background(
-                    (screeningState?.isFlagged == true ? Color.red : Color.pink).opacity(0.11),
+                    isFlagged ? Color.watchBeatAttention.opacity(0.2) : Color.pink.opacity(0.11),
                     in: RoundedRectangle(cornerRadius: 12)
                 )
 
@@ -300,6 +300,10 @@ public struct ECGRecordRow: View {
         .accessibilityHint(language.text("Opens this ECG waveform", "打开这条 ECG 波形"))
     }
 
+    private var isFlagged: Bool {
+        screeningState?.isFlagged == true
+    }
+
     @ViewBuilder
     private var screeningBadge: some View {
         if let screeningState {
@@ -321,11 +325,12 @@ public struct ECGRecordRow: View {
             case .result(.prematureCandidates(let count)):
                 badge(
                     language.text(
-                        "\(count) premature candidate(s)",
-                        "疑似早搏候选 ×\(count)"
+                        "\(count) premature candidate(s) to review",
+                        "\(count) 处疑似早搏候选，可点开查看"
                     ),
-                    symbol: "exclamationmark.triangle.fill",
-                    tint: .red
+                    symbol: "flag.fill",
+                    tint: .watchBeatAttentionText,
+                    background: .watchBeatAttention
                 )
             case .result(.notAnalyzed):
                 badge(
@@ -343,13 +348,21 @@ public struct ECGRecordRow: View {
         }
     }
 
-    private func badge(_ text: String, symbol: String, tint: Color) -> some View {
+    private func badge(
+        _ text: String,
+        symbol: String,
+        tint: Color,
+        background: Color? = nil
+    ) -> some View {
         Label(text, systemImage: symbol)
             .font(.caption.bold())
             .foregroundStyle(tint)
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
-            .background(tint.opacity(0.1), in: Capsule())
+            .background(
+                background.map { $0.opacity(0.22) } ?? tint.opacity(0.1),
+                in: Capsule()
+            )
     }
 
     private var classificationText: String {

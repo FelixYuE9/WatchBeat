@@ -1,4 +1,26 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+
+public extension Color {
+    /// Tint for research flags. Deliberately yellow, never red: WatchBeat does not diagnose, so a
+    /// flag should read as "worth a second look", not as a clinical alarm.
+    static let watchBeatAttention = Color(red: 1.0, green: 0.8, blue: 0.0)
+
+    /// Text and icon tone of the same hue that stays readable on light and dark cards.
+    static var watchBeatAttentionText: Color {
+        #if canImport(UIKit)
+        Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 1.0, green: 0.84, blue: 0.32, alpha: 1)
+                : UIColor(red: 0.55, green: 0.38, blue: 0.0, alpha: 1)
+        })
+        #else
+        Color(red: 0.7, green: 0.5, blue: 0.0)
+        #endif
+    }
+}
 
 public struct WatchBeatBackground: View {
     public init() {}
@@ -33,7 +55,7 @@ private struct WatchBeatDataCardModifier: ViewModifier {
             }
             .overlay(alignment: .leading) {
                 Capsule()
-                    .fill(isFlagged ? Color.red : Color.pink)
+                    .fill(isFlagged ? Color.watchBeatAttention : Color.pink)
                     .frame(width: 4)
                     .padding(.leading, 6)
                     .padding(.vertical, 15)
@@ -49,7 +71,7 @@ private struct WatchBeatDataCardModifier: ViewModifier {
 
     private var borderColor: Color {
         isFlagged
-            ? Color.red.opacity(colorScheme == .dark ? 0.8 : 0.62)
+            ? Color.watchBeatAttention.opacity(colorScheme == .dark ? 0.75 : 0.95)
             : Color.primary.opacity(colorScheme == .dark ? 0.34 : 0.16)
     }
 }

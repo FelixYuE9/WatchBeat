@@ -44,7 +44,10 @@ public final class ECGDetailViewModel {
             ECGWaveformMarker(
                 id: "model-r-\(beat.sampleIndex)",
                 timeSeconds: beat.timeSeconds,
-                label: beat.classification == .prematureUncertain ? "Early" : "R"
+                label: beat.classification == .prematureUncertain
+                    ? ECGWaveformMarker.prematureCandidateLabel
+                    : "R",
+                sampleIndex: beat.sampleIndex
             )
         }
     }

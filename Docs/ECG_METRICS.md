@@ -19,6 +19,36 @@ UI 会显示中位心率、中位 R–R、R–R 四分位距、可用间期数�
 四分位距只是当前 30 秒记录的稳健离散程度，**不是 HRV、房颤诊断或风险评分**。所有字段带
 `metricsVersion = watchbeat.rr-summary.v1`，便于后续审计。
 
+## 2026-10-06 新增：描述性数值与检索结论
+
+`ECGAnalysisReport` 新增 additive `recordingDescriptors`（`watchbeat.descriptors.v1`）和每个 beat 的
+`qrsPeakToTroughMillivolts`，详见 [CONTRACTS.md](CONTRACTS.md)。全部在分类之后计算，不改变 R 峰、
+早搏门槛或候选标签：
+
+- 最短 / 最长 R–R、逐搏心率范围（仅可信间期）；
+- 超过 2 秒的 R–R 间期数（可能是停搏样间歇，也可能是漏检 R 峰，界面如实说明）；
+- 相邻出现的候选对数（只描述本次候选序列，不称为“成对室早”等诊断名）；
+- QRS 峰谷电压差：R 峰 ±80 ms 内原始采样最大值 − 最小值的中位数与范围，波形上同步标注。
+
+检索结论（与下表一致，供后续功能排序）：
+
+- 单导联腕表 ECG 研究中最常见的可读信息仍是房颤/窦律、窄 QRS 心动过速、心动过缓以及房性/室性
+  早搏；Apple 官方算法只分类房颤或窦律，其他节律需人工阅读原始波形。
+- Apple Watch 的 PR、QRS、QTc 间期与 12 导联 I 导联在健康人中大体一致（均差约 ±5–12 ms），但在长 QT
+  患者中 QTc 存在约 20 ms 的系统偏差；因此间期测量适合做“测量工具”，不适合做自动判读。
+- 腕表 R 波幅度与标准导联存在小幅系统偏差，且随佩戴/接触变化；峰谷电压差只做描述，不做肥厚等电压标准。
+- 腕表单导联对一度房室传导阻滞等传导异常灵敏度低（一项研究约 32%），不应据此引入传导阻滞判断。
+
+据此本轮只加入可审计的描述性数值和手动测量工具（任意两点 Δt/ΔV），把 PR/QRS/QT 等间期留给用户
+用测量工具自行读取，不输出自动判读。
+
+本轮检索参考：
+[Frontiers in Medicine 2021](https://www.frontiersin.org/journals/medicine/articles/10.3389/fmed.2021.685999/text)、
+[Saghir et al., Cardiovascular Digital Health Journal 2020](https://doaj.org/article/49d862aba7b44ad3bf774179ee9e6cd2)、
+[Using a Smartwatch to Record Precordial ECGs, Sensors 2023](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10007514/)、
+[QTc measurement using Apple Watch ECG in congenital LQTS](https://esc365.escardio.org/journal/90607)、
+[Digital Health 2023 wearable single-lead validation](https://doaj.org/article/b54038fc42704165beab0fecc7ac6fe0)。
+
 ## 常见信息与引入判断
 
 | 信息 | 单导联 30 秒可行性 | 自动化价值 | 当前判断 |

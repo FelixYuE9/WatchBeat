@@ -77,6 +77,15 @@ end to end; those claims remain governed by the later milestones and recorded ru
   retaining raw voltage in the list cache.
 - [x] Add a scroll-synchronized seconds axis and exact red candidate-time labels below the waveform.
 - [ ] Verify exported samples against selected HealthKit measurements on device.
+- [x] 2026-10-06: replace red flags with a non-alarming yellow; move model R-peak/candidate lines to
+  an off-by-default Settings › Research debugging section; mark candidates with yellow shading,
+  `#n` time labels and a highlighted preceding R–R; add previous/next candidate navigation and
+  tap-to-locate from the result card.
+- [x] 2026-10-06: fixed mV axis with independent 1–4× voltage zoom, per-beat QRS peak-to-trough
+  brackets, and a phone-friendly two-point caliper (tap/drag/one-sample nudge/peak-trough snap).
+- [x] 2026-10-06: additive `recordingDescriptors` (`watchbeat.descriptors.v1`) and per-beat
+  `qrsPeakToTroughMillivolts` in the analysis report; no classification change.
+- [ ] Compile and run the 2026-10-06 waveform/caliper changes on macOS/Xcode and a real iPhone.
 
 ## Milestone 2.5 — single-format premature-beat vertical slice
 
