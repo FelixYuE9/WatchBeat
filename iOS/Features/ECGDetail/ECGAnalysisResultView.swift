@@ -15,7 +15,7 @@ struct ECGAnalysisResultView: View {
     private let visibleCandidateLimit = 8
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             switch report.status {
             case .analyzed:
                 if !prematureCandidates.isEmpty {

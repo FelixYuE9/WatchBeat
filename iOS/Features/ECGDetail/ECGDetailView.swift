@@ -21,10 +21,13 @@ public struct ECGDetailView: View {
             WatchBeatBackground()
             ScrollViewReader { pageProxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 16) {
                         headerSection
                         stateSection(pageProxy: pageProxy)
                         ECGAnnotationView(record: viewModel.record, source: viewModel.source)
+                        if viewModel.measurement != nil {
+                            exportSection
+                        }
                         technicalSection
                         disclaimerSection
                     }
@@ -165,7 +168,7 @@ public struct ECGDetailView: View {
         incomplete: Bool,
         pageProxy: ScrollViewProxy
     ) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             if measurement.source == .builtInSyntheticExample || incomplete {
                 VStack(alignment: .leading, spacing: 8) {
                     if measurement.source == .builtInSyntheticExample {
@@ -206,7 +209,6 @@ public struct ECGDetailView: View {
                     waveformFocusRequest = ECGWaveformFocusRequest(timeSeconds: timeSeconds)
                 }
             )
-            exportSection
         }
     }
 
@@ -417,7 +419,7 @@ public struct ECGDetailView: View {
 
     private var appleClassificationText: String {
         guard viewModel.source == .healthKit else { return language.text("not applicable", "不适用") }
-        return classificationText(viewModel.record.classification)
+        return viewModel.record.classification.title(in: language)
     }
 
     private var symptomsText: String {
@@ -487,19 +489,6 @@ public struct ECGDetailView: View {
     private func rateText(_ rate: Double?) -> String {
         guard let rate else { return language.text("not available", "不可用") }
         return String(format: "%.1f Hz", rate)
-    }
-
-    private func classificationText(_ classification: ECGAppleClassification) -> String {
-        switch classification {
-        case .notSet: return language.text("Not Set", "未设置")
-        case .sinusRhythm: return language.text("Sinus Rhythm", "窦性心律")
-        case .atrialFibrillation: return language.text("Atrial Fibrillation", "房颤")
-        case .inconclusiveLowHeartRate: return language.text("Inconclusive — Low Heart Rate", "无法判定—心率过低")
-        case .inconclusiveHighHeartRate: return language.text("Inconclusive — High Heart Rate", "无法判定—心率过高")
-        case .inconclusivePoorReading: return language.text("Inconclusive — Poor Reading", "无法判定—记录质量不佳")
-        case .inconclusiveOther: return language.text("Inconclusive — Other", "无法判定—其他原因")
-        case .unrecognized: return language.text("Unrecognized", "无法识别")
-        }
     }
 
     private func issueText(_ issue: ECGMeasurementIssue) -> String {

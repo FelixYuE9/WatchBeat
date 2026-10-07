@@ -33,6 +33,24 @@ Swift 功能测试和 UI 验收均未执行，不能据此声称 App 已编译�
    或读取失败时禁止覆盖，保存失败保留草稿并可重试。损坏文件不能被静默重建。
 9. 中英文切换、VoiceOver、最大文字尺寸、小屏及深浅色下的筛选、标签、编辑表单和图表。
 
+### 2026-10-07 界面布局统一（未编译）
+
+只改界面，不改模型、筛选逻辑和存储。`AppStyle.swift` 去掉半透明 `watchBeatCard()`，全 App
+统一使用不透明的 `watchBeatPanel()`，背景改为系统分组底色 + 顶部淡粉色。新增 `WatchBeatFlowLayout`
+（自定义 `Layout`，标签按内容宽度换行）、`WatchBeatChip`、`WatchBeatIconBadge`、
+`WatchBeatGroupHeader`、`WatchBeatFootnote`；`ECGListView.swift` 新增 `ECGEmptyStateCard`。
+
+- 概览：合并重复指标为 2×2 数值卡；分析覆盖改为分段条 + 图例；趋势用分段控件切换
+  “记录数（有候选为黄色堆叠）/平均心率”；免责声明改为页脚。
+- 数据：搜索框 + 筛选按钮 + 日期分段直接放在页面上，“结果与标签”改为底部弹窗，已选条件
+  以可移除标签显示；记录按月分组；行内显示日期、心率、Apple 分类与时长；有记录时示例移到底部。
+- 详情：“感受与批注”移到分析结果之后、导出之前；编辑页标签改为胶囊多选，已有标签可一键添加。
+- 设置分区重排并加图标；首次启动免责声明页重做，按钮固定在底部。
+
+重点看：`WatchBeatFlowLayout` 的 `Layout` 一致性与尾随闭包调用、`Chart` 的
+`foregroundStyle(by:)` 堆叠柱形和 `chartForegroundStyleScale`，以及 Form 中多个胶囊按钮
+是否能分别点击。
+
 如果 `xcode-select` 仍指向 Command Line Tools，先执行：
 
 ```bash

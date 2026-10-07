@@ -38,6 +38,32 @@ public struct SettingsView: View {
                     ))
                 }
 
+                Section(language.text("Privacy", "隐私")) {
+                    settingsRow(
+                        language.text("ECG processing stays on this device", "心电处理仅在本机完成"),
+                        systemImage: "iphone",
+                        tint: .blue
+                    )
+                    settingsRow(
+                        language.text("No analytics or health-data upload", "不含分析追踪或健康数据上传"),
+                        systemImage: "lock.shield.fill",
+                        tint: .green
+                    )
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        confirmsAnnotationClear = true
+                    } label: {
+                        Label(language.text("Clear all local annotations", "清除所有本地批注"), systemImage: "trash")
+                    }
+                    .disabled(annotations.annotations.isEmpty && annotations.exampleAnnotation.isEmpty && !annotations.hasLoadFailure)
+                } header: {
+                    Text(language.text("Feelings and notes", "感受与批注"))
+                } footer: {
+                    Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
+                }
+
                 Section {
                     Toggle(
                         language.text("Model R-peak lines", "模型 R 峰竖线"),
@@ -59,30 +85,15 @@ public struct SettingsView: View {
                     ))
                 }
 
-                Section(language.text("Privacy", "隐私")) {
-                    Label(
-                        language.text("ECG processing stays on this device", "心电处理仅在本机完成"),
-                        systemImage: "iphone"
-                    )
-                    Label(
-                        language.text("No analytics or health-data upload", "不含分析追踪或健康数据上传"),
-                        systemImage: "lock.shield"
-                    )
-                    Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
-                        .font(.footnote).foregroundStyle(.secondary)
-                    Button(language.text("Clear all local annotations", "清除所有本地批注"), role: .destructive) {
-                        confirmsAnnotationClear = true
-                    }
-                    .disabled(annotations.annotations.isEmpty && annotations.exampleAnnotation.isEmpty && !annotations.hasLoadFailure)
-                }
-
-                Section(language.text("About", "关于")) {
+                Section {
                     LabeledContent(language.text("Version", "版本"), value: appVersion)
+                } header: {
+                    Text(language.text("About", "关于"))
+                } footer: {
                     Text(language.text(
                         "Research use only — not a medical diagnosis.",
                         "仅供研究使用，不构成医疗诊断。"
                     ))
-                    .foregroundStyle(.secondary)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -100,6 +111,18 @@ public struct SettingsView: View {
             Button(language.text("OK", "好"), role: .cancel) {}
         } message: {
             Text(language.text("Unlock the device and try again.", "请解锁设备后重试。"))
+        }
+    }
+
+    private func settingsRow(_ title: String, systemImage: String, tint: Color) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: systemImage)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
     }
 
