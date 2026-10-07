@@ -1,4 +1,5 @@
 import SwiftUI
+import WatchBeatModels
 
 public struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var storedLanguage = AppLanguage.system.rawValue
