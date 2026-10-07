@@ -8,6 +8,11 @@ Windows and still needs its Xcode build/test run; follow `../NEEDS_MACOS_VALIDAT
 Build 6 adds an analysis-time row for on-device speed checks, a synthetic example containing one
 PAC-like and one PVC-like beat (detected by the model, not injected), and removes unused scaffolding.
 
+The current source also adds recording trends and analysis coverage to Overview, combined date /
+result / tag / note filtering to Data, and protected local symptom/tag/note annotations to each ECG
+detail. History queries now return all accessible metadata. The new Swift tests and Swift Charts UI
+still need macOS/Xcode validation; see the 2026-10-07 checklist in `../NEEDS_MACOS_VALIDATION.md`.
+
 Actual commands and results are recorded in [Docs/VALIDATION.md](../Docs/VALIDATION.md).
 
 ## Still required before the current revision can be called device-validated

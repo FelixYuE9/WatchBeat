@@ -25,7 +25,7 @@ public actor LiveHealthKitECGReader: ECGHealthKitReading {
     }
 
     /// Metadata-only query; no voltage data is loaded here.
-    public func fetchECGMetadata(limit: Int) async throws -> [ECGRecord] {
+    public func fetchECGMetadata(limit: Int?) async throws -> [ECGRecord] {
         let descriptor = HKSampleQueryDescriptor(
             predicates: [HKSamplePredicate.electrocardiogram()],
             sortDescriptors: [SortDescriptor(\HKElectrocardiogram.startDate, order: .reverse)],

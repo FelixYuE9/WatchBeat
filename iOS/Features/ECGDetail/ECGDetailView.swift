@@ -24,6 +24,7 @@ public struct ECGDetailView: View {
                     VStack(alignment: .leading, spacing: 20) {
                         headerSection
                         stateSection(pageProxy: pageProxy)
+                        ECGAnnotationView(record: viewModel.record, source: viewModel.source)
                         technicalSection
                         disclaimerSection
                     }
@@ -106,7 +107,7 @@ public struct ECGDetailView: View {
                 Divider()
                 VStack(spacing: 8) {
                     ECGInfoRow(language.text("Apple classification", "Apple 分类"), appleClassificationText)
-                    ECGInfoRow(language.text("Symptoms", "症状"), symptomsText)
+                    ECGInfoRow(language.text("Apple-recorded symptoms", "Apple 记录的症状"), symptomsText)
                 }
             }
         }

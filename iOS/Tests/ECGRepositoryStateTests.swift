@@ -20,6 +20,17 @@ import WatchBeatModels
         #expect(outcome == .noAccessibleRecords)
     }
 
+    @Test func defaultHistoryQueryIsNotTruncatedAtTwoHundredRecords() async {
+        let records = (0..<225).map { _ in makeRecord() }
+        let repository = ECGRepository(reader: FakeECGReader(records: records))
+        guard case .loaded(let all) = await repository.loadRecords(),
+              case .loaded(let limited) = await repository.loadRecords(limit: 100) else {
+            Issue.record("Expected loaded metadata"); return
+        }
+        #expect(all.count == 225)
+        #expect(limited.count == 100)
+    }
+
     @Test func metadataFailureIsReportedAsTypedFailure() async {
         let repository = ECGRepository(
             reader: FakeECGReader(metadataFailure: FakeReaderError(code: "query-refused"))

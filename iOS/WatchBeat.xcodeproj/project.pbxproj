@@ -62,6 +62,13 @@
 		A00000000000000000004110 /* WatchBeatModels.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003002 /* WatchBeatModels.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A00000000000000000004111 /* WatchBeatHealthKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003003 /* WatchBeatHealthKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A00000000000000000004112 /* ECGCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A00000000000000000003001 /* ECGCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A00000000000000000004017 /* ECGAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002017 /* ECGAnnotation.swift */; };
+		A00000000000000000004018 /* ECGAnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002018 /* ECGAnnotationStore.swift */; };
+		A00000000000000000004019 /* ECGRecordInsights.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002019 /* ECGRecordInsights.swift */; };
+		A00000000000000000004053 /* ECGRecordFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002053 /* ECGRecordFilterView.swift */; };
+		A00000000000000000004069 /* ECGAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002069 /* ECGAnnotationView.swift */; };
+		A00000000000000000004086 /* ECGRecordInsightsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002086 /* ECGRecordInsightsTests.swift */; };
+		A00000000000000000004087 /* ECGInsightsTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002087 /* ECGInsightsTestSupport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -197,6 +204,13 @@
 		A00000000000000000003003 /* WatchBeatHealthKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WatchBeatHealthKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000003004 /* WatchBeatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchBeatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000003005 /* WatchBeatAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchBeatAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000002017 /* ECGAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotation.swift; sourceTree = "<group>"; };
+		A00000000000000000002018 /* ECGAnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotationStore.swift; sourceTree = "<group>"; };
+		A00000000000000000002019 /* ECGRecordInsights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordInsights.swift; sourceTree = "<group>"; };
+		A00000000000000000002053 /* ECGRecordFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordFilterView.swift; sourceTree = "<group>"; };
+		A00000000000000000002069 /* ECGAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotationView.swift; sourceTree = "<group>"; };
+		A00000000000000000002086 /* ECGRecordInsightsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordInsightsTests.swift; sourceTree = "<group>"; };
+		A00000000000000000002087 /* ECGInsightsTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGInsightsTestSupport.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -308,6 +322,9 @@
 				A00000000000000000002014 /* ECGDisplay.swift */,
 				A00000000000000000002015 /* ECGExportEncoder.swift */,
 				A00000000000000000002016 /* ECGExampleFactory.swift */,
+				A00000000000000000002017 /* ECGAnnotation.swift */,
+				A00000000000000000002018 /* ECGAnnotationStore.swift */,
+				A00000000000000000002019 /* ECGRecordInsights.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -350,6 +367,7 @@
 			children = (
 				A00000000000000000002051 /* ECGListViewModel.swift */,
 				A00000000000000000002052 /* ECGListView.swift */,
+				A00000000000000000002053 /* ECGRecordFilterView.swift */,
 			);
 			path = ECGList;
 			sourceTree = "<group>";
@@ -362,6 +380,7 @@
 				A00000000000000000002067 /* ECGAnalysisResultView.swift */,
 				A00000000000000000002063 /* ECGWaveformView.swift */,
 				A00000000000000000002068 /* ECGCaliperView.swift */,
+				A00000000000000000002069 /* ECGAnnotationView.swift */,
 				A00000000000000000002064 /* ECGExportSharing.swift */,
 			);
 			path = ECGDetail;
@@ -383,6 +402,7 @@
 				A00000000000000000002081 /* ECGHealthKitMapperTests.swift */,
 				A00000000000000000002082 /* ECGRepositoryStateTests.swift */,
 				A00000000000000000002085 /* ECGPresentationAndExportTests.swift */,
+				A00000000000000000002086 /* ECGRecordInsightsTests.swift */,
 				A0000000000000000000000F /* Fakes */,
 			);
 			path = Tests;
@@ -393,6 +413,7 @@
 			children = (
 				A00000000000000000002083 /* FakeECGReader.swift */,
 				A00000000000000000002084 /* Gate.swift */,
+				A00000000000000000002087 /* ECGInsightsTestSupport.swift */,
 			);
 			path = Fakes;
 			sourceTree = "<group>";
@@ -628,6 +649,9 @@
 				A00000000000000000004014 /* ECGDisplay.swift in Sources */,
 				A00000000000000000004015 /* ECGExportEncoder.swift in Sources */,
 				A00000000000000000004016 /* ECGExampleFactory.swift in Sources */,
+				A00000000000000000004017 /* ECGAnnotation.swift in Sources */,
+				A00000000000000000004018 /* ECGAnnotationStore.swift in Sources */,
+				A00000000000000000004019 /* ECGRecordInsights.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -657,6 +681,7 @@
 				A00000000000000000004042 /* DisclaimerView.swift in Sources */,
 				A00000000000000000004051 /* ECGListViewModel.swift in Sources */,
 				A00000000000000000004052 /* ECGListView.swift in Sources */,
+				A00000000000000000004053 /* ECGRecordFilterView.swift in Sources */,
 				A00000000000000000004061 /* ECGDetailViewModel.swift in Sources */,
 				A00000000000000000004062 /* ECGDetailView.swift in Sources */,
 				A00000000000000000004063 /* ECGWaveformView.swift in Sources */,
@@ -665,6 +690,7 @@
 				A00000000000000000004066 /* SettingsView.swift in Sources */,
 				A00000000000000000004067 /* ECGAnalysisResultView.swift in Sources */,
 				A00000000000000000004068 /* ECGCaliperView.swift in Sources */,
+				A00000000000000000004069 /* ECGAnnotationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -676,7 +702,9 @@
 				A00000000000000000004082 /* ECGRepositoryStateTests.swift in Sources */,
 				A00000000000000000004083 /* FakeECGReader.swift in Sources */,
 				A00000000000000000004084 /* Gate.swift in Sources */,
+				A00000000000000000004087 /* ECGInsightsTestSupport.swift in Sources */,
 				A00000000000000000004085 /* ECGPresentationAndExportTests.swift in Sources */,
+				A00000000000000000004086 /* ECGRecordInsightsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

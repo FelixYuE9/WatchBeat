@@ -3,9 +3,10 @@ import WatchBeatModels
 
 public struct ECGListView: View {
     @AppStorage("hasRequestedECGReadAccess") private var hasRequestedReadAccess = false
-    let viewModel: ECGListViewModel
+    @Bindable var viewModel: ECGListViewModel
     let exampleMeasurement: ECGMeasurement?
     @Environment(\.appLanguage) private var language
+    @Environment(ECGAnnotationStore.self) private var annotations
 
     public init(viewModel: ECGListViewModel, exampleMeasurement: ECGMeasurement? = nil) {
         self.viewModel = viewModel
@@ -18,6 +19,7 @@ public struct ECGListView: View {
             content
         }
         .navigationTitle(language.text("ECG Data", "心电数据"))
+        .onAppear { viewModel.startScreeningIfNeeded() }
         .toolbar {
             if viewModel.canReload {
                 ToolbarItem(placement: .primaryAction) {
@@ -107,6 +109,15 @@ public struct ECGListView: View {
                 .buttonStyle(.bordered)
             }
         case .loaded(let records):
+            let matches = filteredRecords
+            ECGRecordFilterView(filter: $viewModel.filter, availableTags: availableTags)
+            if annotations.hasLoadFailure {
+                Text(language.text("Saved annotations are unavailable; tag and note searches may be incomplete.", "已保存的批注暂不可用，标签与文字搜索可能不完整。"))
+                    .font(.caption).foregroundStyle(.orange)
+                Button(language.text("Retry annotations", "重试读取批注")) { annotations.reload() }
+            }
+            Text(language.text("\(matches.count) of \(records.count) recordings", "匹配 \(matches.count) / \(records.count) 条记录"))
+                .font(.subheadline).foregroundStyle(.secondary)
             Label(
                 language.text(
                     "Records are screened one by one on this device; badges are research flags, not diagnoses.",
@@ -117,11 +128,21 @@ public struct ECGListView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
 
-            ForEach(records) { record in
+            if matches.isEmpty {
+                healthStatusCard(
+                    symbol: "magnifyingglass",
+                    title: language.text("No matching recordings", "没有匹配的记录"),
+                    message: language.text("Try a wider date range or reset the filters. Analysis-result matches update as screening completes.", "可扩大日期范围或重置筛选；分析结果筛选会随筛查完成而更新。")
+                ) {
+                    Button(language.text("Reset filters", "重置筛选")) { viewModel.filter = ECGRecordFilter() }
+                }
+            }
+            ForEach(matches) { record in
                 NavigationLink(value: record) {
                     ECGRecordRow(
                         record: record,
-                        screeningState: viewModel.screeningState(for: record)
+                        screeningState: viewModel.screeningState(for: record),
+                        annotation: annotations.annotation(for: record.id)
                     )
                     .watchBeatDataCard(
                         isFlagged: viewModel.screeningState(for: record)?.isFlagged == true
@@ -140,6 +161,23 @@ public struct ECGListView: View {
                 }
                 .buttonStyle(.bordered)
             }
+        }
+    }
+
+    private var availableTags: [ECGRecordTag] {
+        Array(Set(viewModel.records.flatMap { annotations.annotation(for: $0.id).tags }))
+            .sorted { $0.id < $1.id }
+    }
+
+    private var filteredRecords: [ECGRecord] {
+        let now = Date()
+        return viewModel.records.filter { record in
+            let annotation = annotations.annotation(for: record.id)
+            let titles = annotation.tags.flatMap { [$0.title(in: .english), $0.title(in: .simplifiedChinese)] }
+            return viewModel.filter.matches(
+                record, annotation: annotation, screening: viewModel.screeningState(for: record),
+                now: now, searchTerms: titles
+            )
         }
     }
 
@@ -257,11 +295,13 @@ public struct ECGExampleRecordRow: View {
 public struct ECGRecordRow: View {
     let record: ECGRecord
     let screeningState: ECGListScreeningState?
+    let annotation: ECGAnnotation
     @Environment(\.appLanguage) private var language
 
-    public init(record: ECGRecord, screeningState: ECGListScreeningState? = nil) {
+    public init(record: ECGRecord, screeningState: ECGListScreeningState? = nil, annotation: ECGAnnotation = ECGAnnotation()) {
         self.record = record
         self.screeningState = screeningState
+        self.annotation = annotation
     }
 
     public var body: some View {
@@ -287,6 +327,11 @@ public struct ECGRecordRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 screeningBadge
+                ECGAnnotationTags(tags: annotation.tags)
+                if !annotation.note.isEmpty {
+                    Label(annotation.note, systemImage: "text.bubble")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
             }
 
             Spacer(minLength: 0)

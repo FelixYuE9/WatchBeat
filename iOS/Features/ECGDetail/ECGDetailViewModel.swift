@@ -12,15 +12,18 @@ public final class ECGDetailViewModel {
     public private(set) var state: ECGDetailState = .idle
 
     private let repository: ECGRepository?
+    private let onScreeningUpdate: ((ECGScreeningSummary) -> Void)?
 
-    public init(repository: ECGRepository, record: ECGRecord) {
+    public init(repository: ECGRepository, record: ECGRecord, onScreeningUpdate: ((ECGScreeningSummary) -> Void)? = nil) {
         self.repository = repository
         self.record = record
         self.source = .healthKit
+        self.onScreeningUpdate = onScreeningUpdate
     }
 
     public init(example measurement: ECGMeasurement) {
         self.repository = nil
+        self.onScreeningUpdate = nil
         self.record = measurement.record
         self.source = measurement.source
         self.state = measurement.isComplete
@@ -58,6 +61,7 @@ public final class ECGDetailViewModel {
         let outcome = await repository.loadMeasurements(for: record)
         switch outcome {
         case .loaded(let measurement):
+            onScreeningUpdate?(measurement.screeningSummary)
             state = measurement.isComplete
                 ? .loaded(measurement)
                 : .loadedWithIncompleteMeasurements(measurement)

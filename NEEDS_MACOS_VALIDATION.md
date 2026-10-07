@@ -6,6 +6,33 @@ MIT-BIH 上复测；**Swift 源码尚未在本版本编译**，请按下列顺�
 历史记录（供对照）：macOS 26.7 / Xcode 26.6 (17F113，位于 `~/Downloads/Xcode.app`) 曾通过
 ECGCore 7 项测试、App/测试 target 构建，并在 iPhone 17 Pro / iOS 26.5 模拟器上运行 v0.3.0。
 
+### 2026-10-07 新增：跨记录分析、筛选与批注
+
+本轮实际执行 `python -m unittest Tools.Validation.tests.test_ios_project_configuration -v`，
+10/10 工程配置测试通过；`git diff --check` 通过。Windows 没有 Swift/Xcode，下面新增的
+Swift 功能测试和 UI 验收均未执行，不能据此声称 App 已编译或真机通过。
+
+新增源码：`ECGAnnotation.swift`、`ECGAnnotationStore.swift`、`ECGRecordInsights.swift`、
+`ECGRecordFilterView.swift`、`ECGAnnotationView.swift`，以及 Swift Charts 概览。新增
+`ECGRecordInsightsTests.swift` 的 14 项测试和 repository 全历史查询测试已加入 Xcode target。
+
+在 Mac 跑本文件下方的 core/app 测试及 scheme 构建后，重点验收：
+
+1. 概览首次启动即逐条筛查；日期切换正确，按日／按月图表、心率均值、候选总数、分析
+   覆盖情况与标签分布一致。待分析、无法分析和失败不能被统计为零候选。
+2. 零数据／无授权、全为拒判、没有心率、仅单条记录的图表状态；合成数据不进入统计。
+3. 超过 200 条 HealthKit ECG 仍能查到早期记录；大量历史数据下检查加载与筛查响应。
+4. 全部、近 7/30 天、自定义范围包含结束日期整天；反向日期不匹配；日期、结果、标签与
+   文字搜索组合正确。多个标签为 OR；从概览标签点击跳转后正确保留日期及标签。
+5. 详情多选症状、“没有不适”互斥、自定义标签去重与复用、自由批注、保存／取消、单条
+   清空并保存。返回列表／概览立即更新，退出并重启后真实批注仍存在。
+6. Apple 症状与本应用自述感受分开；批注不改变模型候选、波形或原有导出。
+7. 合成示例批注只在当前进程内保留。设置清除全部批注后，真实 HealthKit ECG 仍存在，
+   搜索及概览无残留标签。已有筛选无匹配时可重置。
+8. 真机检查 `WatchBeatAnnotations` 目录排除备份、批注文件 protection 为 complete；锁定
+   或读取失败时禁止覆盖，保存失败保留草稿并可重试。损坏文件不能被静默重建。
+9. 中英文切换、VoiceOver、最大文字尺寸、小屏及深浅色下的筛选、标签、编辑表单和图表。
+
 如果 `xcode-select` 仍指向 Command Line Tools，先执行：
 
 ```bash

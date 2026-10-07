@@ -11,7 +11,8 @@ public protocol ECGHealthKitReading: Sendable {
     func requestReadOnlyAuthorization() async throws
 
     /// Metadata-only list query, sorted by start date (most recent first).
-    func fetchECGMetadata(limit: Int) async throws -> [ECGRecord]
+    /// `nil` returns all accessible metadata so history filters are not silently truncated.
+    func fetchECGMetadata(limit: Int?) async throws -> [ECGRecord]
 
     /// Lazily loads the voltage measurements of a previously listed record.
     /// Implementations must throw `CancellationError` when the current task is cancelled.

@@ -32,7 +32,7 @@ public actor ECGRepository {
         }
     }
 
-    public func loadRecords(limit: Int = 200) async -> ECGListOutcome {
+    public func loadRecords(limit: Int? = nil) async -> ECGListOutcome {
         guard reader.isECGDataAvailable() else { return .unavailable }
 
         listGeneration += 1

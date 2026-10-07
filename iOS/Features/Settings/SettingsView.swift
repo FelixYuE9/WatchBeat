@@ -5,6 +5,9 @@ public struct SettingsView: View {
     @AppStorage(ECGWaveformDebugSettings.showsModelRPeakLinesKey) private var showsModelRPeakLines = false
     @AppStorage(ECGWaveformDebugSettings.showsCandidateLinesKey) private var showsCandidateLines = false
     @Environment(\.appLanguage) private var language
+    @Environment(ECGAnnotationStore.self) private var annotations
+    @State private var confirmsAnnotationClear = false
+    @State private var showsAnnotationClearError = false
 
     public init() {}
 
@@ -64,6 +67,12 @@ public struct SettingsView: View {
                         language.text("No analytics or health-data upload", "不含分析追踪或健康数据上传"),
                         systemImage: "lock.shield"
                     )
+                    Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
+                        .font(.footnote).foregroundStyle(.secondary)
+                    Button(language.text("Clear all local annotations", "清除所有本地批注"), role: .destructive) {
+                        confirmsAnnotationClear = true
+                    }
+                    .disabled(annotations.annotations.isEmpty && annotations.exampleAnnotation.isEmpty && !annotations.hasLoadFailure)
                 }
 
                 Section(language.text("About", "关于")) {
@@ -78,6 +87,19 @@ public struct SettingsView: View {
             .scrollContentBackground(.hidden)
         }
         .navigationTitle(language.text("Settings", "设置"))
+        .confirmationDialog(language.text("Clear all local annotations?", "清除所有本地批注？"), isPresented: $confirmsAnnotationClear) {
+            Button(language.text("Clear annotations", "清除批注"), role: .destructive) {
+                if !annotations.clear() { showsAnnotationClearError = true }
+            }
+            Button(language.text("Cancel", "取消"), role: .cancel) {}
+        } message: {
+            Text(language.text("This removes saved feelings, tags and notes from WatchBeat. Apple Health ECGs are unaffected.", "此操作会删除 WatchBeat 保存的感受、标签和文字批注，不影响 Apple 健康中的 ECG。"))
+        }
+        .alert(language.text("Annotations could not be cleared", "无法清除批注"), isPresented: $showsAnnotationClearError) {
+            Button(language.text("OK", "好"), role: .cancel) {}
+        } message: {
+            Text(language.text("Unlock the device and try again.", "请解锁设备后重试。"))
+        }
     }
 
     private var appVersion: String {

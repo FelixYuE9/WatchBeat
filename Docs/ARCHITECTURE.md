@@ -36,7 +36,7 @@
 6. Apple classification 只进入展示/metadata，不进入任何研究算法输入。
 7. UI explanation 仅由实际 feature 值和 `ReasonCode` 生成。
 8. 每个分析结果带 schema、algorithm、config version、detector identifier 和拒判原因。
-9. 默认无 ECG 副本缓存、无健康数据日志、无网络数据流。
+9. 默认无 ECG 副本缓存、无健康数据日志、无网络数据流。用户主动保存的批注仅存于本机受保护文件。
 
 ## 当前最小闭环的数据契约
 
@@ -109,6 +109,34 @@ iPhone；当前 revision 的签名产物和真机 HealthKit 行为仍须按
 HealthKit 异步查询必须支持 cooperative cancellation 和请求 identity 检查，防止快速切换
 记录时旧结果覆盖新页面。读取权限被拒绝和“数据库无可访问记录”在 HealthKit 中不可可靠
 区分，因此 empty state 不能断言用户拒绝权限。
+
+## 跨记录概览、筛选与批注
+
+`ECGRecordInsights` 是 SwiftUI/HealthKit 无关的描述性汇总：对可访问记录按日分组，跨度超过
+90 天时概览按月分组。心率均值对有有效 Apple 平均心率的记录等权平均，不以时长加权。
+候选总数只求和成功分析的记录；成功零候选、无法分析、待分析和读取失败分别统计。
+示例不进入真实记录集合。筛查仍只缓存紧凑结果，详情成功读取后同步更新列表和概览。
+
+`ECGRecordFilter` 将日期、研究分析结果、标签、批注搜索组合为 AND；标签内部为 OR。
+自定义结束日期包含整天，使用当前 Calendar 的次日零点作为排他上界，覆盖夏令时间。
+最近 7/30 天包含今天；预设症状的中英文名称都可搜索。HealthKit metadata 查询默认
+`limit: nil`，返回全部可访问记录，不再隐含截断到 200 条，电压仍按需逐条读取。
+
+`ECGAnnotation` 与算法和 Apple 症状状态独立：预设感受多选，“没有不适”与其他预设症状
+互斥，自定义标签清理空白并忽略大小写／重音去重。`ECGAnnotationStore` 在保存成功后才
+发布修改；读取失败时禁止覆盖原文件。文件包含 schema v1、关联 UUID 和用户批注，使用
+iOS complete file protection，并在写入前排除目录备份。详情提供草稿编辑与保存／取消，
+设置提供清除全部批注。隐私边界见 [PRIVACY.md](PRIVACY.md)。
+
+功能参考（2026-10-07 查阅官方页面）：
+
+- [Kardia Insights](https://kardia.com/insights)：按月、时段查看 ECG 趋势，并汇总记录标签；
+  为本项目的跨记录概览和标签分布提供参考。
+- [Apple ECG](https://support.apple.com/en-ie/120278)：保存波形、分类和用户记录的症状，并支持 PDF 分享；
+  为本项目的“记录期间感觉如何”入口提供参考。
+- [Wellue 报告说明](https://getwellue.com/blogs/select-product-category/what-does-ai-ecg-report-include)：
+  展示报告概览、心率摘要、事件计数和按小时统计。其持续记录场景与本项目的短时 ECG 不同；
+  本轮只借鉴汇总层级，没有新增 PAC/PVC 分型或全天负荷指标。
 
 ## 依赖倒置
 

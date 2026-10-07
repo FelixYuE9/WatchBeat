@@ -8,12 +8,14 @@ import WatchBeatModels
 @Observable
 public final class AppContainer {
     public let repository: ECGRepository
+    public let annotations: ECGAnnotationStore
     public let listViewModel: ECGListViewModel
     public let exampleMeasurement: ECGMeasurement?
 
     public init() {
         let repository = ECGRepository(reader: LiveHealthKitECGReader())
         self.repository = repository
+        self.annotations = ECGAnnotationStore()
         self.listViewModel = ECGListViewModel(repository: repository)
         self.exampleMeasurement = try? ECGExampleFactory.makeMeasurement()
     }
