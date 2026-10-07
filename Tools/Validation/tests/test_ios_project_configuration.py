@@ -140,6 +140,13 @@ class IOSProjectConfigurationTests(unittest.TestCase):
             "AppHomeView.swift",
             "OverviewView.swift",
             "SettingsView.swift",
+            "ECGAnnotation.swift",
+            "ECGAnnotationStore.swift",
+            "ECGRecordInsights.swift",
+            "ECGRecordFilterView.swift",
+            "ECGAnnotationView.swift",
+            "ECGRecordInsightsTests.swift",
+            "ECGInsightsTestSupport.swift",
         }
 
         for file_name in source_files:

@@ -20,8 +20,8 @@ public enum ECGSymptomsStatus: String, Codable, CaseIterable, Sendable, Equatabl
 
 /// Metadata-only view of one HealthKit ECG record. No voltage data is held here.
 ///
-/// `id` is the HealthKit sample UUID. It is used as an in-memory key only: it is never persisted,
-/// exported, or logged.
+/// `id` is the HealthKit sample UUID. User-saved annotations use it as a protected local association
+/// key; it is never exported or logged. Waveforms and record metadata are not persisted.
 public struct ECGRecord: Identifiable, Hashable, Sendable, Codable {
     public let id: UUID
     public let startDate: Date

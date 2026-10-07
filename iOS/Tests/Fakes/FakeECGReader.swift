@@ -55,9 +55,9 @@ public actor FakeECGReader: ECGHealthKitReading {
         if let authorizationFailure { throw authorizationFailure }
     }
 
-    public func fetchECGMetadata(limit: Int) async throws -> [ECGRecord] {
+    public func fetchECGMetadata(limit: Int?) async throws -> [ECGRecord] {
         if let metadataFailure { throw metadataFailure }
-        return records
+        return limit.map { Array(records.prefix($0)) } ?? records
     }
 
     public func fetchVoltageSamples(forRecordWithID id: UUID) async throws -> [ECGVoltageSample] {

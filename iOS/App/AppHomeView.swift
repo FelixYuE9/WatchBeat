@@ -52,12 +52,14 @@ public struct AppHomeView: View {
             }
             .tag(AppTab.settings)
         }
+        .environment(container.annotations)
         .tint(.pink)
         .onChange(of: selectedTab) { _, newTab in
-            guard newTab == .records else { return }
+            guard newTab == .records || newTab == .overview else { return }
             container.listViewModel.startScreeningIfNeeded()
         }
         .task {
+            container.listViewModel.startScreeningIfNeeded()
             guard hasRequestedReadAccess else { return }
             await container.listViewModel.load()
         }

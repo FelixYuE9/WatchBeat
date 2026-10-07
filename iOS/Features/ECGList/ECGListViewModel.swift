@@ -3,22 +3,17 @@ import Observation
 import WatchBeatHealthKit
 import WatchBeatModels
 
-public enum ECGListScreeningState: Equatable, Sendable {
-    case checking
-    case result(ECGScreeningSummary)
-    case failed
-
-    public var isFlagged: Bool {
-        guard case .result(.prematureCandidates(count: _)) = self else { return false }
-        return true
-    }
-}
-
 @MainActor
 @Observable
 public final class ECGListViewModel {
     public private(set) var state: ECGListState = .authorizationRequired
     public private(set) var screeningStates: [UUID: ECGListScreeningState] = [:]
+    public var filter = ECGRecordFilter()
+
+    public var records: [ECGRecord] {
+        guard case .loaded(let records) = state else { return [] }
+        return records
+    }
 
     private let repository: ECGRepository
     private var screeningTask: Task<Void, Never>?
@@ -78,14 +73,17 @@ public final class ECGListViewModel {
     }
 
     public func makeDetailViewModel(for record: ECGRecord) -> ECGDetailViewModel {
-        ECGDetailViewModel(repository: repository, record: record)
+        ECGDetailViewModel(repository: repository, record: record) { [weak self] summary in
+            guard let self, self.records.contains(where: { $0.id == record.id }) else { return }
+            self.screeningStates[record.id] = .result(summary)
+        }
     }
 
     public func screeningState(for record: ECGRecord) -> ECGListScreeningState? {
         screeningStates[record.id]
     }
 
-    /// Defers voltage-heavy screening until the user actually visits the data page.
+    /// Both the overview and data page use the same compact screening results.
     public func startScreeningIfNeeded() {
         isScreeningRequested = true
         guard screeningTask == nil,
@@ -112,6 +110,8 @@ public final class ECGListViewModel {
                 case .loaded(let summary):
                     screeningStates[record.id] = .result(summary)
                 case .failed:
+                    // An overlapping detail read may already have published a valid summary.
+                    if case .result = screeningStates[record.id] { break }
                     screeningStates[record.id] = .failed
                 case .cancelled:
                     return
