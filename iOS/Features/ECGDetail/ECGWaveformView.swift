@@ -343,14 +343,12 @@ public struct ECGWaveformView: View {
                     tint: .blue
                 )
             }
-            if !qrsAmplitudes.isEmpty {
-                overlayToggle(
-                    isOn: $showsQRSAmplitude,
-                    title: language.text("Peak-to-trough voltage", "峰谷电压差"),
-                    symbol: "arrow.up.and.down.square",
-                    tint: .teal
-                )
-            }
+            overlayToggle(
+                isOn: $showsQRSAmplitude,
+                title: language.text("Peak-to-trough voltage and axis labels", "峰谷电压差与纵轴数值"),
+                symbol: "arrow.up.and.down.square",
+                tint: .teal
+            )
         }
     }
 
@@ -488,7 +486,9 @@ public struct ECGWaveformView: View {
             .background(Color.secondary.opacity(0.07))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(alignment: .topLeading) {
-                voltageLabels(geometry: geometry, ticks: voltageTicks)
+                if showsQRSAmplitude {
+                    voltageLabels(geometry: geometry, ticks: voltageTicks)
+                }
             }
         }
         .frame(height: chartHeight)
@@ -759,8 +759,8 @@ public struct ECGWaveformView: View {
                 guideRow(
                     "arrow.up.and.down.square",
                     language.text(
-                        "Teal values are the peak-to-trough voltage within ±80 ms of each R peak (mV).",
-                        "青色数值是每个 R 峰前后 80 毫秒内的峰谷电压差（mV）。"
+                        "This button shows or hides both the voltage-axis labels and the teal peak-to-trough values within ±80 ms of each R peak (mV).",
+                        "此按钮同时显示或隐藏纵轴电压数值，以及每个 R 峰前后 80 毫秒内的青色峰谷电压差（mV）。"
                     )
                 )
                 guideRow(
