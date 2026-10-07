@@ -10,6 +10,8 @@ public struct OverviewView: View {
     @Environment(ECGAnnotationStore.self) private var annotations
     @State private var period = ECGRecordFilter(dateRange: .last30Days)
     @State private var trendMetric = TrendMetric.recordings
+    /// Start of the day or month the person tapped in the trend chart.
+    @State private var selectedBucketDate: Date?
 
     private enum TrendMetric: Hashable {
         case recordings
@@ -204,6 +206,7 @@ public struct OverviewView: View {
             .padding(.top, 10)
 
             ECGDateRangePicker(filter: $period)
+                .onChange(of: period) { _, _ in selectedBucketDate = nil }
 
             if summary.recordCount == 0 {
                 ECGEmptyStateCard(
@@ -402,7 +405,8 @@ public struct OverviewView: View {
     // MARK: Trends
 
     private func trendsCard(_ summary: ECGRecordInsights) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let selected = summary.buckets.first { $0.date == selectedBucketDate }
+        return VStack(alignment: .leading, spacing: 12) {
             WatchBeatSectionTitle(language.text("Trends", "趋势"), systemImage: "chart.bar.xaxis")
 
             Picker(language.text("Trend", "趋势"), selection: $trendMetric) {
@@ -421,6 +425,21 @@ public struct OverviewView: View {
                 heartRateChart(summary)
             }
 
+            if let selected {
+                Divider()
+                bucketDetail(selected)
+            } else {
+                Label(
+                    language.text(
+                        groupsByMonth ? "Tap a month in the chart for details." : "Tap a day in the chart for details.",
+                        groupsByMonth ? "点击图表中的月份查看当月详情。" : "点击图表中的日期查看当天详情。"
+                    ),
+                    systemImage: "hand.tap"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
             Text(language.text(
                 "Only recorded ECGs are summarized; gaps in recording are not continuous monitoring.",
                 "仅汇总实际记录的 ECG；记录间的空白不代表持续监测。"
@@ -434,19 +453,20 @@ public struct OverviewView: View {
     private func recordingsChart(_ summary: ECGRecordInsights) -> some View {
         let flagged = language.text("With candidates", "有疑似候选")
         let other = language.text("Other recordings", "其他记录")
-        let unit: Calendar.Component = groupsByMonth ? .month : .day
         return Chart {
             ForEach(summary.buckets) { bucket in
                 BarMark(
-                    x: .value(language.text("Date", "日期"), bucket.date, unit: unit),
+                    x: .value(language.text("Date", "日期"), bucket.date, unit: bucketUnit),
                     y: .value(language.text("Recordings", "记录数"), bucket.recordCount - bucket.candidateRecordCount)
                 )
                 .foregroundStyle(by: .value(language.text("Result", "结果"), other))
+                .opacity(barOpacity(for: bucket))
                 BarMark(
-                    x: .value(language.text("Date", "日期"), bucket.date, unit: unit),
+                    x: .value(language.text("Date", "日期"), bucket.date, unit: bucketUnit),
                     y: .value(language.text("Recordings", "记录数"), bucket.candidateRecordCount)
                 )
                 .foregroundStyle(by: .value(language.text("Result", "结果"), flagged))
+                .opacity(barOpacity(for: bucket))
             }
         }
         .chartForegroundStyleScale(
@@ -456,30 +476,44 @@ public struct OverviewView: View {
         .chartLegend(position: .bottom, alignment: .leading)
         .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
         .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
+        .chartOverlay { proxy in
+            bucketTapTarget(proxy: proxy, buckets: summary.buckets)
+        }
         .frame(height: 170)
     }
 
     @ViewBuilder
     private func heartRateChart(_ summary: ECGRecordInsights) -> some View {
         if summary.heartRateRecordCount > 0 {
-            Chart(summary.buckets) { bucket in
-                if let heartRate = bucket.averageHeartRateBPM {
-                    LineMark(
-                        x: .value(language.text("Date", "日期"), bucket.date),
-                        y: .value("BPM", heartRate)
-                    )
-                    .foregroundStyle(Color.pink)
-                    PointMark(
-                        x: .value(language.text("Date", "日期"), bucket.date),
-                        y: .value("BPM", heartRate)
-                    )
-                    .foregroundStyle(Color.pink)
-                    .symbolSize(28)
+            Chart {
+                ForEach(summary.buckets) { bucket in
+                    if let heartRate = bucket.averageHeartRateBPM {
+                        LineMark(
+                            x: .value(language.text("Date", "日期"), bucket.date),
+                            y: .value("BPM", heartRate)
+                        )
+                        .foregroundStyle(Color.pink)
+                        PointMark(
+                            x: .value(language.text("Date", "日期"), bucket.date),
+                            y: .value("BPM", heartRate)
+                        )
+                        .foregroundStyle(Color.pink)
+                        .symbolSize(bucket.date == selectedBucketDate ? 90 : 28)
+                    }
+                }
+                if let selectedBucketDate,
+                   summary.buckets.contains(where: { $0.date == selectedBucketDate && $0.averageHeartRateBPM != nil }) {
+                    RuleMark(x: .value(language.text("Date", "日期"), selectedBucketDate))
+                        .foregroundStyle(Color.secondary.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
             .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
             .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
+            .chartOverlay { proxy in
+                bucketTapTarget(proxy: proxy, buckets: summary.buckets)
+            }
             .frame(height: 170)
             Text(language.text(
                 "Mean of \(summary.heartRateRecordCount) ECG record(s) with a valid Apple average heart rate.",
@@ -495,6 +529,183 @@ public struct OverviewView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, minHeight: 120)
+        }
+    }
+
+    // MARK: Trend selection
+
+    /// The calendar unit of one chart bucket; matches `ECGRecordInsights` grouping.
+    private var bucketUnit: Calendar.Component { groupsByMonth ? .month : .day }
+
+    private func bucketStart(for date: Date) -> Date {
+        let calendar = Calendar.current
+        if groupsByMonth {
+            return calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
+        }
+        return calendar.startOfDay(for: date)
+    }
+
+    private var bucketTitleFormat: Date.FormatStyle {
+        groupsByMonth ? .dateTime.year().month(.wide) : .dateTime.month().day().weekday(.wide)
+    }
+
+    private var bucketRecordTimeFormat: Date.FormatStyle {
+        groupsByMonth ? .dateTime.month().day().hour().minute() : .dateTime.hour().minute()
+    }
+
+    private func barOpacity(for bucket: ECGInsightBucket) -> Double {
+        selectedBucketDate == nil || selectedBucketDate == bucket.date ? 1 : 0.35
+    }
+
+    /// A tap (not a drag, so the page still scrolls over the chart) selects the bucket under the
+    /// finger; tapping it again, or an empty day, clears the selection.
+    private func bucketTapTarget(proxy: ChartProxy, buckets: [ECGInsightBucket]) -> some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .onTapGesture { location in
+                    guard let plotFrame = proxy.plotFrame else { return }
+                    let frame = geometry[plotFrame]
+                    guard location.x >= frame.minX, location.x <= frame.maxX,
+                          let date = proxy.value(atX: location.x - frame.minX, as: Date.self) else { return }
+                    let target: Date?
+                    switch trendMetric {
+                    case .recordings:
+                        let start = bucketStart(for: date)
+                        target = buckets.first { $0.date == start }?.date
+                    case .heartRate:
+                        target = buckets
+                            .filter { $0.averageHeartRateBPM != nil }
+                            .min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+                            .map { $0.date }
+                    }
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedBucketDate = target == selectedBucketDate ? nil : target
+                    }
+                }
+        }
+    }
+
+    /// Numbers and recordings behind one selected bar or point.
+    private func bucketDetail(_ bucket: ECGInsightBucket) -> some View {
+        let records = periodRecords
+            .filter { bucketStart(for: $0.startDate) == bucket.date }
+            .sorted { $0.startDate > $1.startDate }
+        let visibleLimit = 5
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(bucket.date, format: bucketTitleFormat)
+                    .font(.headline)
+                Spacer(minLength: 8)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedBucketDate = nil }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(language.text("Close details", "关闭详情"))
+            }
+
+            HStack(spacing: 8) {
+                WatchBeatMetricTile(
+                    value: "\(bucket.recordCount)",
+                    label: language.text("Recordings", "记录")
+                )
+                WatchBeatMetricTile(
+                    value: "\(bucket.candidateRecordCount)",
+                    label: language.text("With candidates", "有疑似候选"),
+                    isHighlighted: bucket.candidateRecordCount > 0
+                )
+                WatchBeatMetricTile(
+                    value: bucket.averageHeartRateBPM.map { "\(Int($0.rounded())) BPM" } ?? "—",
+                    label: language.text("Mean HR", "平均心率")
+                )
+            }
+            .fixedSize(horizontal: false, vertical: true)
+
+            VStack(spacing: 0) {
+                ForEach(Array(records.prefix(visibleLimit).enumerated()), id: \.element.id) { index, record in
+                    if index > 0 {
+                        Divider()
+                    }
+                    NavigationLink {
+                        ECGDetailView(viewModel: viewModel.makeDetailViewModel(for: record))
+                    } label: {
+                        bucketRecordRow(record)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            Button {
+                var filter = ECGRecordFilter(dateRange: .custom)
+                filter.startDate = bucket.date
+                filter.endDate = groupsByMonth
+                    ? Calendar.current.date(byAdding: DateComponents(month: 1, day: -1), to: bucket.date) ?? bucket.date
+                    : bucket.date
+                viewModel.filter = filter
+                selectedTab = .records
+            } label: {
+                HStack(spacing: 4) {
+                    Text(records.count > visibleLimit
+                        ? language.text("Show all \(records.count) in Data", "在“数据”中查看全部 \(records.count) 条")
+                        : language.text("Open in Data", "在“数据”中查看"))
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+        }
+        .transition(.opacity)
+    }
+
+    private func bucketRecordRow(_ record: ECGRecord) -> some View {
+        HStack(spacing: 10) {
+            Text(record.startDate, format: bucketRecordTimeFormat)
+                .font(.subheadline.monospacedDigit())
+            if let bpm = record.averageHeartRateBPM, bpm.isFinite, bpm > 0 {
+                Text("\(Int(bpm.rounded())) BPM")
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            recordScreeningMark(viewModel.screeningState(for: record))
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 9)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private func recordScreeningMark(_ state: ECGListScreeningState?) -> some View {
+        switch state {
+        case .result(.prematureCandidates(let count)) where count > 0:
+            Label("\(count)", systemImage: "flag.fill")
+                .font(.caption.bold().monospacedDigit())
+                .foregroundStyle(Color.watchBeatAttentionText)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color.watchBeatAttention.opacity(0.22), in: Capsule())
+                .accessibilityLabel(language.text("\(count) premature candidate(s)", "\(count) 处疑似早搏候选"))
+        case .result(.notAnalyzed):
+            Text(language.text("Unable to analyze", "无法分析"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .failed:
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.orange)
+                .accessibilityLabel(language.text("Screening failed", "筛查失败"))
+        case .checking, .none:
+            ProgressView()
+                .controlSize(.mini)
+        case .result:
+            EmptyView()
         }
     }
 

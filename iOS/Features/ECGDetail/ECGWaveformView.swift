@@ -136,7 +136,6 @@ public struct ECGWaveformView: View {
     @Environment(\.appLanguage) private var language
 
     private let baseDrawableHeight: CGFloat = 180
-    private let axisGutterWidth: CGFloat = 40
     private let waveformBottomInset: CGFloat = 30
     private let candidateBandHalfWidthSeconds = 0.16
     private let overviewDrawableHeight: CGFloat = 56
@@ -435,7 +434,7 @@ public struct ECGWaveformView: View {
         proxy: ScrollViewProxy
     ) -> some View {
         GeometryReader { container in
-            let viewportWidth = max(container.size.width - axisGutterWidth, 1)
+            let viewportWidth = max(container.size.width, 1)
             let geometry = ECGChartGeometry(
                 timeRange: timeRange,
                 voltageRange: voltageRange,
@@ -452,42 +451,44 @@ public struct ECGWaveformView: View {
                 chartHeightPoints: Double(drawableHeight)
             )
 
-            HStack(spacing: 0) {
-                voltageAxis(geometry: geometry, ticks: voltageTicks)
-                ScrollView(.horizontal) {
-                    chartContent(geometry: geometry, voltageTicks: voltageTicks, viewportWidth: viewportWidth)
-                        .background {
-                            GeometryReader { content in
-                                Color.clear.preference(
-                                    key: ECGWaveformViewportKey.self,
-                                    value: ECGWaveformViewport(
-                                        timeRange: timeRange,
-                                        contentWidthPoints: Double(geometry.width),
-                                        viewportWidthPoints: Double(viewportWidth),
-                                        offsetPoints: -Double(content.frame(in: .named(viewportCoordinateSpace)).minX)
-                                    )
+            ScrollView(.horizontal) {
+                chartContent(geometry: geometry, voltageTicks: voltageTicks, viewportWidth: viewportWidth)
+                    .background {
+                        GeometryReader { content in
+                            Color.clear.preference(
+                                key: ECGWaveformViewportKey.self,
+                                value: ECGWaveformViewport(
+                                    timeRange: timeRange,
+                                    contentWidthPoints: Double(geometry.width),
+                                    viewportWidthPoints: Double(viewportWidth),
+                                    offsetPoints: -Double(content.frame(in: .named(viewportCoordinateSpace)).minX)
                                 )
-                            }
-                        }
-                }
-                .scrollIndicators(.visible)
-                .coordinateSpace(.named(viewportCoordinateSpace))
-                .onPreferenceChange(ECGWaveformViewportKey.self) { viewport = $0 }
-                .onPreferenceChange(ECGWaveformScrollAnchorKey.self) { anchor in
-                    guard let anchor else { return }
-                    Task { @MainActor in
-                        // Layout must finish before scrollTo resolves a newly moved anchor.
-                        // A newer drag event supersedes any still-pending request.
-                        guard anchor.target.id == scrollTarget?.id else { return }
-                        if anchor.target.animated {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                proxy.scrollTo(anchor.target.id, anchor: .center)
-                            }
-                        } else {
-                            proxy.scrollTo(anchor.target.id, anchor: .center)
+                            )
                         }
                     }
+            }
+            .scrollIndicators(.visible)
+            .coordinateSpace(.named(viewportCoordinateSpace))
+            .onPreferenceChange(ECGWaveformViewportKey.self) { viewport = $0 }
+            .onPreferenceChange(ECGWaveformScrollAnchorKey.self) { anchor in
+                guard let anchor else { return }
+                Task { @MainActor in
+                    // Layout must finish before scrollTo resolves a newly moved anchor.
+                    // A newer drag event supersedes any still-pending request.
+                    guard anchor.target.id == scrollTarget?.id else { return }
+                    if anchor.target.animated {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo(anchor.target.id, anchor: .center)
+                        }
+                    } else {
+                        proxy.scrollTo(anchor.target.id, anchor: .center)
+                    }
                 }
+            }
+            .background(Color.secondary.opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(alignment: .topLeading) {
+                voltageLabels(geometry: geometry, ticks: voltageTicks)
             }
         }
         .frame(height: chartHeight)
@@ -526,8 +527,6 @@ public struct ECGWaveformView: View {
             }
         }
         .frame(width: geometry.width, height: chartHeight)
-        .background(Color.secondary.opacity(0.07))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
         .contentShape(Rectangle())
         .coordinateSpace(.named(ECGChartGeometry.coordinateSpaceName))
         .onTapGesture { location in
@@ -562,10 +561,10 @@ public struct ECGWaveformView: View {
                 let initialViewport = ECGWaveformViewport(
                     timeRange: timeRange,
                     contentWidthPoints: Double(chartWidth(
-                        minimumWidth: max(container.size.width - axisGutterWidth, 1),
+                        minimumWidth: max(container.size.width, 1),
                         duration: timeRange.upperBound - timeRange.lowerBound
                     )),
-                    viewportWidthPoints: Double(max(container.size.width - axisGutterWidth, 1)),
+                    viewportWidthPoints: Double(max(container.size.width, 1)),
                     offsetPoints: 0
                 )
                 let visibleRange = (viewport ?? initialViewport)?.visibleTimeRange ?? timeRange
@@ -635,29 +634,39 @@ public struct ECGWaveformView: View {
         )
     }
 
-    /// Fixed millivolt labels; they stay put while the waveform scrolls horizontally.
-    private func voltageAxis(geometry: ECGChartGeometry, ticks: [Double]) -> some View {
+    /// Millivolt labels drawn inside the plot just above their grid lines, so the waveform can use
+    /// the full card width. They stay put while the trace scrolls and never intercept taps.
+    private func voltageLabels(geometry: ECGChartGeometry, ticks: [Double]) -> some View {
         Canvas { context, size in
             let decimals = Self.tickDecimals(ticks)
-            var tickMarks = Path()
+            let topTick = ticks.max()
             for tick in ticks {
                 let y = geometry.y(for: tick)
-                tickMarks.move(to: CGPoint(x: size.width - 4, y: y))
-                tickMarks.addLine(to: CGPoint(x: size.width, y: y))
+                let value = String(format: "%.\(decimals)f", tick)
                 var label = context.resolve(
-                    Text(String(format: "%.\(decimals)f", tick))
+                    Text(tick == topTick ? "\(value) mV" : value)
                         .font(.caption2.monospacedDigit())
                 )
                 label.shading = .color(.secondary)
-                context.draw(label, at: CGPoint(x: size.width - 6, y: y), anchor: .trailing)
+                let textSize = label.measure(in: size)
+                // Sit above the line; flip below it when that would run into the R–R strip.
+                let above = y - textSize.height - 2 >= geometry.topInset - 2
+                let chip = CGRect(
+                    x: 4,
+                    y: above ? y - textSize.height - 2 : y + 2,
+                    width: textSize.width + 6,
+                    height: textSize.height
+                )
+                guard chip.maxY < geometry.waveformBottom else { continue }
+                context.fill(
+                    Path(roundedRect: chip, cornerRadius: 3),
+                    with: .color(Color.watchBeatSurface.opacity(0.75))
+                )
+                context.draw(label, at: CGPoint(x: chip.midX, y: chip.midY), anchor: .center)
             }
-            context.stroke(tickMarks, with: .color(.secondary.opacity(0.45)), lineWidth: 0.7)
-
-            var unit = context.resolve(Text("mV").font(.caption2.bold()))
-            unit.shading = .color(.secondary)
-            context.draw(unit, at: CGPoint(x: size.width - 6, y: size.height - 8), anchor: .trailing)
         }
-        .frame(width: axisGutterWidth, height: chartHeight)
+        .frame(height: chartHeight)
+        .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
 
