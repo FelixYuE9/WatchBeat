@@ -125,6 +125,7 @@ class IOSProjectConfigurationTests(unittest.TestCase):
         source_files = {
             "PrematureBeatAnalyzer.swift",
             "ECGAnalysisReport.swift",
+            "ECGRRVariability.swift",
             "GradientEnergyRPeakDetector.swift",
             "ECGQRSAmplitude.swift",
             "ECGDisplay.swift",
@@ -142,6 +143,7 @@ class IOSProjectConfigurationTests(unittest.TestCase):
             "SettingsView.swift",
             "ECGAnnotation.swift",
             "ECGAnnotationStore.swift",
+            "ECGScreeningCache.swift",
             "ECGRecordInsights.swift",
             "ECGRecordFilterView.swift",
             "ECGAnnotationView.swift",

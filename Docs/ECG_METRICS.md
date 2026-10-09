@@ -102,3 +102,17 @@ UI 会显示中位心率、中位 R–R、R–R 四分位距、可用间期数�
   [QRS detection in single-lead, telehealth electrocardiogram signals: benchmarking open-source algorithms](https://pmc.ncbi.nlm.nih.gov/articles/PMC7617317/),
   *Physiological Measurement* 2023.
 
+
+## 2026 年 10 月 9 日新增 RR 变异统计
+
+本轮新增可选 `rrVariability`（`watchbeat.rr-variability.v1`）：平均 RR、样本 SDRR、
+CV_RR = SDRR / 平均 RR × 100%、原序列相邻间期差值均方根 RMSSD_RR 和 pRR50；
+同时显示纳入/检测间期数、排除数、相邻对数和连接候选的间期数。详情页提供 50 ms 分箱
+RR 直方图及原序列相邻间期散点图。计算在分类之后进行，不改变检测和候选结果。
+
+当前 `normal` 只表示没有满足提前规则，不能确认正常窦性心搏，因此这些是描述性 RR 统计，
+不称为 SDNN、pNN50 或经过验证的临床 HRV。300–2000 ms 范围筛选不是伪迹校正。
+被排除间期保留断点，差值与散点图不跨断点配对；没有有效相邻对时相邻指标为空。
+
+本段扩展了前文“只显示四分位距”的历史实现；标准时长与 NN 输入的要求仍成立。
+完整医学边界、竞品对比和后续优先级见 [单导联 ECG 能力与竞品功能调研](SINGLE_LEAD_ECG_RESEARCH.md)。

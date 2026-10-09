@@ -124,3 +124,34 @@ JSON 仍可解码；拒判报告不生成该摘要。
 A refused report has `status: notAnalyzed`, a machine-readable `reason`, zero summary counts and an
 empty `beats` array. Optional unavailable fields may be omitted by JSON encoders. Schema changes are
 additive only within v1; a breaking field/meaning change requires schema v2.
+
+## RR variability in one recording
+
+An analyzed report may also contain `rrVariability`, with
+`metricsVersion: watchbeat.rr-variability.v1`. The optional field is absent from old schema-v1 JSON
+and refused reports. At least two included intervals and a finite positive recording duration are
+required. It is descriptive RR variability, not verified NN/clinical HRV.
+
+| Field | Meaning |
+| --- | --- |
+| `recordingDurationSeconds` | Input timeline span, not the sum of included intervals |
+| `detectedIntervalCount` | Number of adjacent detected R-peak intervals |
+| `includedIntervalCount` | Finite intervals in the inclusive 300–2,000 ms range |
+| `excludedIntervalCount` | Detected minus included count |
+| `candidateAdjacentIntervalCount` | Included intervals touching any premature candidate at either endpoint, counted once each |
+| `successivePairCount` | Pairs of included intervals adjacent in the original sequence; never bridge an excluded interval |
+| `meanRRMilliseconds` | Arithmetic mean of included intervals |
+| `sdrrMilliseconds` | Sample RR standard deviation, n−1 denominator; not SDNN |
+| `coefficientOfVariationPercent` | 100 × SDRR / mean RR; not the CV of instantaneous heart rate |
+| `successiveDifferenceRMSMilliseconds` | Square root of mean squared differences over original adjacent included pairs (RMSSD_RR) |
+| `successiveDifferenceOver50MillisecondsPercent` | 100 × number of original adjacent included pairs with absolute difference >50 ms / pair count (pRR50) |
+
+The final two fields are nil/omitted when no original adjacent pairs remain. The >50 ms comparison
+uses a 1e−9 ms tolerance to prevent floating-point timestamp subtraction from counting exactly
+50 ms as greater than 50. Candidates are retained in these raw RR values. Timing range checks are
+not artifact correction, noise detection or confirmation of sinus beats. Neither a high value nor
+zero candidates establishes good recovery or absence of arrhythmia.
+
+The UI's 50 ms histogram and adjacent RR pair scatter plot use the same range mask as these metrics.
+This additive computation runs after classification, does not change the algorithm version or the
+compact screening cache, and does not modify or interpolate original samples.

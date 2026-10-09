@@ -1,4 +1,5 @@
 import SwiftUI
+import WatchBeatModels
 
 public struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var storedLanguage = AppLanguage.system.rawValue
@@ -8,8 +9,12 @@ public struct SettingsView: View {
     @Environment(ECGAnnotationStore.self) private var annotations
     @State private var confirmsAnnotationClear = false
     @State private var showsAnnotationClearError = false
+    @State private var screeningCacheClearResult: Bool?
+    let listViewModel: ECGListViewModel
 
-    public init() {}
+    public init(listViewModel: ECGListViewModel) {
+        self.listViewModel = listViewModel
+    }
 
     public var body: some View {
         ZStack {
@@ -37,6 +42,61 @@ public struct SettingsView: View {
                     ))
                 }
 
+                Section(language.text("Privacy", "隐私")) {
+                    settingsRow(
+                        language.text("ECG processing stays on this device", "心电处理仅在本机完成"),
+                        systemImage: "iphone",
+                        tint: .blue
+                    )
+                    settingsRow(
+                        language.text("No analytics or health-data upload", "不含分析追踪或健康数据上传"),
+                        systemImage: "lock.shield.fill",
+                        tint: .green
+                    )
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        confirmsAnnotationClear = true
+                    } label: {
+                        Label(language.text("Clear all local annotations", "清除所有本地批注"), systemImage: "trash")
+                    }
+                    .disabled(annotations.annotations.isEmpty && annotations.exampleAnnotation.isEmpty && !annotations.hasLoadFailure)
+                } header: {
+                    Text(language.text("Feelings and notes", "感受与批注"))
+                } footer: {
+                    Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        Task { @MainActor in
+                            screeningCacheClearResult = await listViewModel.clearScreeningCache()
+                        }
+                    } label: {
+                        HStack {
+                            Label(language.text("Clear saved screening results", "清除已保存的筛查结果"), systemImage: "trash")
+                            Spacer(minLength: 8)
+                            if screeningCacheClearResult == true {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                    .accessibilityLabel(language.text("Cleared", "已清除"))
+                            } else if screeningCacheClearResult == false {
+                                Text(language.text("Unlock and retry", "请解锁后重试"))
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                } header: {
+                    Text(language.text("Screening results", "筛查结果"))
+                } footer: {
+                    Text(language.text(
+                        "Each ECG's screening result (candidate count only, no waveform, date or report) is kept on this iPhone so reopening WatchBeat only analyzes new recordings. Excluded from backup and recalculated automatically when the algorithm changes or after clearing.",
+                        "每条 ECG 的筛查结果（仅候选数，不含波形、日期或报告）保存在此 iPhone，重新打开时只分析新增记录。不参与备份；算法更新或清除后会自动重新计算。"
+                    ))
+                }
+
                 Section {
                     Toggle(
                         language.text("Model R-peak lines", "模型 R 峰竖线"),
@@ -58,30 +118,15 @@ public struct SettingsView: View {
                     ))
                 }
 
-                Section(language.text("Privacy", "隐私")) {
-                    Label(
-                        language.text("ECG processing stays on this device", "心电处理仅在本机完成"),
-                        systemImage: "iphone"
-                    )
-                    Label(
-                        language.text("No analytics or health-data upload", "不含分析追踪或健康数据上传"),
-                        systemImage: "lock.shield"
-                    )
-                    Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
-                        .font(.footnote).foregroundStyle(.secondary)
-                    Button(language.text("Clear all local annotations", "清除所有本地批注"), role: .destructive) {
-                        confirmsAnnotationClear = true
-                    }
-                    .disabled(annotations.annotations.isEmpty && annotations.exampleAnnotation.isEmpty && !annotations.hasLoadFailure)
-                }
-
-                Section(language.text("About", "关于")) {
+                Section {
                     LabeledContent(language.text("Version", "版本"), value: appVersion)
+                } header: {
+                    Text(language.text("About", "关于"))
+                } footer: {
                     Text(language.text(
                         "Research use only — not a medical diagnosis.",
                         "仅供研究使用，不构成医疗诊断。"
                     ))
-                    .foregroundStyle(.secondary)
                 }
             }
             .scrollContentBackground(.hidden)
@@ -99,6 +144,18 @@ public struct SettingsView: View {
             Button(language.text("OK", "好"), role: .cancel) {}
         } message: {
             Text(language.text("Unlock the device and try again.", "请解锁设备后重试。"))
+        }
+    }
+
+    private func settingsRow(_ title: String, systemImage: String, tint: Color) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: systemImage)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
         }
     }
 

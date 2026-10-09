@@ -12,6 +12,7 @@
 		A00000000000000000004005 /* ECGSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002005 /* ECGSignal.swift */; };
 		A00000000000000000004007 /* ECGSignalInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002007 /* ECGSignalInspector.swift */; };
 		A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002008 /* PrematureBeatAnalyzer.swift */; };
+		A0000000000000000000400C /* ECGRRVariability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200C /* ECGRRVariability.swift */; };
 		A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002009 /* ECGAnalysisReport.swift */; };
 		A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */; };
 		A0000000000000000000400B /* ECGQRSAmplitude.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200B /* ECGQRSAmplitude.swift */; };
@@ -65,6 +66,7 @@
 		A00000000000000000004017 /* ECGAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002017 /* ECGAnnotation.swift */; };
 		A00000000000000000004018 /* ECGAnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002018 /* ECGAnnotationStore.swift */; };
 		A00000000000000000004019 /* ECGRecordInsights.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002019 /* ECGRecordInsights.swift */; };
+		A0000000000000000000401A /* ECGScreeningCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000201A /* ECGScreeningCache.swift */; };
 		A00000000000000000004053 /* ECGRecordFilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002053 /* ECGRecordFilterView.swift */; };
 		A00000000000000000004069 /* ECGAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002069 /* ECGAnnotationView.swift */; };
 		A00000000000000000004086 /* ECGRecordInsightsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002086 /* ECGRecordInsightsTests.swift */; };
@@ -159,6 +161,7 @@
 		A00000000000000000002005 /* ECGSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignal.swift; sourceTree = "<group>"; };
 		A00000000000000000002007 /* ECGSignalInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignalInspector.swift; sourceTree = "<group>"; };
 		A00000000000000000002008 /* PrematureBeatAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrematureBeatAnalyzer.swift; sourceTree = "<group>"; };
+		A0000000000000000000200C /* ECGRRVariability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRRVariability.swift; sourceTree = "<group>"; };
 		A00000000000000000002009 /* ECGAnalysisReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnalysisReport.swift; sourceTree = "<group>"; };
 		A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientEnergyRPeakDetector.swift; sourceTree = "<group>"; };
 		A0000000000000000000200B /* ECGQRSAmplitude.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGQRSAmplitude.swift; sourceTree = "<group>"; };
@@ -207,6 +210,7 @@
 		A00000000000000000002017 /* ECGAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotation.swift; sourceTree = "<group>"; };
 		A00000000000000000002018 /* ECGAnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotationStore.swift; sourceTree = "<group>"; };
 		A00000000000000000002019 /* ECGRecordInsights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordInsights.swift; sourceTree = "<group>"; };
+		A0000000000000000000201A /* ECGScreeningCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGScreeningCache.swift; sourceTree = "<group>"; };
 		A00000000000000000002053 /* ECGRecordFilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordFilterView.swift; sourceTree = "<group>"; };
 		A00000000000000000002069 /* ECGAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnnotationView.swift; sourceTree = "<group>"; };
 		A00000000000000000002086 /* ECGRecordInsightsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRecordInsightsTests.swift; sourceTree = "<group>"; };
@@ -325,6 +329,7 @@
 				A00000000000000000002017 /* ECGAnnotation.swift */,
 				A00000000000000000002018 /* ECGAnnotationStore.swift */,
 				A00000000000000000002019 /* ECGRecordInsights.swift */,
+				A0000000000000000000201A /* ECGScreeningCache.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -421,6 +426,7 @@
 		A00000000000000000000011 /* Classification */ = {
 			isa = PBXGroup;
 			children = (
+				A0000000000000000000200C /* ECGRRVariability.swift */,
 				A00000000000000000002009 /* ECGAnalysisReport.swift */,
 				A00000000000000000002008 /* PrematureBeatAnalyzer.swift */,
 			);
@@ -633,6 +639,7 @@
 				A00000000000000000004005 /* ECGSignal.swift in Sources */,
 				A00000000000000000004007 /* ECGSignalInspector.swift in Sources */,
 				A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */,
+				A0000000000000000000400C /* ECGRRVariability.swift in Sources */,
 				A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */,
 				A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */,
 				A0000000000000000000400B /* ECGQRSAmplitude.swift in Sources */,
@@ -652,6 +659,7 @@
 				A00000000000000000004017 /* ECGAnnotation.swift in Sources */,
 				A00000000000000000004018 /* ECGAnnotationStore.swift in Sources */,
 				A00000000000000000004019 /* ECGRecordInsights.swift in Sources */,
+				A0000000000000000000401A /* ECGScreeningCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

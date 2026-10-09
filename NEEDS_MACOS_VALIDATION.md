@@ -33,6 +33,60 @@ Swift 功能测试和 UI 验收均未执行，不能据此声称 App 已编译�
    或读取失败时禁止覆盖，保存失败保留草稿并可重试。损坏文件不能被静默重建。
 9. 中英文切换、VoiceOver、最大文字尺寸、小屏及深浅色下的筛选、标签、编辑表单和图表。
 
+### 2026-10-07 界面布局统一（未编译）
+
+只改界面，不改模型、筛选逻辑和存储。`AppStyle.swift` 去掉半透明 `watchBeatCard()`，全 App
+统一使用不透明的 `watchBeatPanel()`，背景改为系统分组底色 + 顶部淡粉色。新增 `WatchBeatFlowLayout`
+（自定义 `Layout`，标签按内容宽度换行）、`WatchBeatChip`、`WatchBeatIconBadge`、
+`WatchBeatGroupHeader`、`WatchBeatFootnote`；`ECGListView.swift` 新增 `ECGEmptyStateCard`。
+
+- 概览：合并重复指标为 2×2 数值卡；分析覆盖改为分段条 + 图例；趋势用分段控件切换
+  “记录数（有候选为黄色堆叠）/平均心率”；免责声明改为页脚。
+- 数据：搜索框 + 筛选按钮 + 日期分段直接放在页面上，“结果与标签”改为底部弹窗，已选条件
+  以可移除标签显示；记录按月分组；行内显示日期、心率、Apple 分类与时长；有记录时示例移到底部。
+- 详情：“感受与批注”移到分析结果之后、导出之前；编辑页标签改为胶囊多选，已有标签可一键添加。
+- 设置分区重排并加图标；首次启动免责声明页重做，按钮固定在底部。
+
+- 波形：去掉左侧 40pt 电压刻度栏，波形占满卡片宽度；mV 刻度改为图内左上的小标签（不拦截测量点击），
+  最高刻度带 “mV” 单位。全段预览的视窗换算同步改为整宽。
+- 概览趋势：点击柱形／心率点选中当天（或当月），图下显示记录数、有候选记录数、平均心率和最多 5 条
+  记录（可直接打开详情），并可跳到“数据”页按该日期筛选；再次点击或点 ✕ 取消。用的是
+  `chartOverlay` + `ChartProxy.plotFrame` / `value(atX:as:)` 的点击手势，不影响页面上下滚动。
+
+重点看：`WatchBeatFlowLayout` 的 `Layout` 一致性与尾随闭包调用、`Chart` 的
+`foregroundStyle(by:)` 堆叠柱形和 `chartForegroundStyleScale`，以及 Form 中多个胶囊按钮
+是否能分别点击。
+
+### 2026-10-08 筛查结果本地缓存与趋势图分页（未编译）
+
+本轮实际执行 `python -m unittest Tools.Validation.tests.test_ios_project_configuration -v`（10/10 通过）
+和 `git diff --check`；Swift 未编译。
+
+- 新文件 `Models/ECGScreeningCache.swift`（已写入 `project.pbxproj`，WatchBeatModels target）：
+  `ECGScreeningCacheStorage` 协议、`ECGScreeningCacheFileStorage`、`ECGScreeningCacheIdentity`。
+  `ECGScreeningSummary` 新增 `Codable`；批注文件写入路径抽成共用的 `ECGProtectedFile`。
+- `ECGRepository` 新增 `screeningStorage` 注入、`cachedScreeningSummaries(for:)`、
+  `flushScreeningCache()`、`clearScreeningCache()`；`ECGListViewModel` 先一次性填入已缓存结果，
+  只对其余记录读取电压。`SettingsView` 改为 `init(listViewModel:)`，新增“清除已保存的筛查结果”。
+- 概览趋势图去掉 `chartOverlay` 点击层，改用 iOS 17 的 `chartXSelection` + `chartGesture`
+  (`SpatialTapGesture` → `proxy.selectXValue(at:)`)，并在超过 14 天／12 个月时启用
+  `chartScrollableAxes`、`chartXVisibleDomain`、`chartScrollPosition(x:)`、
+  `chartScrollTargetBehavior(.valueAligned(matching:majorAlignment:))`。
+- `ECGRepositoryStateTests` 新增 7 项：重启后不重读电压、仅新增记录未缓存、全量刷新删除已移除记录
+  （限量查询不删）、缓存暂不可读时不覆盖、清除、文件往返与算法变化失效、损坏文件视为空。
+
+重点验收：
+
+1. 首次启动逐条筛查；完全退出（上滑杀掉）再打开，概览“分析覆盖”立即完整、不再逐条转圈；
+   新录一条 ECG 后下拉刷新，只有新记录显示筛查进度。
+2. 在健康 App 删除一条 ECG 或关闭读取权限后刷新，统计中不再出现该记录。
+3. 设置清除后返回，下次启动重新逐条筛查；真机检查 `Library/Caches/WatchBeatScreening` 排除备份、
+   文件 protection 为 complete。
+4. 近 30 天／全部且记录跨度超过 14 天（或按月超过 12 个月）时：趋势图默认显示最近一页、纵轴固定、
+   左右滑动流畅且按天／月对齐、快速滑动按周／年对齐，横轴每页都有日期标签；上下滚动页面不被图表拦截。
+5. 滑动后点击柱形／心率点，选中的是手指下的那天（重点确认滚动偏移后坐标没有错位）；再次点击取消。
+   不足一页时图表与之前一样不可滑动，点击选择正常。切换日期范围后回到最近一页。
+
 如果 `xcode-select` 仍指向 Command Line Tools，先执行：
 
 ```bash
@@ -142,7 +196,9 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
      R–R、候选、峰谷电压差、测量、采样点数），可上拉到全屏，点“完成”关闭。
    - 波形卡片底部只显示一行颜色图例（R–R 间期、疑似早搏候选、峰谷电压差，按开关显示），窄屏时自动换成竖排。
    - 电压缩放 1×–4×：图表变高、R 峰之间的幅度差被放大，mV 刻度同步变密。
-   - “峰谷电压差”开关：每个 R 峰旁出现青色竖括号和数值（mV），与分析 JSON 中
+   - “峰谷电压差”开关同时控制纵轴电压数字（含 mV 单位）及每个 R 峰旁的青色竖括号和数值；
+     关闭后两者一起隐藏，重新开启后恢复。没有可计算峰谷差的记录也能用此按钮控制纵轴数值。
+     开关状态在重新进入详情后保持；缩放、滚动、网格与测量工具仍正常。峰谷差数值与分析 JSON 中
      `qrsPeakToTroughMillivolts` 一致；示例 ECG 正常搏约 1.27 mV，PVC 样搏约 1.72 mV。
    - “测量”开关：依次点击波形放置 A、B；拖动圆点时页面不滚动、其他位置仍可左右滑动；
      ‹ › 逐采样点移动、“吸附峰/谷”跳到 ±40 ms 内极值；读数为 B − A 的 Δt（ms）与 ΔV（mV），
@@ -169,3 +225,29 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
 
 记录设备型号/系统版本、Xcode/Swift 版本、提交号、测试通过数、分析耗时（中位数）和脱敏错误码。
 不要把心电波形、HealthKit 标识、精确采集时间、Apple 账号或设备标识写进仓库。
+
+### 2026 年 10 月 9 日 RR 变异统计与图表
+
+本轮在 Windows 实际执行 `python -m unittest discover -s Tools/Validation/tests -v`
+（48/48 通过）和 `git diff --check`。此结果验证项目配置与已有 Python 验证行为，不验证新 Swift
+计算或 SwiftUI 编译。当前主机没有 Swift/Xcode，新 Swift 测试未执行。
+
+新增 `Classification/ECGRRVariability.swift` 已注册到 ECGCore Xcode target；报告新增
+optional `rrVariability`，详情新增统计、RR 直方图和相邻间期散点图。算法分类、版本与缓存口径不变。
+
+Mac 上需执行：
+
+```bash
+bash Tools/run-core-tests.sh
+bash Tools/run-app-tests.sh
+```
+
+重点验收：
+
+1. 新 `ECGRRVariabilityTests` 的 7 项测试：手算序列、恒定间期、排除项断点、严格 >50 ms、
+   候选邻接计数、边界与非有限值、JSON 往返和旧 JSON 解码；同时运行原有 analyzer 和 App 导出测试。
+2. 内置示例中出现统计卡和候选影响提示；分析 JSON 含 `rrVariability`，不含 HealthKit UUID。
+3. 有排除间期时相邻对数只计原序列有效邻居；没有相邻对时显示不可用，不输出 0。
+4. 50 ms 分箱直方图计数和纳入间期数一致，散点数与相邻对数一致；极少间期和恒定间期可显示。
+5. iPhone 窄屏、大字号、中英切换、深浅色和折叠图表布局；无法分析时不显示统计。
+6. 不足 5 分钟的记录显示时长限制，不提供健康范围、压力评分或 AF/PAC/PVC 新诊断。

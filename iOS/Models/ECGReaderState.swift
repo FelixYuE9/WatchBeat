@@ -25,8 +25,9 @@ public enum ECGMeasurementOutcome: Equatable, Sendable {
 }
 
 /// Compact, non-diagnostic result used to annotate the metadata list after an on-device screen.
-/// The full voltage signal is deliberately not retained by this value.
-public enum ECGScreeningSummary: Equatable, Sendable {
+/// The full voltage signal is deliberately not retained by this value. `ECGScreeningCacheStorage`
+/// persists it so a relaunch does not have to read every waveform again.
+public enum ECGScreeningSummary: Codable, Equatable, Sendable {
     case noPrematureCandidates
     case prematureCandidates(count: Int)
     case notAnalyzed

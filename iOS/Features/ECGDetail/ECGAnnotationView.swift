@@ -15,32 +15,86 @@ struct ECGAnnotationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                Label(language.text("How did you feel during this recording?", "记录期间感觉如何？"), systemImage: "text.bubble")
-                    .font(.headline)
-                Spacer()
-                Button(language.text(annotation.isEmpty ? "Add" : "Edit", annotation.isEmpty ? "添加" : "编辑")) {
-                    showsEditor = true
+            HStack(alignment: .firstTextBaseline) {
+                WatchBeatSectionTitle(language.text("Feelings and notes", "感受与批注"), systemImage: "text.bubble")
+                Spacer(minLength: 8)
+                if !annotation.isEmpty, !(store.hasLoadFailure && !isExample) {
+                    Button {
+                        showsEditor = true
+                    } label: {
+                        Label(language.text("Edit", "编辑"), systemImage: "pencil")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.borderless)
                 }
             }
+
             if store.hasLoadFailure && !isExample {
-                Text(language.text("Saved annotations could not be read. Retry before editing.", "无法读取已保存的批注，请重试后再编辑。"))
-                    .font(.caption).foregroundStyle(.orange)
-                Button(language.text("Retry", "重试")) { store.reload() }
+                HStack {
+                    Text(language.text(
+                        "Saved annotations could not be read. Retry before editing.",
+                        "无法读取已保存的批注，请重试后再编辑。"
+                    ))
+                    .font(.subheadline)
+                    .foregroundStyle(.orange)
+                    Spacer(minLength: 8)
+                    Button(language.text("Retry", "重试")) { store.reload() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                }
             } else if annotation.isEmpty {
-                Text(language.text("Add symptoms, your own tags or a note to remember the context.", "选择当时的症状、添加自己的标签或文字批注，方便以后回顾。"))
-                    .font(.subheadline).foregroundStyle(.secondary)
+                Button {
+                    showsEditor = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.pink)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(language.text("How did you feel during this recording?", "记录期间感觉如何？"))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                            Text(language.text(
+                                "Add symptoms, your own tags or a note to remember the context.",
+                                "选择当时的症状、添加自己的标签或文字批注，方便以后回顾。"
+                            ))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.pink.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             } else {
                 ECGAnnotationTags(tags: annotation.tags)
                 if !annotation.note.isEmpty {
-                    Text(annotation.note).font(.subheadline).lineLimit(4)
+                    Text(annotation.note)
+                        .font(.subheadline)
+                        .lineLimit(6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.watchBeatInset, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
             }
-            Text(language.text(
-                isExample ? "Example annotations last only for this app session." : "Your notes are saved only on this iPhone. You can clear them in Settings.",
-                isExample ? "示例批注仅保留到本次应用关闭。" : "你的批注仅保存在此 iPhone，可在设置中清除。"
-            ))
-            .font(.caption).foregroundStyle(.secondary)
+
+            Label(
+                language.text(
+                    isExample
+                        ? "Example annotations last only for this app session."
+                        : "Saved only on this iPhone. You can clear them in Settings.",
+                    isExample ? "示例批注仅保留到本次应用关闭。" : "仅保存在此 iPhone，可在设置中清除。"
+                ),
+                systemImage: isExample ? "clock" : "lock"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .watchBeatPanel()
         .sheet(isPresented: $showsEditor) {
@@ -56,22 +110,24 @@ struct ECGAnnotationView: View {
     }
 }
 
+/// Self-reported feelings and custom tags as wrapping chips.
 struct ECGAnnotationTags: View {
     let tags: [ECGRecordTag]
     @Environment(\.appLanguage) private var language
 
     var body: some View {
         if !tags.isEmpty {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110))], alignment: .leading, spacing: 6) {
+            WatchBeatFlowLayout {
                 ForEach(tags) { tag in
-                    Text(tag.title(in: language))
-                        .font(.caption)
-                        .padding(.horizontal, 9).padding(.vertical, 5)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.pink.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
+                    WatchBeatChip(title: tag.title(in: language), systemImage: chipSymbol(tag))
                 }
             }
         }
+    }
+
+    private func chipSymbol(_ tag: ECGRecordTag) -> String? {
+        if case .custom = tag { return "number" }
+        return nil
     }
 }
 
@@ -97,7 +153,7 @@ private struct ECGAnnotationEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 125))], spacing: 8) {
+                    WatchBeatFlowLayout(spacing: 8, lineSpacing: 8) {
                         ForEach(ECGFeeling.allCases) { feeling in
                             ECGSelectableTag(
                                 title: ECGRecordTag.feeling(feeling).title(in: language),
@@ -105,48 +161,88 @@ private struct ECGAnnotationEditor: View {
                             ) { draft.toggle(feeling) }
                         }
                     }
+                    .padding(.vertical, 4)
                 } header: {
                     Text(language.text("How did you feel during this recording?", "记录期间感觉如何？"))
                 } footer: {
                     Text(language.text("Choose all that apply, or leave this unanswered.", "可多选，也可以不填写。"))
                 }
+
                 Section {
-                    ForEach(draft.customTags, id: \.self) { tag in
-                        HStack {
-                            Text(tag)
-                            Spacer()
-                            Button(role: .destructive) { draft.customTags.removeAll { $0 == tag } } label: {
-                                Image(systemName: "minus.circle")
+                    if !draft.customTags.isEmpty {
+                        WatchBeatFlowLayout(spacing: 8, lineSpacing: 8) {
+                            ForEach(draft.customTags, id: \.self) { tag in
+                                Button {
+                                    draft.customTags.removeAll { $0 == tag }
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Text(tag)
+                                        Image(systemName: "xmark")
+                                            .font(.caption2.weight(.bold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .font(.subheadline)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 7)
+                                    .background(Color.pink.opacity(0.12), in: Capsule())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(language.text("Remove \(tag)", "移除 \(tag)"))
                             }
-                            .accessibilityLabel(language.text("Remove \(tag)", "移除 \(tag)"))
                         }
+                        .padding(.vertical, 4)
                     }
+
                     HStack {
                         TextField(language.text("For example: after coffee", "例如：咖啡后、运动后"), text: $newTag)
                             .onSubmit { addTag() }
                         Button(language.text("Add", "添加")) { addTag() }
+                            .buttonStyle(.borderless)
                             .disabled(newTag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                     if showsTagError {
                         Text(language.text("This tag is empty or already selected.", "标签为空或已经添加。"))
                             .font(.caption).foregroundStyle(.orange)
                     }
-                    if !availableTags.isEmpty {
-                        Menu(language.text("Reuse a saved tag", "使用已有标签")) {
-                            ForEach(availableTags, id: \.self) { tag in
-                                Button(tag) { draft.addCustomTag(tag) }
+
+                    if !suggestedTags.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(language.text("Saved tags", "已有标签"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            WatchBeatFlowLayout(spacing: 8, lineSpacing: 8) {
+                                ForEach(suggestedTags, id: \.self) { tag in
+                                    Button {
+                                        draft.addCustomTag(tag)
+                                    } label: {
+                                        Label(tag, systemImage: "plus")
+                                            .font(.subheadline)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 7)
+                                            .background(Color.watchBeatInset, in: Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(language.text("Add saved tag \(tag)", "添加已有标签 \(tag)"))
+                                }
                             }
                         }
+                        .padding(.vertical, 4)
                     }
-                } header: { Text(language.text("Custom tags", "自定义标签")) }
+                } header: {
+                    Text(language.text("Custom tags", "自定义标签"))
+                }
+
                 Section(language.text("Note", "文字批注")) {
-                    TextEditor(text: $draft.note).frame(minHeight: 110)
+                    TextEditor(text: $draft.note)
+                        .frame(minHeight: 110)
                         .accessibilityLabel(language.text("Recording note", "记录批注"))
                 }
+
                 Section {
                     Button(language.text("Clear this annotation", "清空这条批注"), role: .destructive) {
                         draft = ECGAnnotation()
                     }
+                    .disabled(draft.isEmpty)
                 } footer: {
                     Text(language.text("Changes, including clearing, take effect when you tap Save.", "点击“保存”后，修改或清空才会生效。"))
                 }
@@ -167,6 +263,7 @@ private struct ECGAnnotationEditor: View {
                         }
                         if save(draft) { dismiss() } else { showsSaveError = true }
                     }
+                    .fontWeight(.semibold)
                     .disabled(!canSave)
                 }
             }
@@ -176,6 +273,12 @@ private struct ECGAnnotationEditor: View {
                 Text(language.text("Your edits are still here. Unlock the device and try saving again.", "修改仍保留在此页面，请解锁设备后重试保存。"))
             }
         }
+    }
+
+    /// Saved custom tags from other records that this draft does not have yet.
+    private var suggestedTags: [String] {
+        let current = Set(draft.customTags.map(ECGAnnotation.tagKey))
+        return availableTags.filter { !current.contains(ECGAnnotation.tagKey($0)) }
     }
 
     private func addTag() {

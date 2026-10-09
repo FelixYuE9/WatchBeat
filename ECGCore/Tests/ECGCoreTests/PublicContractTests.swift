@@ -39,6 +39,10 @@ import Testing
         )
         #expect(abs(candidate.timeSeconds - 6.2) < 0.04)
         #expect(abs((candidate.prematurityRatio ?? 0) - 0.7) < 0.06)
+        let variability = try #require(report.rrVariability)
+        #expect(variability.includedIntervalCount == report.beats.count - 1)
+        #expect(variability.candidateAdjacentIntervalCount == 2)
+        #expect(variability.coefficientOfVariationPercent > 0)
         let metrics = try #require(report.rhythmMetrics)
         #expect(metrics.metricsVersion == ECGRhythmMetrics.currentVersion)
         #expect(metrics.plausibleRRIntervalCount == report.beats.count - 1)
@@ -78,6 +82,7 @@ import Testing
         #expect(report.status == .notAnalyzed)
         #expect(report.reason == .missingOrNonFiniteSamples)
         #expect(report.rhythmMetrics == nil)
+        #expect(report.rrVariability == nil)
         #expect(report.beats.isEmpty)
     }
 
