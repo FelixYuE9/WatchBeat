@@ -103,6 +103,9 @@ public struct PrematureBeatAnalyzer: ECGAnalyzing, Sendable {
             ),
             rhythmMetrics: rhythmMetrics,
             recordingDescriptors: recordingDescriptors,
+            rrVariability: ECGRRVariabilityMetrics.measure(
+                beats: result.beats, recordingDurationSeconds: duration
+            ),
             beats: result.beats
         )
     }

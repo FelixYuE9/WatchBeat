@@ -1,3 +1,4 @@
+import Charts
 import ECGCore
 import Foundation
 import SwiftUI
@@ -23,6 +24,9 @@ struct ECGAnalysisResultView: View {
                 }
                 if report.rhythmMetrics != nil || report.recordingDescriptors != nil {
                     rhythmCard
+                }
+                if let metrics = report.rrVariability {
+                    ECGRRVariabilityCard(metrics: metrics, beats: report.beats)
                 }
             case .notAnalyzed:
                 refusedCard
@@ -355,6 +359,161 @@ enum ECGAnalysisReasonText {
                 "Detected peaks did not provide enough plausible RR intervals for classification.",
                 "检测到的峰没有提供足够可信的 RR 间期用于分类。"
             )
+        }
+    }
+}
+
+/// RR metrics and plots share the same range mask from ECGCore, without inventing NN intervals.
+private struct ECGRRVariabilityCard: View {
+    let metrics: ECGRRVariabilityMetrics
+    let beats: [ECGAnalyzedBeat]
+    @Environment(\.appLanguage) private var language
+    @State private var showsPlots = false
+
+    private struct HistogramBin: Identifiable {
+        let lower: Int
+        let count: Int
+        var id: Int { lower }
+    }
+
+    private struct RRPair: Identifiable {
+        let id: Int
+        let previous: Double
+        let current: Double
+    }
+
+    private var intervals: [Double?] { ECGRRVariabilityMetrics.plausibleIntervals(from: beats) }
+
+    private var histogram: [HistogramBin] {
+        // Avoid splitting a constant RR at a bin edge due only to timestamp roundoff.
+        let counts = Dictionary(grouping: intervals.compactMap { $0 }) { Int(floor(($0 + 1e-9) / 50)) * 50 }
+        return counts.keys.sorted().map { HistogramBin(lower: $0, count: counts[$0]?.count ?? 0) }
+    }
+
+    private var pairs: [RRPair] {
+        let values = intervals
+        guard values.count > 1 else { return [] }
+        return (1..<values.count).compactMap { index in
+            guard let previous = values[index - 1], let current = values[index] else { return nil }
+            return RRPair(id: index, previous: previous, current: current)
+        }
+    }
+
+    private var plotDomain: ClosedRange<Double> {
+        let values = intervals.compactMap { $0 }
+        return max(0, (values.min() ?? 300) - 50)...((values.max() ?? 2_000) + 50)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            WatchBeatSectionTitle(
+                language.text("R–R variability", "R–R 变异统计"),
+                systemImage: "chart.xyaxis.line"
+            )
+            ECGInfoRow(language.text("Mean R–R", "平均 R–R"), String(format: "%.1f ms", metrics.meanRRMilliseconds))
+            ECGInfoRow(language.text("R–R standard deviation (SDRR)", "R–R 标准差 SDRR"), String(format: "%.1f ms", metrics.sdrrMilliseconds))
+            ECGInfoRow(language.text("R–R coefficient of variation", "R–R 变异系数 CV"), String(format: "%.1f%%", metrics.coefficientOfVariationPercent))
+            ECGInfoRow(
+                language.text("Successive difference RMS (RR)", "相邻差值均方根 RMSSD_RR"),
+                metricText(metrics.successiveDifferenceRMSMilliseconds, format: "%.1f ms")
+            )
+            ECGInfoRow(
+                language.text("Successive differences > 50 ms", "相邻差值 > 50 ms 的比例 pRR50"),
+                metricText(metrics.successiveDifferenceOver50MillisecondsPercent, format: "%.1f%%")
+            )
+            Divider()
+            ECGInfoRow(
+                language.text("Recording length", "记录时长"),
+                String(format: "%.1f s", metrics.recordingDurationSeconds)
+            )
+            ECGInfoRow(
+                language.text("Included / detected R–R", "纳入 / 检测间期数"),
+                "\(metrics.includedIntervalCount) / \(metrics.detectedIntervalCount)"
+            )
+            ECGInfoRow(language.text("Excluded intervals", "排除间期数"), "\(metrics.excludedIntervalCount)")
+            ECGInfoRow(language.text("Original adjacent pairs", "原序列相邻间期对数"), "\(metrics.successivePairCount)")
+            if metrics.candidateAdjacentIntervalCount > 0 {
+                Text(language.text(
+                    "\(metrics.candidateAdjacentIntervalCount) included interval(s) touch a premature candidate. This can raise variability and does not mean better recovery.",
+                    "纳入间期中有 \(metrics.candidateAdjacentIntervalCount) 个连接疑似早搏候选，可能抬高变异数值，不表示恢复更好。"
+                ))
+                .font(.caption)
+                .foregroundStyle(Color.watchBeatAttentionText)
+            }
+            Text(language.text(
+                "Timing range: 300–2,000 ms; no artifact correction or confirmation of normal sinus beats. CV = SDRR / mean RR × 100%. These describe this recording, not clinical SDNN/HRV, a stress score or a diagnosis.",
+                "纳入 300–2000 ms 的间期，未校正伪迹或确认正常窦性心搏。CV = SDRR / 平均 RR × 100%。仅描述本次记录，不等于临床 SDNN/HRV、压力评分或诊断。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            if metrics.recordingDurationSeconds < 300 {
+                Text(language.text(
+                    "Under 5 minutes: do not compare with standard 5-minute or 24-hour HRV reference values.",
+                    "不足 5 分钟：不能与标准 5 分钟或 24 小时 HRV 参考值直接比较。"
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            DisclosureGroup(isExpanded: $showsPlots) {
+                plots.padding(.top, 10)
+            } label: {
+                Text(language.text("R–R distribution and adjacent-pair plot", "R–R 分布与相邻间期散点图"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+            }
+        }
+        .watchBeatPanel()
+    }
+
+    private func metricText(_ value: Double?, format: String) -> String {
+        value.map { String(format: format, $0) }
+            ?? language.text("No adjacent pairs", "无相邻间期对")
+    }
+
+    private var plots: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(language.text("R–R histogram · 50 ms bins", "R–R 直方图 · 每格 50 ms"))
+                .font(.caption.weight(.semibold))
+            Chart(histogram) { bin in
+                BarMark(
+                    xStart: .value("R–R (ms)", bin.lower),
+                    xEnd: .value("R–R (ms)", bin.lower + 50),
+                    y: .value(language.text("Intervals", "间期数"), bin.count)
+                )
+                .foregroundStyle(Color.blue.opacity(0.7))
+            }
+            .chartXAxisLabel("R–R (ms)")
+            .chartYAxisLabel(language.text("Count", "数量"))
+            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
+            .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
+            .frame(height: 150)
+            .accessibilityLabel(language.text("Distribution of included R–R intervals", "纳入间期的 R–R 分布"))
+
+            if !pairs.isEmpty {
+                Text(language.text("Poincaré · original adjacent R–R pairs", "Poincaré 散点图 · 原序列相邻 R–R"))
+                    .font(.caption.weight(.semibold))
+                Chart(pairs) { pair in
+                    PointMark(
+                        x: .value("RR(n) (ms)", pair.previous),
+                        y: .value("RR(n+1) (ms)", pair.current)
+                    )
+                    .foregroundStyle(Color.blue.opacity(0.7))
+                }
+                .chartXScale(domain: plotDomain)
+                .chartYScale(domain: plotDomain)
+                .chartXAxisLabel("RR(n) (ms)")
+                .chartYAxisLabel("RR(n+1) (ms)")
+                .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
+                .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
+                .frame(height: 170)
+                .accessibilityLabel(language.text("Original adjacent R–R interval pairs", "原序列相邻 R–R 间期对"))
+            }
+            Text(language.text(
+                "Excluded intervals leave gaps; adjacent-pair statistics and plots never join across them. Plot shape alone cannot identify AFib or a disease.",
+                "排除间期保留断点，相邻统计和散点图不会跨断点配对。图形形状本身不能识别房颤或疾病。"
+            ))
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
     }
 }

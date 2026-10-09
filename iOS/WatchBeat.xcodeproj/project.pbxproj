@@ -12,6 +12,7 @@
 		A00000000000000000004005 /* ECGSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002005 /* ECGSignal.swift */; };
 		A00000000000000000004007 /* ECGSignalInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002007 /* ECGSignalInspector.swift */; };
 		A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002008 /* PrematureBeatAnalyzer.swift */; };
+		A0000000000000000000400C /* ECGRRVariability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200C /* ECGRRVariability.swift */; };
 		A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000002009 /* ECGAnalysisReport.swift */; };
 		A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */; };
 		A0000000000000000000400B /* ECGQRSAmplitude.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000200B /* ECGQRSAmplitude.swift */; };
@@ -160,6 +161,7 @@
 		A00000000000000000002005 /* ECGSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignal.swift; sourceTree = "<group>"; };
 		A00000000000000000002007 /* ECGSignalInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGSignalInspector.swift; sourceTree = "<group>"; };
 		A00000000000000000002008 /* PrematureBeatAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrematureBeatAnalyzer.swift; sourceTree = "<group>"; };
+		A0000000000000000000200C /* ECGRRVariability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGRRVariability.swift; sourceTree = "<group>"; };
 		A00000000000000000002009 /* ECGAnalysisReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGAnalysisReport.swift; sourceTree = "<group>"; };
 		A0000000000000000000200A /* GradientEnergyRPeakDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientEnergyRPeakDetector.swift; sourceTree = "<group>"; };
 		A0000000000000000000200B /* ECGQRSAmplitude.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGQRSAmplitude.swift; sourceTree = "<group>"; };
@@ -424,6 +426,7 @@
 		A00000000000000000000011 /* Classification */ = {
 			isa = PBXGroup;
 			children = (
+				A0000000000000000000200C /* ECGRRVariability.swift */,
 				A00000000000000000002009 /* ECGAnalysisReport.swift */,
 				A00000000000000000002008 /* PrematureBeatAnalyzer.swift */,
 			);
@@ -636,6 +639,7 @@
 				A00000000000000000004005 /* ECGSignal.swift in Sources */,
 				A00000000000000000004007 /* ECGSignalInspector.swift in Sources */,
 				A00000000000000000004008 /* PrematureBeatAnalyzer.swift in Sources */,
+				A0000000000000000000400C /* ECGRRVariability.swift in Sources */,
 				A00000000000000000004009 /* ECGAnalysisReport.swift in Sources */,
 				A0000000000000000000400A /* GradientEnergyRPeakDetector.swift in Sources */,
 				A0000000000000000000400B /* ECGQRSAmplitude.swift in Sources */,

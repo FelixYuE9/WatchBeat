@@ -219,6 +219,8 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
     public let rhythmMetrics: ECGRhythmMetrics?
     /// Additive like `rhythmMetrics`; absent from refusals and older JSON.
     public let recordingDescriptors: ECGRecordingDescriptors?
+    /// Raw RR variability; absent from refusals and older JSON. Never labels RR as NN.
+    public let rrVariability: ECGRRVariabilityMetrics?
     public let beats: [ECGAnalyzedBeat]
 
     public init(
@@ -235,6 +237,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         summary: ECGAnalysisSummary,
         rhythmMetrics: ECGRhythmMetrics? = nil,
         recordingDescriptors: ECGRecordingDescriptors? = nil,
+        rrVariability: ECGRRVariabilityMetrics? = nil,
         beats: [ECGAnalyzedBeat]
     ) {
         self.schemaVersion = schemaVersion
@@ -250,6 +253,7 @@ public struct ECGAnalysisReport: Codable, Equatable, Sendable {
         self.summary = summary
         self.rhythmMetrics = rhythmMetrics
         self.recordingDescriptors = recordingDescriptors
+        self.rrVariability = rrVariability
         self.beats = beats
     }
 }

@@ -91,6 +91,12 @@ end to end; those claims remain governed by the later milestones and recorded ru
   relaunch only reads voltages of new records; page the overview trend charts (14 days / 12 months).
 - [ ] Compile and run the 2026-10-08 screening cache and trend paging on macOS/Xcode and a real iPhone.
 
+- [x] 2026-10-09: additive raw RR variability (mean, sample SDRR, CV_RR, RMSSD_RR, pRR50),
+  counts and candidate influence, RR histogram and adjacent-pair scatter; no classification change.
+- [x] 2026-10-09: single-lead capability and competitor report in Docs/SINGLE_LEAD_ECG_RESEARCH.md.
+- [ ] Run new RR arithmetic/compatibility tests and verify charts on macOS/Xcode and iPhone.
+- [ ] Prioritize local signal quality and premature-beat recall before adding diagnostic labels.
+
 ## Milestone 2.5 — single-format premature-beat vertical slice
 
 This takes priority over further detector voting, parameter sweeps and PAC/PVC subtype work.

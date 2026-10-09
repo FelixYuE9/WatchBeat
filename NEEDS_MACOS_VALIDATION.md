@@ -225,3 +225,29 @@ xcodebuild -project WatchBeat.xcodeproj -scheme WatchBeatApp \
 
 记录设备型号/系统版本、Xcode/Swift 版本、提交号、测试通过数、分析耗时（中位数）和脱敏错误码。
 不要把心电波形、HealthKit 标识、精确采集时间、Apple 账号或设备标识写进仓库。
+
+### 2026 年 10 月 9 日 RR 变异统计与图表
+
+本轮在 Windows 实际执行 `python -m unittest discover -s Tools/Validation/tests -v`
+（48/48 通过）和 `git diff --check`。此结果验证项目配置与已有 Python 验证行为，不验证新 Swift
+计算或 SwiftUI 编译。当前主机没有 Swift/Xcode，新 Swift 测试未执行。
+
+新增 `Classification/ECGRRVariability.swift` 已注册到 ECGCore Xcode target；报告新增
+optional `rrVariability`，详情新增统计、RR 直方图和相邻间期散点图。算法分类、版本与缓存口径不变。
+
+Mac 上需执行：
+
+```bash
+bash Tools/run-core-tests.sh
+bash Tools/run-app-tests.sh
+```
+
+重点验收：
+
+1. 新 `ECGRRVariabilityTests` 的 7 项测试：手算序列、恒定间期、排除项断点、严格 >50 ms、
+   候选邻接计数、边界与非有限值、JSON 往返和旧 JSON 解码；同时运行原有 analyzer 和 App 导出测试。
+2. 内置示例中出现统计卡和候选影响提示；分析 JSON 含 `rrVariability`，不含 HealthKit UUID。
+3. 有排除间期时相邻对数只计原序列有效邻居；没有相邻对时显示不可用，不输出 0。
+4. 50 ms 分箱直方图计数和纳入间期数一致，散点数与相邻对数一致；极少间期和恒定间期可显示。
+5. iPhone 窄屏、大字号、中英切换、深浅色和折叠图表布局；无法分析时不显示统计。
+6. 不足 5 分钟的记录显示时长限制，不提供健康范围、压力评分或 AF/PAC/PVC 新诊断。
