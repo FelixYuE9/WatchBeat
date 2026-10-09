@@ -142,6 +142,7 @@ class IOSProjectConfigurationTests(unittest.TestCase):
             "SettingsView.swift",
             "ECGAnnotation.swift",
             "ECGAnnotationStore.swift",
+            "ECGScreeningCache.swift",
             "ECGRecordInsights.swift",
             "ECGRecordFilterView.swift",
             "ECGAnnotationView.swift",

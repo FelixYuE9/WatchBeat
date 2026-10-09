@@ -77,3 +77,39 @@ public actor FakeECGReader: ECGHealthKitReading {
         voltageCallCount
     }
 }
+
+/// In-memory `ECGScreeningCacheStorage`; one instance shared by two repositories stands in for a
+/// relaunch.
+public final class FakeScreeningCacheStorage: ECGScreeningCacheStorage, @unchecked Sendable {
+    private let lock = NSLock()
+    private var summaries: [UUID: ECGScreeningSummary]
+    private var failsRead: Bool
+    private var saves = 0
+
+    public init(summaries: [UUID: ECGScreeningSummary] = [:], failsRead: Bool = false) {
+        self.summaries = summaries
+        self.failsRead = failsRead
+    }
+
+    public var stored: [UUID: ECGScreeningSummary] { lock.withLock { summaries } }
+    public var saveCount: Int { lock.withLock { saves } }
+    public func allowReads() { lock.withLock { failsRead = false } }
+
+    public func load() throws -> [UUID: ECGScreeningSummary] {
+        try lock.withLock {
+            if failsRead { throw FakeReaderError(code: "cache-locked") }
+            return summaries
+        }
+    }
+
+    public func save(_ summaries: [UUID: ECGScreeningSummary]) throws {
+        lock.withLock {
+            saves += 1
+            self.summaries = summaries
+        }
+    }
+
+    public func clear() throws {
+        lock.withLock { summaries = [:] }
+    }
+}

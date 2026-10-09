@@ -45,7 +45,7 @@ public struct AppHomeView: View {
             .tag(AppTab.records)
 
             NavigationStack {
-                SettingsView()
+                SettingsView(listViewModel: container.listViewModel)
             }
             .tabItem {
                 Label(language.text("Settings", "设置"), systemImage: "gearshape.fill")

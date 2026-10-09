@@ -12,6 +12,14 @@ public struct OverviewView: View {
     @State private var trendMetric = TrendMetric.recordings
     /// Start of the day or month the person tapped in the trend chart.
     @State private var selectedBucketDate: Date?
+    /// Raw x value under the latest tap; turned into `selectedBucketDate` and reset.
+    @State private var tappedTrendDate: Date?
+    /// Leading edge of the visible trend page; `nil` shows the most recent page.
+    @State private var trendScrollStart: Date?
+
+    /// The most buckets one trend page shows before the chart scrolls sideways, like the waveform.
+    private static let trendDaysPerPage = 14
+    private static let trendMonthsPerPage = 12
 
     private enum TrendMetric: Hashable {
         case recordings
@@ -206,7 +214,10 @@ public struct OverviewView: View {
             .padding(.top, 10)
 
             ECGDateRangePicker(filter: $period)
-                .onChange(of: period) { _, _ in selectedBucketDate = nil }
+                .onChange(of: period) { _, _ in
+                    selectedBucketDate = nil
+                    trendScrollStart = nil
+                }
 
             if summary.recordCount == 0 {
                 ECGEmptyStateCard(
@@ -406,6 +417,7 @@ public struct OverviewView: View {
 
     private func trendsCard(_ summary: ECGRecordInsights) -> some View {
         let selected = summary.buckets.first { $0.date == selectedBucketDate }
+        let window = trendWindow(for: summary.buckets)
         return VStack(alignment: .leading, spacing: 12) {
             WatchBeatSectionTitle(language.text("Trends", "趋势"), systemImage: "chart.bar.xaxis")
 
@@ -420,24 +432,18 @@ public struct OverviewView: View {
 
             switch trendMetric {
             case .recordings:
-                recordingsChart(summary)
+                recordingsChart(summary, window: window)
             case .heartRate:
-                heartRateChart(summary)
+                heartRateChart(summary, window: window)
             }
 
             if let selected {
                 Divider()
                 bucketDetail(selected)
             } else {
-                Label(
-                    language.text(
-                        groupsByMonth ? "Tap a month in the chart for details." : "Tap a day in the chart for details.",
-                        groupsByMonth ? "点击图表中的月份查看当月详情。" : "点击图表中的日期查看当天详情。"
-                    ),
-                    systemImage: "hand.tap"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Label(trendHint(isScrollable: window != nil), systemImage: "hand.tap")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Text(language.text(
@@ -448,12 +454,36 @@ public struct OverviewView: View {
             .foregroundStyle(.secondary)
         }
         .watchBeatPanel()
+        .onChange(of: tappedTrendDate) { _, date in
+            guard let date else { return }
+            tappedTrendDate = nil
+            selectBucket(near: date, in: summary.buckets)
+        }
     }
 
-    private func recordingsChart(_ summary: ECGRecordInsights) -> some View {
+    private func trendHint(isScrollable: Bool) -> String {
+        switch (isScrollable, groupsByMonth) {
+        case (false, false):
+            return language.text("Tap a day in the chart for details.", "点击图表中的日期查看当天详情。")
+        case (false, true):
+            return language.text("Tap a month in the chart for details.", "点击图表中的月份查看当月详情。")
+        case (true, false):
+            return language.text(
+                "Swipe the chart for earlier days; tap a day for details.",
+                "左右滑动图表查看更早的日期，点击某天查看详情。"
+            )
+        case (true, true):
+            return language.text(
+                "Swipe the chart for earlier months; tap a month for details.",
+                "左右滑动图表查看更早的月份，点击某月查看详情。"
+            )
+        }
+    }
+
+    private func recordingsChart(_ summary: ECGRecordInsights, window: TrendWindow?) -> some View {
         let flagged = language.text("With candidates", "有疑似候选")
         let other = language.text("Other recordings", "其他记录")
-        return Chart {
+        let chart = Chart {
             ForEach(summary.buckets) { bucket in
                 BarMark(
                     x: .value(language.text("Date", "日期"), bucket.date, unit: bucketUnit),
@@ -474,18 +504,16 @@ public struct OverviewView: View {
             range: [Color.pink.opacity(0.55), Color.watchBeatAttention]
         )
         .chartLegend(position: .bottom, alignment: .leading)
-        .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
+        .chartXAxis { AxisMarks(values: trendXAxisValues(window)) }
         .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
-        .chartOverlay { proxy in
-            bucketTapTarget(proxy: proxy, buckets: summary.buckets)
-        }
-        .frame(height: 170)
+        return scrollableTrend(chart, window: window)
+            .frame(height: 170)
     }
 
     @ViewBuilder
-    private func heartRateChart(_ summary: ECGRecordInsights) -> some View {
+    private func heartRateChart(_ summary: ECGRecordInsights, window: TrendWindow?) -> some View {
         if summary.heartRateRecordCount > 0 {
-            Chart {
+            let chart = Chart {
                 ForEach(summary.buckets) { bucket in
                     if let heartRate = bucket.averageHeartRateBPM {
                         LineMark(
@@ -509,12 +537,10 @@ public struct OverviewView: View {
                 }
             }
             .chartYScale(domain: .automatic(includesZero: false))
-            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
+            .chartXAxis { AxisMarks(values: trendXAxisValues(window)) }
             .chartYAxis { AxisMarks(values: .automatic(desiredCount: 3)) }
-            .chartOverlay { proxy in
-                bucketTapTarget(proxy: proxy, buckets: summary.buckets)
-            }
-            .frame(height: 170)
+            scrollableTrend(chart, window: window)
+                .frame(height: 170)
             Text(language.text(
                 "Mean of \(summary.heartRateRecordCount) ECG record(s) with a valid Apple average heart rate.",
                 "均值来自 \(summary.heartRateRecordCount) 条具有有效 Apple 平均心率的 ECG 记录。"
@@ -529,6 +555,70 @@ public struct OverviewView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, minHeight: 120)
+        }
+    }
+
+    // MARK: Trend paging
+
+    /// The scrollable x range shared by both trend charts.
+    private struct TrendWindow {
+        let domain: ClosedRange<Date>
+        /// Start of the most recent page, shown first.
+        let latestPageStart: Date
+        var visibleLength: TimeInterval { domain.upperBound.timeIntervalSince(latestPageStart) }
+    }
+
+    /// `nil` when every bucket fits on one page; the chart then keeps its automatic domain.
+    private func trendWindow(for buckets: [ECGInsightBucket]) -> TrendWindow? {
+        let calendar = Calendar.current
+        let pageSize = groupsByMonth ? Self.trendMonthsPerPage : Self.trendDaysPerPage
+        guard let first = buckets.first?.date,
+              let last = buckets.last?.date,
+              let end = calendar.date(byAdding: bucketUnit, value: 1, to: last),
+              let pageStart = calendar.date(byAdding: bucketUnit, value: -pageSize, to: end),
+              pageStart > first else { return nil }
+        return TrendWindow(domain: first...end, latestPageStart: pageStart)
+    }
+
+    /// A paged chart needs fixed label spacing; automatic spacing would spread a few labels over
+    /// the whole history and leave most pages unlabeled.
+    private func trendXAxisValues(_ window: TrendWindow?) -> AxisMarkValues {
+        guard window != nil else { return .automatic(desiredCount: 4) }
+        return groupsByMonth ? .stride(by: .month, count: 2) : .stride(by: .day, count: 3)
+    }
+
+    /// Scrolls sideways one page at a time when needed and turns a tap into a bucket selection.
+    /// A tap gesture (not a drag) keeps both the chart and the page scrollable.
+    @ViewBuilder
+    private func scrollableTrend<Content: View>(_ chart: Content, window: TrendWindow?) -> some View {
+        let selectable = chart
+            .chartXSelection(value: $tappedTrendDate)
+            .chartGesture { proxy in
+                SpatialTapGesture().onEnded { value in
+                    proxy.selectXValue(at: value.location.x)
+                }
+            }
+        if let window {
+            selectable
+                .chartXScale(domain: window.domain)
+                .chartScrollableAxes(.horizontal)
+                .chartXVisibleDomain(length: window.visibleLength)
+                .chartScrollPosition(x: Binding(
+                    get: { trendScrollStart ?? window.latestPageStart },
+                    set: { trendScrollStart = $0 }
+                ))
+                .chartScrollTargetBehavior(
+                    .valueAligned(
+                        matching: groupsByMonth ? DateComponents(day: 1) : DateComponents(hour: 0),
+                        majorAlignment: .matching(
+                            groupsByMonth
+                                ? DateComponents(month: 1)
+                                : DateComponents(weekday: Calendar.current.firstWeekday)
+                        )
+                    )
+                )
+        } else {
+            selectable
         }
     }
 
@@ -557,33 +647,21 @@ public struct OverviewView: View {
         selectedBucketDate == nil || selectedBucketDate == bucket.date ? 1 : 0.35
     }
 
-    /// A tap (not a drag, so the page still scrolls over the chart) selects the bucket under the
-    /// finger; tapping it again, or an empty day, clears the selection.
-    private func bucketTapTarget(proxy: ChartProxy, buckets: [ECGInsightBucket]) -> some View {
-        GeometryReader { geometry in
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .onTapGesture { location in
-                    guard let plotFrame = proxy.plotFrame else { return }
-                    let frame = geometry[plotFrame]
-                    guard location.x >= frame.minX, location.x <= frame.maxX,
-                          let date = proxy.value(atX: location.x - frame.minX, as: Date.self) else { return }
-                    let target: Date?
-                    switch trendMetric {
-                    case .recordings:
-                        let start = bucketStart(for: date)
-                        target = buckets.first { $0.date == start }?.date
-                    case .heartRate:
-                        target = buckets
-                            .filter { $0.averageHeartRateBPM != nil }
-                            .min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
-                            .map { $0.date }
-                    }
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedBucketDate = target == selectedBucketDate ? nil : target
-                    }
-                }
+    /// Selects the bucket under a tap; tapping it again, or an empty day, clears the selection.
+    private func selectBucket(near date: Date, in buckets: [ECGInsightBucket]) {
+        let target: Date?
+        switch trendMetric {
+        case .recordings:
+            let start = bucketStart(for: date)
+            target = buckets.first { $0.date == start }?.date
+        case .heartRate:
+            target = buckets
+                .filter { $0.averageHeartRateBPM != nil }
+                .min { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) }
+                .map { $0.date }
+        }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            selectedBucketDate = target == selectedBucketDate ? nil : target
         }
     }
 

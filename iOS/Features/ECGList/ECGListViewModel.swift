@@ -101,7 +101,17 @@ public final class ECGListViewModel {
         )
         screeningTask = Task { [weak self] in
             guard let self else { return }
-            for record in records {
+            // Results saved by an earlier launch appear at once, in a single update; only records
+            // added since then have their voltages read and analyzed.
+            let cached = await repository.cachedScreeningSummaries(for: records)
+            guard !Task.isCancelled else { return }
+            if !cached.isEmpty {
+                var states = screeningStates
+                for (id, summary) in cached { states[id] = .result(summary) }
+                screeningStates = states
+            }
+
+            for record in records where cached[record.id] == nil {
                 guard !Task.isCancelled else { return }
                 let outcome = await repository.loadScreeningSummary(for: record)
                 guard !Task.isCancelled else { return }
@@ -117,7 +127,14 @@ public final class ECGListViewModel {
                     return
                 }
             }
+            await repository.flushScreeningCache()
             screeningTask = nil
         }
+    }
+
+    /// Deletes saved screening results. Records shown now keep their results until the next reload;
+    /// after a relaunch every record is screened again.
+    public func clearScreeningCache() async -> Bool {
+        await repository.clearScreeningCache()
     }
 }

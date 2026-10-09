@@ -57,6 +57,36 @@ Swift 功能测试和 UI 验收均未执行，不能据此声称 App 已编译�
 `foregroundStyle(by:)` 堆叠柱形和 `chartForegroundStyleScale`，以及 Form 中多个胶囊按钮
 是否能分别点击。
 
+### 2026-10-08 筛查结果本地缓存与趋势图分页（未编译）
+
+本轮实际执行 `python -m unittest Tools.Validation.tests.test_ios_project_configuration -v`（10/10 通过）
+和 `git diff --check`；Swift 未编译。
+
+- 新文件 `Models/ECGScreeningCache.swift`（已写入 `project.pbxproj`，WatchBeatModels target）：
+  `ECGScreeningCacheStorage` 协议、`ECGScreeningCacheFileStorage`、`ECGScreeningCacheIdentity`。
+  `ECGScreeningSummary` 新增 `Codable`；批注文件写入路径抽成共用的 `ECGProtectedFile`。
+- `ECGRepository` 新增 `screeningStorage` 注入、`cachedScreeningSummaries(for:)`、
+  `flushScreeningCache()`、`clearScreeningCache()`；`ECGListViewModel` 先一次性填入已缓存结果，
+  只对其余记录读取电压。`SettingsView` 改为 `init(listViewModel:)`，新增“清除已保存的筛查结果”。
+- 概览趋势图去掉 `chartOverlay` 点击层，改用 iOS 17 的 `chartXSelection` + `chartGesture`
+  (`SpatialTapGesture` → `proxy.selectXValue(at:)`)，并在超过 14 天／12 个月时启用
+  `chartScrollableAxes`、`chartXVisibleDomain`、`chartScrollPosition(x:)`、
+  `chartScrollTargetBehavior(.valueAligned(matching:majorAlignment:))`。
+- `ECGRepositoryStateTests` 新增 7 项：重启后不重读电压、仅新增记录未缓存、全量刷新删除已移除记录
+  （限量查询不删）、缓存暂不可读时不覆盖、清除、文件往返与算法变化失效、损坏文件视为空。
+
+重点验收：
+
+1. 首次启动逐条筛查；完全退出（上滑杀掉）再打开，概览“分析覆盖”立即完整、不再逐条转圈；
+   新录一条 ECG 后下拉刷新，只有新记录显示筛查进度。
+2. 在健康 App 删除一条 ECG 或关闭读取权限后刷新，统计中不再出现该记录。
+3. 设置清除后返回，下次启动重新逐条筛查；真机检查 `Library/Caches/WatchBeatScreening` 排除备份、
+   文件 protection 为 complete。
+4. 近 30 天／全部且记录跨度超过 14 天（或按月超过 12 个月）时：趋势图默认显示最近一页、纵轴固定、
+   左右滑动流畅且按天／月对齐、快速滑动按周／年对齐，横轴每页都有日期标签；上下滚动页面不被图表拦截。
+5. 滑动后点击柱形／心率点，选中的是手指下的那天（重点确认滚动偏移后坐标没有错位）；再次点击取消。
+   不足一页时图表与之前一样不可滑动，点击选择正常。切换日期范围后回到最近一页。
+
 如果 `xcode-select` 仍指向 Command Line Tools，先执行：
 
 ```bash

@@ -32,6 +32,21 @@ public struct ECGAnnotationFileStorage: ECGAnnotationStorage {
     }
 
     public func save(_ annotations: [UUID: ECGAnnotation]) throws {
+        let data = try JSONEncoder().encode(Document(schemaVersion: 1, records: annotations))
+        try ECGProtectedFile.write(data, to: fileURL, in: directory)
+    }
+
+    public func clear() throws {
+        try ECGProtectedFile.remove(fileURL)
+    }
+
+    private enum StorageError: Error { case unsupportedSchema }
+}
+
+/// Shared write path for the app's local health-derived files: complete file protection on iOS and a
+/// directory excluded from backup before any sensitive bytes are written.
+enum ECGProtectedFile {
+    static func write(_ data: Data, to fileURL: URL, in directory: URL) throws {
         var attributes: [FileAttributeKey: Any] = [:]
         #if os(iOS)
         attributes[.protectionKey] = FileProtectionType.complete
@@ -42,7 +57,6 @@ public struct ECGAnnotationFileStorage: ECGAnnotationStorage {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try protectedDirectory.setResourceValues(values)
-        let data = try JSONEncoder().encode(Document(schemaVersion: 1, records: annotations))
         #if os(iOS)
         try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
         #else
@@ -50,15 +64,13 @@ public struct ECGAnnotationFileStorage: ECGAnnotationStorage {
         #endif
     }
 
-    public func clear() throws {
+    static func remove(_ fileURL: URL) throws {
         do {
             try FileManager.default.removeItem(at: fileURL)
         } catch let error as CocoaError where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile {
             return
         }
     }
-
-    private enum StorageError: Error { case unsupportedSchema }
 }
 
 @MainActor

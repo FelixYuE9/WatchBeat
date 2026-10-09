@@ -9,8 +9,12 @@ public struct SettingsView: View {
     @Environment(ECGAnnotationStore.self) private var annotations
     @State private var confirmsAnnotationClear = false
     @State private var showsAnnotationClearError = false
+    @State private var screeningCacheClearResult: Bool?
+    let listViewModel: ECGListViewModel
 
-    public init() {}
+    public init(listViewModel: ECGListViewModel) {
+        self.listViewModel = listViewModel
+    }
 
     public var body: some View {
         ZStack {
@@ -62,6 +66,35 @@ public struct SettingsView: View {
                     Text(language.text("Feelings and notes", "感受与批注"))
                 } footer: {
                     Text(language.text("Saved feelings, tags and notes stay on this iPhone and are excluded from backup.", "已保存的感受、标签与批注仅保存在此 iPhone，并排除备份。"))
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        Task { @MainActor in
+                            screeningCacheClearResult = await listViewModel.clearScreeningCache()
+                        }
+                    } label: {
+                        HStack {
+                            Label(language.text("Clear saved screening results", "清除已保存的筛查结果"), systemImage: "trash")
+                            Spacer(minLength: 8)
+                            if screeningCacheClearResult == true {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                    .accessibilityLabel(language.text("Cleared", "已清除"))
+                            } else if screeningCacheClearResult == false {
+                                Text(language.text("Unlock and retry", "请解锁后重试"))
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                    }
+                } header: {
+                    Text(language.text("Screening results", "筛查结果"))
+                } footer: {
+                    Text(language.text(
+                        "Each ECG's screening result (candidate count only, no waveform, date or report) is kept on this iPhone so reopening WatchBeat only analyzes new recordings. Excluded from backup and recalculated automatically when the algorithm changes or after clearing.",
+                        "每条 ECG 的筛查结果（仅候选数，不含波形、日期或报告）保存在此 iPhone，重新打开时只分析新增记录。不参与备份；算法更新或清除后会自动重新计算。"
+                    ))
                 }
 
                 Section {

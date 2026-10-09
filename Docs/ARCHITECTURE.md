@@ -36,7 +36,8 @@
 6. Apple classification 只进入展示/metadata，不进入任何研究算法输入。
 7. UI explanation 仅由实际 feature 值和 `ReasonCode` 生成。
 8. 每个分析结果带 schema、algorithm、config version、detector identifier 和拒判原因。
-9. 默认无 ECG 副本缓存、无健康数据日志、无网络数据流。用户主动保存的批注仅存于本机受保护文件。
+9. 不缓存 ECG 波形副本、分析报告或采集日期，无健康数据日志、无网络数据流。本机受保护文件只保存
+   用户主动保存的批注，以及按记录 UUID 索引的紧凑筛查摘要（候选数／未标记候选／无法分析）。
 
 ## 当前最小闭环的数据契约
 
@@ -90,8 +91,12 @@ iPhone；当前 revision 的签名产物和真机 HealthKit 行为仍须按
 
 - `ECGHealthKitReading` / `LiveHealthKitECGReader`：可注入的最小授权/查询边界；`toShare` 为空。
 - `ECGRepository`：先加载 metadata；用户进入数据页后逐条读取 voltage 生成仅含候选数/拒判的
-  进程内列表摘要，原始信号不进入列表缓存；详情仍按需重读完整 voltage。详情请求使用
+  列表摘要，原始信号不进入列表缓存；详情仍按需重读完整 voltage。详情请求使用
   generation + 取消保护，列表筛查使用独立通道，二者不会互相判为过期。
+- `ECGScreeningCacheStorage`：摘要经 `ECGScreeningCacheFileStorage` 持久化，重新启动后列表一次性
+  显示已知结果，只读取新增记录的 voltage。文件绑定算法版本与全部研究参数（任何变化即整体失效），
+  每 20 条新结果及每轮筛查结束时写入；全量 metadata 查询后删除已不可访问记录的摘要；文件
+  暂不可读时不覆盖。
 - `ECGHealthKitMapper`：单位换算和完整性信息，不静默清洗。
 - feature modules：Disclaimer、ECG list、ECG detail、可滚动/缩放 Canvas 波形、模型结果卡、
   内置合成教程与 settings（beat detail、research mode 待后续里程碑）。
@@ -113,7 +118,8 @@ HealthKit 异步查询必须支持 cooperative cancellation 和请求 identity �
 ## 跨记录概览、筛选与批注
 
 `ECGRecordInsights` 是 SwiftUI/HealthKit 无关的描述性汇总：对可访问记录按日分组，跨度超过
-90 天时概览按月分组。心率均值对有有效 Apple 平均心率的记录等权平均，不以时长加权。
+90 天时概览按月分组。趋势图每页最多显示 14 天或 12 个月，超出时可左右滑动（Swift Charts
+原生滚动，纵轴固定），默认停在最近一页，切换日期范围后回到最近一页。心率均值对有有效 Apple 平均心率的记录等权平均，不以时长加权。
 候选总数只求和成功分析的记录；成功零候选、无法分析、待分析和读取失败分别统计。
 示例不进入真实记录集合。筛查仍只缓存紧凑结果，详情成功读取后同步更新列表和概览。
 

@@ -151,6 +151,129 @@ import WatchBeatModels
         }
     }
 
+    // MARK: - Saved screening results
+
+    @Test func savedScreeningSkipsVoltageReadsAfterRelaunch() async {
+        let record = makeRecord(declaredMeasurementCount: 1)
+        let samples = [ECGVoltageSample(timeSinceSampleStart: 0, quantity: nil)]
+        let storage = FakeScreeningCacheStorage()
+        let firstLaunch = ECGRepository(
+            reader: FakeECGReader(records: [record], voltageSamples: samples),
+            screeningStorage: storage
+        )
+        _ = await firstLaunch.loadRecords()
+        let screened = await firstLaunch.loadScreeningSummary(for: record)
+        await firstLaunch.flushScreeningCache()
+
+        let reader = FakeECGReader(records: [record], voltageSamples: samples)
+        let relaunch = ECGRepository(reader: reader, screeningStorage: storage)
+        _ = await relaunch.loadRecords()
+        let cached = await relaunch.cachedScreeningSummaries(for: [record])
+        let summary = await relaunch.loadScreeningSummary(for: record)
+        let fetchCount = await reader.voltageFetchCount()
+
+        #expect(screened == .loaded(.notAnalyzed))
+        #expect(cached == [record.id: .notAnalyzed])
+        #expect(summary == .loaded(.notAnalyzed))
+        #expect(fetchCount == 0)
+    }
+
+    @Test func onlyRecordsAddedSinceTheLastLaunchAreUncached() async {
+        let known = makeRecord()
+        let added = makeRecord()
+        let storage = FakeScreeningCacheStorage(summaries: [known.id: .prematureCandidates(count: 2)])
+        let repository = ECGRepository(
+            reader: FakeECGReader(records: [added, known]),
+            screeningStorage: storage
+        )
+
+        _ = await repository.loadRecords()
+        let cached = await repository.cachedScreeningSummaries(for: [added, known])
+
+        #expect(cached == [known.id: .prematureCandidates(count: 2)])
+    }
+
+    @Test func fullHistoryReloadForgetsRecordsNoLongerInHealth() async {
+        let kept = makeRecord()
+        let removed = makeRecord()
+        let storage = FakeScreeningCacheStorage(summaries: [
+            kept.id: .noPrematureCandidates,
+            removed.id: .prematureCandidates(count: 1)
+        ])
+        let repository = ECGRepository(reader: FakeECGReader(records: [kept]), screeningStorage: storage)
+
+        _ = await repository.loadRecords(limit: 1)
+        let afterLimitedQuery = storage.stored
+        _ = await repository.loadRecords()
+
+        #expect(afterLimitedQuery.count == 2)
+        #expect(storage.stored == [kept.id: .noPrematureCandidates])
+    }
+
+    @Test func unreadableSavedResultsAreNeverOverwrittenWithAPartialCopy() async {
+        let record = makeRecord(declaredMeasurementCount: 1)
+        let storage = FakeScreeningCacheStorage(summaries: [UUID(): .noPrematureCandidates], failsRead: true)
+        let repository = ECGRepository(
+            reader: FakeECGReader(
+                records: [record],
+                voltageSamples: [ECGVoltageSample(timeSinceSampleStart: 0, quantity: nil)]
+            ),
+            screeningStorage: storage
+        )
+
+        _ = await repository.loadScreeningSummary(for: record)
+        await repository.flushScreeningCache()
+        let savesWhileLocked = storage.saveCount
+        storage.allowReads()
+        await repository.flushScreeningCache()
+
+        #expect(savesWhileLocked == 0)
+        #expect(storage.stored.count == 2)
+        #expect(storage.stored[record.id] == .notAnalyzed)
+    }
+
+    @Test func clearingSavedResultsRemovesStoredAndInMemorySummaries() async {
+        let record = makeRecord()
+        let storage = FakeScreeningCacheStorage(summaries: [record.id: .noPrematureCandidates])
+        let repository = ECGRepository(reader: FakeECGReader(records: [record]), screeningStorage: storage)
+
+        _ = await repository.loadRecords()
+        let cleared = await repository.clearScreeningCache()
+        let cached = await repository.cachedScreeningSummaries(for: [record])
+
+        #expect(cleared)
+        #expect(cached.isEmpty)
+        #expect(storage.stored.isEmpty)
+    }
+
+    @Test func screeningCacheFileRoundTripsAndDropsOtherAnalysisVersions() throws {
+        let directory = ECGInsightsFixture.temporaryDirectory()
+        defer { ECGInsightsFixture.removeDirectory(directory) }
+        let summaries: [UUID: ECGScreeningSummary] = [
+            UUID(): .prematureCandidates(count: 3),
+            UUID(): .noPrematureCandidates,
+            UUID(): .notAnalyzed
+        ]
+        try ECGScreeningCacheFileStorage(directory: directory, analysisIdentity: "rules-a").save(summaries)
+
+        #expect(try ECGScreeningCacheFileStorage(directory: directory, analysisIdentity: "rules-a").load() == summaries)
+        #expect(try ECGScreeningCacheFileStorage(directory: directory, analysisIdentity: "rules-b").load().isEmpty)
+        #expect(try ECGInsightsFixture.excludedFromBackup(directory))
+    }
+
+    @Test func missingOrCorruptScreeningCacheReadsAsEmpty() throws {
+        let directory = ECGInsightsFixture.temporaryDirectory()
+        defer { ECGInsightsFixture.removeDirectory(directory) }
+        let storage = ECGScreeningCacheFileStorage(directory: directory)
+
+        #expect(try storage.load().isEmpty)
+        try storage.save([UUID(): .noPrematureCandidates])
+        try ECGInsightsFixture.corruptFile(storage.fileURL)
+        #expect(try storage.load().isEmpty)
+        try storage.clear()
+        #expect(try storage.load().isEmpty)
+    }
+
     private func makeRecord(
         declaredMeasurementCount: Int = 3,
         samplingFrequencyHz: Double? = 500

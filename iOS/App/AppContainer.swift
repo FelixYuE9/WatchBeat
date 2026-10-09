@@ -13,7 +13,10 @@ public final class AppContainer {
     public let exampleMeasurement: ECGMeasurement?
 
     public init() {
-        let repository = ECGRepository(reader: LiveHealthKitECGReader())
+        let repository = ECGRepository(
+            reader: LiveHealthKitECGReader(),
+            screeningStorage: ECGScreeningCacheFileStorage.standard()
+        )
         self.repository = repository
         self.annotations = ECGAnnotationStore()
         self.listViewModel = ECGListViewModel(repository: repository)
